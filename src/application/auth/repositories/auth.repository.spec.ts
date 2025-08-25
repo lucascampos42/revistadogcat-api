@@ -14,6 +14,7 @@ const mockPrismaService = {
 
 describe('AuthRepository', () => {
   let repository: AuthRepository;
+  let prisma: PrismaService;
 
   const mockUser: User = {
     userId: '1',
@@ -24,7 +25,7 @@ describe('AuthRepository', () => {
     cpf: '12345678901',
     telefone: '11999999999',
     avatarUrl: 'https://example.com/avatar.jpg',
-    role: Role.CLIENTE,
+    role: Role.USUARIO,
     active: true,
     lastLogin: new Date(),
     tokenVersion: 1,
@@ -74,7 +75,7 @@ describe('AuthRepository', () => {
         cpf: '12345678901',
         telefone: '11999999999',
         avatarUrl: null,
-        role: Role.CLIENTE,
+        role: Role.USUARIO,
         lastLogin: null,
         tokenVersion: 0,
         refreshToken: null,
@@ -109,7 +110,7 @@ describe('AuthRepository', () => {
         cpf: '12345678901',
         telefone: '11999999999',
         avatarUrl: null,
-        role: Role.CLIENTE,
+        role: Role.USUARIO,
         lastLogin: null,
         tokenVersion: 0,
         refreshToken: null,

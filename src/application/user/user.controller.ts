@@ -7,6 +7,9 @@ import {
   Delete,
   Query,
   Post,
+  UseInterceptors,
+  UploadedFile,
+  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,13 +18,20 @@ import {
   ApiQuery,
   ApiParam,
   ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
 } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { UserService } from './user.service';
 import { UpdateUserDto } from '../auth/dto/update-auth.dto';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { BlockUserDto } from './dto/block-user.dto';
 import { RestoreUserDto } from './dto/restore-user.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UploadAvatarDto } from './dto/upload-avatar.dto';
+import { multerConfig } from '../../core/config/multer.config';
+import { AuthRequest } from '../auth/models/AuthRequest';
 
 @ApiTags('Usuários')
 @ApiBearerAuth()
@@ -30,7 +40,7 @@ export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Get()
-  @Roles(Role.ADMIN, Role.GERENTE)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Listar usuários com paginação e filtros' })
   @ApiResponse({
     status: 200,
@@ -93,34 +103,32 @@ export class UserController {
   }
 
   @Get(':id')
-  @Roles(Role.ADMIN, Role.GERENTE)
   @ApiOperation({ summary: 'Buscar usuário por ID' })
   @ApiResponse({ status: 200, description: 'Usuário encontrado com sucesso' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({
     status: 403,
-    description: 'Acesso negado - permissão insuficiente',
+    description: 'Acesso negado - usuário só pode ver seu próprio perfil (exceto ADMIN)',
   })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiParam({ name: 'id', description: 'ID único do usuário' })
-  findOne(@Param('id') id: string) {
-    return this.userService.findOneById(id);
+  findOne(@Param('id') id: string, @Req() req: AuthRequest) {
+    return this.userService.findOneById(id, req.user);
   }
 
   @Patch(':id')
-  @Roles(Role.ADMIN, Role.GERENTE)
   @ApiOperation({ summary: 'Atualizar dados do usuário' })
   @ApiResponse({ status: 200, description: 'Usuário atualizado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos fornecidos' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({
     status: 403,
-    description: 'Acesso negado - permissão insuficiente',
+    description: 'Acesso negado - usuário só pode editar seus próprios dados (exceto ADMIN)',
   })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiParam({ name: 'id', description: 'ID único do usuário' })
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(id, updateUserDto);
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: AuthRequest) {
+    return this.userService.update(id, updateUserDto, req.user);
   }
 
   @Delete(':id')
@@ -139,7 +147,7 @@ export class UserController {
   }
 
   @Post(':id/block')
-  @Roles(Role.ADMIN, Role.GERENTE)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Bloquear usuário' })
   @ApiResponse({ status: 200, description: 'Usuário bloqueado com sucesso' })
   @ApiResponse({ status: 400, description: 'Dados inválidos fornecidos' })
@@ -158,7 +166,7 @@ export class UserController {
   }
 
   @Post(':id/unblock')
-  @Roles(Role.ADMIN, Role.GERENTE)
+  @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Desbloquear usuário' })
   @ApiResponse({ status: 200, description: 'Usuário desbloqueado com sucesso' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
@@ -170,6 +178,25 @@ export class UserController {
   @ApiParam({ name: 'id', description: 'ID único do usuário' })
   async unblockUser(@Param('id') id: string) {
     return this.userService.unblockUser(id);
+  }
+
+  @Patch(':id/role')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Atualizar role do usuário (apenas Admin)' })
+  @ApiResponse({ status: 200, description: 'Role do usuário atualizado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Role inválido fornecido' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({
+    status: 403,
+    description: 'Acesso negado - apenas administradores',
+  })
+  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiParam({ name: 'id', description: 'ID único do usuário' })
+  async updateUserRole(
+    @Param('id') id: string,
+    @Body() updateUserRoleDto: UpdateUserRoleDto,
+  ) {
+    return this.userService.updateUserRole(id, updateUserRoleDto.role);
   }
 
   @Post(':id/restore')
@@ -185,5 +212,90 @@ export class UserController {
   @ApiParam({ name: 'id', description: 'ID único do usuário' })
   async restoreUser(@Param('id') id: string, @Body() _dto: RestoreUserDto) {
     return this.userService.restoreUser(id);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: 'Obter perfil do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil do usuário retornado com sucesso' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  getMyProfile(@Req() req: AuthRequest) {
+    return this.userService.findOneById(req.user.userId, req.user);
+  }
+
+  @Patch('me')
+  @ApiOperation({ summary: 'Atualizar perfil do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil atualizado com sucesso' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos fornecidos' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({
+    status: 403,
+    description: 'Acesso negado - usuário não pode alterar seu próprio role',
+  })
+  updateMyProfile(@Body() updateUserDto: UpdateUserDto, @Req() req: AuthRequest) {
+    return this.userService.update(req.user.userId, updateUserDto, req.user);
+  }
+
+  @Post('avatar-upload')
+  @UseInterceptors(FileInterceptor('avatar', multerConfig))
+  @ApiOperation({ summary: 'Upload de avatar do usuário' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Upload de arquivo de avatar',
+    type: UploadAvatarDto,
+    schema: {
+      type: 'object',
+      properties: {
+        avatar: {
+          type: 'string',
+          format: 'binary',
+          description: 'Arquivo de imagem do avatar (JPEG, PNG, WebP - máx. 5MB)',
+        },
+        description: {
+          type: 'string',
+          description: 'Descrição opcional para o upload',
+          maxLength: 255,
+        },
+      },
+      required: ['avatar'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Avatar atualizado com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string' },
+        avatarUrl: { type: 'string' },
+        user: { type: 'object' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Arquivo inválido ou dados incorretos' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 413, description: 'Arquivo muito grande (máx. 5MB)' })
+  async uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() uploadAvatarDto: UploadAvatarDto,
+    @Req() req: AuthRequest,
+  ) {
+    if (!file) {
+      throw new Error('Nenhum arquivo foi enviado');
+    }
+
+    // Construir URL do avatar baseada no caminho do arquivo
+    const avatarUrl = `/uploads/avatars/${file.filename}`;
+    
+    // Atualizar o usuário com a nova URL do avatar
+    const updatedUser = await this.userService.uploadAvatar(
+      req.user.userId,
+      avatarUrl,
+    );
+
+    return {
+      message: 'Avatar atualizado com sucesso',
+      avatarUrl,
+      user: updatedUser,
+    };
   }
 }

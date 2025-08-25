@@ -1,8 +1,8 @@
 {
-  "name": "nest-boilerplate",
-  "version": "0.0.1",
-  "description": "Express NestJS boilerplate with JWT authentication, Prisma ORM, and TypeScript.",
-  "author": "Lucas Campos",
+  "name": "revistadogcat",
+  "version": "1.0.0",
+  "description": "Revista DogCat é uma plataforma online dedicada ao mundo pet, unindo informação e entretenimento. Além da revista mensal, o site oferece artigos e notícias sobre cães e gatos, dicas de cuidados, histórias de adoção e bem-estar animal. Também promove eventos e campanhas de adoção, e conta com o Expodog, uma exposição voltada para cães de raça.",
+  "author": "CodesDevs",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
@@ -36,14 +36,17 @@
     "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.13.0",
     "@scalar/nestjs-api-reference": "^0.5.12",
+    "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "dotenv": "^17.2.1",
+    "multer": "^2.0.2",
     "nodemailer": "^7.0.5",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "sharp": "^0.34.3"
   },
   "devDependencies": {
     "@compodoc/compodoc": "^1.1.25",

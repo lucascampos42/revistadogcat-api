@@ -175,7 +175,7 @@ describe('AuthService', () => {
         cpf: null,
         telefone: null,
         avatarUrl: null,
-        role: Role.CLIENTE,
+        role: Role.USUARIO,
         active: true,
         blocked: false,
         blockedUntil: null,
@@ -226,7 +226,7 @@ describe('AuthService', () => {
         cpf: null,
         telefone: null,
         avatarUrl: null,
-        role: Role.CLIENTE,
+        role: Role.USUARIO,
         active: true,
         blocked: false,
         blockedUntil: null,
@@ -247,7 +247,7 @@ describe('AuthService', () => {
       mockUserService.findByIdentification.mockResolvedValue(user);
       (
         bcrypt.compare as jest.MockedFunction<typeof bcrypt.compare>
-      ).mockResolvedValue(false);
+      ).mockImplementation(() => false);
 
       await expect(service.signIn('testuser', 'wrongpassword')).rejects.toThrow(
         UnauthorizedException,

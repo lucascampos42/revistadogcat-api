@@ -50,7 +50,7 @@ export class UserMapper {
       cpf: userEntity.cpf || null,
       telefone: userEntity.telefone || null,
       avatarUrl: userEntity.avatarUrl || null,
-      role: this.mapUserRoleToPrismaRole(userEntity.role || UserRole.CLIENTE),
+      role: this.mapUserRoleToPrismaRole(userEntity.role || UserRole.USUARIO),
       password: userEntity.password || null,
       lastLogin: userEntity.lastLogin || null,
       tokenVersion: userEntity.tokenVersion || 1,
@@ -129,18 +129,22 @@ export class UserMapper {
    */
   private static mapPrismaRoleToUserRole(prismaRole: PrismaRole): UserRole {
     switch (prismaRole) {
-      case PrismaRole.CLIENTE:
-        return UserRole.CLIENTE;
-      case PrismaRole.FUNCIONARIO:
-        return UserRole.FUNCIONARIO;
-      case PrismaRole.GERENTE:
-        return UserRole.GERENTE;
+      case PrismaRole.USUARIO:
+      return UserRole.USUARIO;
+    case PrismaRole.DONO_PET_APROVADO:
+      return UserRole.DONO_PET_APROVADO;
+    case PrismaRole.EDITOR:
+      return UserRole.EDITOR;
+    case PrismaRole.FUNCIONARIO:
+      return UserRole.FUNCIONARIO;
+      case PrismaRole.ASSINANTE:
+        return UserRole.ASSINANTE;
+      case PrismaRole.DONO_PET_APROVADO_ASSINANTE:
+        return UserRole.DONO_PET_APROVADO_ASSINANTE;
       case PrismaRole.ADMIN:
         return UserRole.ADMIN;
-      case PrismaRole.SUPERADMIN:
-        return UserRole.SUPERADMIN;
       default:
-        return UserRole.CLIENTE;
+        return UserRole.USUARIO;
     }
   }
 
@@ -149,18 +153,22 @@ export class UserMapper {
    */
   private static mapUserRoleToPrismaRole(userRole: UserRole): PrismaRole {
     switch (userRole) {
-      case UserRole.CLIENTE:
-        return PrismaRole.CLIENTE;
-      case UserRole.FUNCIONARIO:
-        return PrismaRole.FUNCIONARIO;
-      case UserRole.GERENTE:
-        return PrismaRole.GERENTE;
+      case UserRole.USUARIO:
+      return PrismaRole.USUARIO;
+    case UserRole.DONO_PET_APROVADO:
+      return PrismaRole.DONO_PET_APROVADO;
+    case UserRole.EDITOR:
+      return PrismaRole.EDITOR;
+    case UserRole.FUNCIONARIO:
+      return PrismaRole.FUNCIONARIO;
+      case UserRole.ASSINANTE:
+        return PrismaRole.ASSINANTE;
+      case UserRole.DONO_PET_APROVADO_ASSINANTE:
+        return PrismaRole.DONO_PET_APROVADO_ASSINANTE;
       case UserRole.ADMIN:
         return PrismaRole.ADMIN;
-      case UserRole.SUPERADMIN:
-        return PrismaRole.SUPERADMIN;
       default:
-        return PrismaRole.CLIENTE;
+        return PrismaRole.USUARIO;
     }
   }
 }

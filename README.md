@@ -1,6 +1,6 @@
-# NestJS Prisma Boilerplate
+# Revista DogCat API
 
-Este é um projeto boilerplate para iniciar aplicações com [NestJS](https://nestjs.com/) e [Prisma](https://www.prisma.io/). Ele vem com uma série de funcionalidades pré-configuradas para acelerar o seu desenvolvimento, seguindo as melhores práticas de arquitetura e segurança.
+API backend para plataforma de revista digital focada em pets, desenvolvida com [NestJS](https://nestjs.com/) e [Prisma](https://www.prisma.io/). A aplicação oferece um sistema completo de gestão de usuários com diferentes níveis de acesso específicos para o modelo de negócio de uma revista de pets.
 
 Criado e mantido por [lucascampos42](https://github.com/lucascampos42).
 
@@ -40,18 +40,53 @@ Criado e mantido por [lucascampos42](https://github.com/lucascampos42).
 - **[Prettier](https://prettier.io/)** - Formatação de código
 - **[Docker](https://www.docker.com/)** - Containerização (opcional)
 
-## Funcionalidades
+## 🛠️ Tecnologias Utilizadas
 
-*   **Framework:** [NestJS](https://nestjs.com/) - Um framework Node.js progressivo para construir aplicações server-side eficientes e escaláveis.
+### Core Technologies
+*   **Framework:** [NestJS](https://nestjs.com/) - Framework Node.js progressivo para construir aplicações server-side eficientes e escaláveis.
+*   **Linguagem:** [TypeScript](https://www.typescriptlang.org/) - Superset do JavaScript que adiciona tipagem estática.
+*   **Banco de Dados:** [PostgreSQL](https://www.postgresql.org/) - Sistema de gerenciamento de banco de dados relacional.
 *   **ORM:** [Prisma](https://www.prisma.io/) - ORM de próxima geração para Node.js e TypeScript.
-*   **Autenticação:** Autenticação completa com JWT (login e registro).
-*   **Autorização:** Controle de acesso baseado em papéis (Role-Based Access Control - RBAC) com guards.
-*   **Notificações de Segurança:** Sistema de alertas por e-mail para logins suspeitos, múltiplas tentativas de login e bloqueios de conta.
-*   **Logs de Ações do Usuário:** Middleware para registrar automaticamente as ações dos usuários em uma tabela de log no banco de dados.
-*   **Docker (Opcional):** Configuração completa para um ambiente de desenvolvimento e produção containerizado. Veja o guia [DOCKER.md](./DOCKER.md) para detalhes.
-*   **Testes:** Estrutura de testes com Jest para testes unitários e e2e.
-*   **Validação:** Validação de DTOs com `class-validator`.
-*   **Cliente de API:** Coleção do [Bruno](https://www.usebruno.com/) para testar a API.
+
+### Funcionalidades de Segurança
+*   **Autenticação:** Sistema completo com JWT (login, registro e refresh tokens)
+*   **Autorização:** RBAC com 5 roles específicos para revista de pets
+*   **Notificações de Segurança:** Alertas por e-mail para atividades suspeitas
+*   **Rate Limiting:** Proteção contra ataques de força bruta
+*   **Logs de Auditoria:** Rastreamento completo de ações dos usuários
+
+### Qualidade e Desenvolvimento
+*   **Validação:** [class-validator](https://github.com/typestack/class-validator) e [class-transformer](https://github.com/typestack/class-transformer)
+*   **Documentação:** [Swagger](https://swagger.io/) com interface Scalar para documentação interativa
+*   **Testes:** [Jest](https://jestjs.io/) com cobertura de testes unitários e de integração
+*   **Linting:** [ESLint](https://eslint.org/) e [Prettier](https://prettier.io/) para qualidade de código
+*   **Containerização:** [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
+
+## 📋 Funcionalidades Principais
+
+### Gestão de Usuários
+*   **Registro e Login:** Sistema completo de autenticação com JWT
+*   **Perfis de Usuário:** Diferentes tipos de usuários (comum, dono de pet, assinante, etc.)
+*   **Verificação de Conta:** Sistema de verificação por e-mail
+*   **Recuperação de Senha:** Reset seguro de senhas
+*   **Bloqueio/Desbloqueio:** Controle administrativo de contas
+
+### Sistema de Roles Específico para Revista de Pets
+*   **5 Níveis de Acesso:** Desde usuário comum até admin
+*   **Controle Granular:** Permissões específicas por funcionalidade
+*   **Escalabilidade:** Sistema preparado para novos roles
+
+### Segurança Avançada
+*   **Rate Limiting:** Proteção contra ataques automatizados
+*   **Logs de Auditoria:** Rastreamento completo de ações
+*   **Notificações de Segurança:** Alertas automáticos por e-mail
+*   **Validação Robusta:** DTOs com validação completa
+
+### Ferramentas de Desenvolvimento
+*   **Docker:** Ambiente containerizado completo ([DOCKER.md](./DOCKER.md))
+*   **Cliente de API:** Coleção do [Bruno](https://www.usebruno.com/) para testes
+*   **Documentação Interativa:** Swagger com interface Scalar
+*   **Testes Automatizados:** Cobertura completa com Jest
 
 ## Como Começar
 
@@ -155,6 +190,17 @@ npm run seed
 O usuário administrador será criado com as seguintes credenciais:
 - **E-mail:** `admin@admin.com`
 - **Senha:** `12345678`
+- **Role:** `ADMIN`
+
+### Roles Disponíveis
+
+O sistema possui 5 tipos de usuários com diferentes níveis de acesso:
+
+- **`USUARIO_COMUM`** - Usuários básicos da plataforma (role padrão)
+- **`DONO_PET_CADASTRADO`** - Donos de pet que se cadastraram na plataforma
+- **`ASSINANTE`** - Usuários com assinatura ativa da revista
+- **`DONO_PET_APROVADO_ASSINANTE`** - Donos de pet aprovados com assinatura premium
+- **`ADMIN`** - Administradores do sistema com acesso total
 
 ## 🚀 Comandos Disponíveis
 
@@ -247,6 +293,63 @@ EMAIL_ENABLED=true
 
 Os templates de e-mail estão localizados em `src/core/mail/templates/` e podem ser customizados conforme necessário.
 
+## 🔐 Sistema de Roles e Permissões
+
+### Hierarquia de Acesso
+
+O sistema implementa um controle de acesso baseado em roles (RBAC) específico para o modelo de negócio de uma revista de pets:
+
+```
+ADMIN (Acesso Total)
+├── Gerenciar todos os usuários
+├── Bloquear/desbloquear contas
+├── Alterar roles de usuários
+├── Acesso a logs do sistema
+└── Todas as funcionalidades da plataforma
+
+DONO_PET_APROVADO_ASSINANTE (Premium)
+├── Conteúdo exclusivo para assinantes
+├── Funcionalidades premium
+├── Perfil verificado como dono de pet
+└── Benefícios de assinante
+
+ASSINANTE (Assinatura Ativa)
+├── Conteúdo exclusivo para assinantes
+├── Funcionalidades premium
+└── Acesso prioritário
+
+DONO_PET_CADASTRADO (Verificado)
+├── Funcionalidades básicas
+├── Perfil verificado como dono de pet
+└── Conteúdo público
+
+USUARIO_COMUM (Padrão)
+├── Funcionalidades básicas
+├── Conteúdo público
+└── Acesso limitado
+```
+
+### Implementação Técnica
+
+- **Guards:** `@Roles()` decorator para proteger endpoints
+- **Middleware:** Verificação automática de permissões
+- **DTOs:** Validação de roles em requests
+- **Database:** Enum `Role` no Prisma schema
+
+### Exemplos de Uso
+
+```typescript
+// Endpoint apenas para administradores
+@Roles(Role.ADMIN)
+@Get('users')
+findAllUsers() { ... }
+
+// Endpoint para assinantes e admins
+@Roles(Role.ASSINANTE, Role.DONO_PET_APROVADO_ASSINANTE, Role.ADMIN)
+@Get('premium-content')
+getPremiumContent() { ... }
+```
+
 ## 🏗️ Arquitetura do Projeto
 
 ### Estrutura de Pastas
@@ -260,22 +363,39 @@ src/
 │   │   ├── auth.module.ts
 │   │   ├── dto/             # Data Transfer Objects
 │   │   ├── entities/        # Entidades de domínio
-│   │   └── repositories/    # Repositórios
+│   │   ├── strategies/      # Estratégias JWT
+│   │   └── repositories/    # Repositórios de auth
 │   ├── user/                # Gestão de usuários
+│   │   ├── user.controller.ts
+│   │   ├── user.service.ts
+│   │   ├── user.module.ts
+│   │   ├── dto/             # DTOs do usuário
+│   │   ├── entities/        # Entidades do usuário
+│   │   ├── mappers/         # Mapeadores de dados
+│   │   └── repositories/    # Repositórios
 │   └── home/                # Endpoint de saúde
 ├── core/                     # Funcionalidades centrais
 │   ├── config/              # Configurações da aplicação
-│   ├── decorators/          # Decorators customizados
+│   ├── decorators/          # Decorators customizados (@Roles)
 │   ├── dto/                 # DTOs base
 │   ├── entities/            # Entidades base
 │   ├── exceptions/          # Exceções customizadas
 │   ├── filters/             # Exception filters
-│   ├── guards/              # Guards de autenticação/autorização
+│   ├── guards/              # Guards de autenticação/autorização (RolesGuard)
 │   ├── interceptors/        # Interceptors
 │   ├── interfaces/          # Interfaces compartilhadas
 │   ├── mail/                # Sistema de e-mail
+│   ├── middleware/          # Middlewares (UserActionLogger)
 │   ├── utils/               # Utilitários
 │   └── validators/          # Validadores customizados
+├── shared/                   # Utilitários compartilhados
+│   ├── constants/           # Constantes
+│   ├── enums/               # Enumerações (Role enum)
+│   ├── interfaces/          # Interfaces
+│   └── utils/               # Funções utilitárias
+├── prisma/                   # Configuração do Prisma
+│   ├── migrations/          # Migrações do banco
+│   └── schema.prisma        # Schema do banco (com roles)
 └── main.ts                   # Ponto de entrada da aplicação
 ```
 

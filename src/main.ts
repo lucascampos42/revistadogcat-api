@@ -4,10 +4,51 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { apiReference } from '@scalar/nestjs-api-reference';
+import { join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const port = process.env.PORT ?? 3099;
+
+  // Configurar CORS
+  app.enableCors({
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:4200',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:8080',
+      'http://localhost:8081',
+      'http://127.0.0.1:4200',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:8080',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+      'Access-Control-Request-Method',
+      'Access-Control-Request-Headers',
+    ],
+    credentials: true,
+    optionsSuccessStatus: 200,
+    preflightContinue: false,
+  });
+
+  // Criar diretório de uploads se não existir
+  const uploadsPath = join(process.cwd(), 'uploads', 'avatars');
+  if (!existsSync(uploadsPath)) {
+    mkdirSync(uploadsPath, { recursive: true });
+    Logger.log(`Diretório de uploads criado: ${uploadsPath}`);
+  }
+
+  // Configurar servir arquivos estáticos
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   // Configurar Swagger/OpenAPI
   const config = new DocumentBuilder()

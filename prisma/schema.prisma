@@ -15,7 +15,7 @@ model User {
   cpf       String? @unique
   telefone  String?
   avatarUrl String?
-  role      Role    @default(CLIENTE)
+  role      Role    @default(USUARIO)
 
   // --- Campos de Segurança ---
   password             String?
@@ -38,16 +38,29 @@ model User {
   deletedAt        DateTime?
 
   logs Log[]
+  enderecos Endereco[]
+  cadastrosCao CadastroCao[]
 
   @@map("users")
 }
 
 enum Role {
-  CLIENTE
-  FUNCIONARIO
-  GERENTE
+  USUARIO
+  DONO_PET_APROVADO
+  ASSINANTE
+  DONO_PET_APROVADO_ASSINANTE
   ADMIN
-  SUPERADMIN
+  EDITOR
+  FUNCIONARIO
+}
+
+enum TipoEndereco {
+  RESIDENCIAL
+  COMERCIAL
+  ENTREGA
+  COBRANCA
+  TEMPORARIO
+  OUTRO
 }
 
 model Log {
@@ -61,4 +74,120 @@ model Log {
   user User? @relation(fields: [userId], references: [userId])
 
   @@map("logs")
+}
+
+model Endereco {
+  enderecoId      String        @id @default(cuid())
+  userId          String
+  tipo            TipoEndereco
+  nome            String?
+  logradouro      String
+  numero          String
+  complemento     String?
+  bairro          String
+  cidade          String
+  estado          String
+  cep             String
+  pontoReferencia String?
+  principal       Boolean       @default(false)
+  ativo           Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("enderecos")
+}
+
+enum StatusArtigo {
+  PUBLICADO
+  RASCUNHO
+  REVISAO
+}
+
+enum SexoCao {
+  MACHO
+  FEMEA
+}
+
+enum VideoOption {
+  UPLOAD
+  URL
+  WHATSAPP
+  NONE
+}
+
+model Artigo {
+  artigoId        String        @id @default(cuid())
+  titulo          String
+  conteudo        Json          // Conteúdo em formato JSON do TipTap
+  resumo          String?
+  autor           String
+  categoria       String
+  status          StatusArtigo  @default(RASCUNHO)
+  dataPublicacao  DateTime
+  imagemCapa      String
+  visualizacoes   Int           @default(0)
+  curtidas        Int           @default(0)
+  comentarios     Int           @default(0)
+  destaque        Boolean       @default(false)
+  tags            String[]      @default([])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  @@map("artigos")
+}
+
+model CadastroCao {
+  cadastroId              String       @id @default(cuid())
+  userId                  String       // Usuário que fez o cadastro
+  
+  // Dados do proprietário (condicionais)
+  proprietarioDiferente   Boolean      @default(false)
+  nomeProprietario        String?
+  cpfProprietario         String?
+  emailProprietario       String?
+  telefoneProprietario    String?
+  enderecoProprietario    String?
+  cidade                  String?
+  estado                  String?
+  
+  // Dados do cão (obrigatórios)
+  nome                    String
+  raca                    String
+  sexo                    SexoCao
+  dataNascimento          DateTime
+  fotoPerfil              String       // URL da foto de perfil
+  fotoLateral             String       // URL da foto lateral
+  peso                    String?
+  altura                  String?
+  
+  // Pedigree (condicional)
+  temPedigree             Boolean      @default(false)
+  registroPedigree        String?
+  pedigreeFrente          String?      // URL do arquivo
+  pedigreeVerso           String?      // URL do arquivo
+  
+  // Microchip (condicional)
+  temMicrochip            Boolean      @default(false)
+  numeroMicrochip         String?
+  
+  // Informações adicionais
+  titulos                 String?
+  caracteristicas         String?
+  
+  // Vídeo (opcional)
+  videoOption             VideoOption  @default(NONE)
+  videoUrl                String?
+  whatsappContato         String?
+  observacoes             String?
+  
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  deletedAt               DateTime?
+
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@map("cadastros_cao")
 }

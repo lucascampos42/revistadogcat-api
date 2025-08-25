@@ -18,6 +18,7 @@ const mockPrismaService = {
 
 describe('UserRepository', () => {
   let repository: UserRepository;
+  let prisma: PrismaService;
 
   const mockUser: User = {
     userId: '1',
@@ -28,7 +29,7 @@ describe('UserRepository', () => {
     cpf: '12345678901',
     telefone: '11999999999',
     avatarUrl: 'https://example.com/avatar.jpg',
-    role: Role.CLIENTE,
+    role: Role.USUARIO,
     active: true,
     lastLogin: new Date(),
     tokenVersion: 1,
@@ -87,7 +88,7 @@ describe('UserRepository', () => {
           cpf: null,
           telefone: null,
           avatarUrl: null,
-          role: 'CLIENTE',
+          role: 'USUARIO',
           active: false,
         },
       });
@@ -284,7 +285,7 @@ describe('UserRepository', () => {
       const params = {
         page: 1,
         limit: 10,
-        role: Role.CLIENTE,
+        role: Role.USUARIO,
         userName: 'test',
         email: 'test@',
       };
@@ -299,7 +300,7 @@ describe('UserRepository', () => {
 
       expect(mockPrismaService.user.findMany).toHaveBeenCalledWith({
         where: {
-          role: Role.CLIENTE,
+          role: Role.USUARIO,
           userName: { contains: 'test', mode: 'insensitive' },
           email: { contains: 'test@', mode: 'insensitive' },
         },
@@ -310,7 +311,7 @@ describe('UserRepository', () => {
 
       expect(mockPrismaService.user.count).toHaveBeenCalledWith({
         where: {
-          role: Role.CLIENTE,
+          role: Role.USUARIO,
           userName: { contains: 'test', mode: 'insensitive' },
           email: { contains: 'test@', mode: 'insensitive' },
         },

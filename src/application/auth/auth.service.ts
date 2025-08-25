@@ -138,7 +138,7 @@ export class AuthService {
       cpf: createUserDto.cpf || null,
       telefone: createUserDto.telefone || null,
       avatarUrl: createUserDto.avatarUrl || null,
-      role: createUserDto.role || 'CLIENTE',
+      role: createUserDto.role || 'USUARIO',
       password: hashedPassword,
       active: false,
       activationToken,

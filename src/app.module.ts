@@ -1,10 +1,13 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AuthModule } from './application/auth/auth.module';
 import { UserModule } from './application/user/user.module';
+import { EnderecoModule } from './application/endereco/endereco.module';
 import { PrismaService } from './core/config/prisma.service';
 import { LogModule } from './application/log/log.module';
 import { LoggerMiddleware } from './application/log/middleware/log.middleware';
 import { HomeModule } from './application/home/home.module';
+import { ArtigoModule } from './application/artigo/artigo.module';
+import { CadastroCaoModule } from './application/cadastro-cao/cadastro-cao.module';
 import { ConfigModule } from '@nestjs/config';
 import { MailModule } from './core/mail/mail.module';
 import mailConfig from './core/mail/mail.config';
@@ -50,8 +53,11 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     }),
     AuthModule,
     UserModule,
+    EnderecoModule,
     LogModule,
     HomeModule,
+    ArtigoModule,
+    CadastroCaoModule,
     MailModule,
   ],
   controllers: [],

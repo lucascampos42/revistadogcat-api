@@ -1,7 +1,12 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { CreateUserDto } from '../auth/dto/create-auth.dto';
 import { User, Role } from '@prisma/client';
 import { IUserRepository } from './repositories/user.repository.interface';
+
+interface RequestingUser {
+  userId: string;
+  role: Role;
+}
 
 /**
  * Service responsável pela lógica de negócio relacionada aos usuários
@@ -64,11 +69,46 @@ export class UserService {
     return this.userRepository.findAllPaged(params);
   }
 
-  async findOneById(id: string): Promise<User | null> {
+  async findOneById(id: string, requestingUser?: RequestingUser): Promise<User | null> {
+    // Se não há usuário requisitante, comportamento original (para compatibilidade)
+    if (!requestingUser) {
+      return this.userRepository.findById(id);
+    }
+
+    // ADMIN pode ver qualquer usuário
+    if (requestingUser.role === Role.ADMIN) {
+      return this.userRepository.findById(id);
+    }
+
+    // Usuários só podem ver seu próprio perfil
+    if (requestingUser.userId !== id) {
+      throw new ForbiddenException('Você só pode visualizar seu próprio perfil');
+    }
+
     return this.userRepository.findById(id);
   }
 
-  async update(id: string, data: Partial<User>): Promise<User> {
+  async update(id: string, data: Partial<User>, requestingUser?: RequestingUser): Promise<User> {
+    // Se não há usuário requisitante, comportamento original (para compatibilidade)
+    if (!requestingUser) {
+      return this.userRepository.update(id, data);
+    }
+
+    // ADMIN pode editar qualquer usuário
+    if (requestingUser.role === Role.ADMIN) {
+      return this.userRepository.update(id, data);
+    }
+
+    // Usuários só podem editar seus próprios dados
+    if (requestingUser.userId !== id) {
+      throw new ForbiddenException('Você só pode editar seus próprios dados');
+    }
+
+    // Usuários não-ADMIN não podem alterar o próprio role
+    if (data.role && (requestingUser.role as Role) !== Role.ADMIN) {
+      throw new ForbiddenException('Você não tem permissão para alterar seu próprio role');
+    }
+
     return this.userRepository.update(id, data);
   }
 
@@ -86,5 +126,20 @@ export class UserService {
 
   async restoreUser(id: string): Promise<User> {
     return this.userRepository.restoreUser(id);
+  }
+
+  /**
+   * Atualiza o role de um usuário
+   * Apenas usuários com role ADMIN podem executar esta operação
+   */
+  async updateUserRole(id: string, role: Role): Promise<User> {
+    return this.userRepository.update(id, { role });
+  }
+
+  /**
+   * Atualiza o avatar do usuário
+   */
+  async uploadAvatar(id: string, avatarUrl: string): Promise<User> {
+    return this.userRepository.update(id, { avatarUrl });
   }
 }
