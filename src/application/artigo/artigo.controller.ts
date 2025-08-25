@@ -35,7 +35,7 @@ import { Role } from '@prisma/client';
 import { FileUploadService } from '../../core/services/file-upload.service';
 
 @ApiTags('Artigos')
-@Controller('api/artigos')
+@Controller('artigos')
 export class ArtigoController {
   constructor(
     private readonly artigoService: ArtigoService,

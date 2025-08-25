@@ -22,6 +22,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
 import { ResendActivationDto } from './dto/resend-activation.dto';
+import { AuthResponseDto } from './dto/auth-response.dto';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
 import { AuthRequest } from './models/AuthRequest';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -39,7 +40,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Fazer login no sistema' })
   @ApiResponse({
     status: 200,
-    description: 'Login realizado com sucesso - retorna tokens de acesso',
+    description: 'Login realizado com sucesso - retorna tokens de acesso e dados do usuário',
+    type: AuthResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Dados de login inválidos' })
   @ApiResponse({ status: 401, description: 'Credenciais incorretas' })
@@ -143,7 +145,11 @@ export class AuthController {
   @IsPublic()
   @Post('refresh')
   @ApiOperation({ summary: 'Renovar token de acesso' })
-  @ApiResponse({ status: 200, description: 'Tokens renovados com sucesso' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Tokens renovados com sucesso - retorna tokens e dados do usuário',
+    type: AuthResponseDto,
+  })
   @ApiResponse({
     status: 401,
     description: 'Refresh token inválido ou expirado',

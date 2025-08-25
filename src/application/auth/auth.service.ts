@@ -7,6 +7,7 @@ import { CreateUserDto } from './dto/create-auth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
+import { AuthResponseDto } from './dto/auth-response.dto';
 import * as crypto from 'crypto';
 import { User } from '@prisma/client';
 import { MailService } from '../../core/mail/mail.service';
@@ -73,7 +74,7 @@ export class AuthService {
     });
   }
 
-  async issueTokens(user: User) {
+  async issueTokens(user: User): Promise<AuthResponseDto> {
     const access_token = await this.signAccessToken(user);
     const refresh_token = await this.signRefreshToken(user);
 
@@ -82,7 +83,18 @@ export class AuthService {
       refreshToken: refresh_token,
     });
 
-    return { access_token, refresh_token };
+    return { 
+      access_token, 
+      refresh_token,
+      user: {
+        userId: user.userId,
+        userName: user.userName,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatarUrl: user.avatarUrl
+      }
+    };
   }
 
   async register(
@@ -223,7 +235,7 @@ export class AuthService {
     identification: string,
     pass: string,
     loginDetails?: { ip: string; userAgent: string },
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<AuthResponseDto> {
     const user = await this.userService.findByIdentification(identification);
     if (!user) {
       throw new UnauthorizedException('Credenciais inválidas.');
@@ -317,7 +329,7 @@ export class AuthService {
 
   async refreshToken(
     token: string,
-  ): Promise<{ access_token: string; refresh_token: string }> {
+  ): Promise<AuthResponseDto> {
     try {
       const payload = await this.jwtService.verifyAsync<{
         sub: string;

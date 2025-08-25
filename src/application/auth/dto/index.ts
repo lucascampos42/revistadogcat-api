@@ -1,5 +1,6 @@
 // Exportações centralizadas dos DTOs de autenticação
 export { ActivateAccountDto } from './activate-account.dto';
+export { AuthResponseDto, AuthUserDto } from './auth-response.dto';
 export { ChangePasswordDto } from './change-password.dto';
 export { CreateUserDto } from './create-auth.dto';
 export { ForgotPasswordDto } from './forgot-password.dto';

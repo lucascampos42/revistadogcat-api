@@ -7,6 +7,6 @@ import { Throttle } from '@nestjs/throttler';
  */
 export const AuthThrottle = () =>
   applyDecorators(
-    // 5 tentativas por minuto para rotas de autenticação
-    Throttle({ default: { ttl: 60000, limit: 5 } }),
+    // 20 tentativas por minuto para rotas de autenticação (aumentado para desenvolvimento)
+    Throttle({ default: { ttl: 60000, limit: 20 } }),
   );

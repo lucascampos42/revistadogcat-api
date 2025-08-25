@@ -32,7 +32,7 @@ import { RolesGuard } from '../../core/guards/roles.guard';
 import { EnderecoEntity } from './entities/endereco.entity';
 
 @ApiTags('Endereços')
-@Controller('api')
+@Controller('enderecos')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class EnderecoController {

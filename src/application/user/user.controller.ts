@@ -1,12 +1,12 @@
 import {
   Controller,
   Get,
+  Post,
   Body,
   Patch,
   Param,
   Delete,
   Query,
-  Post,
   UseInterceptors,
   UploadedFile,
   Req,
