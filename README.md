@@ -492,6 +492,27 @@ npm run lint && npm run test:cov && npm run test:e2e
 
 ## 📚 Documentação
 
+### Principais Endpoints da API
+
+#### Autenticação
+- **POST** `/auth/login` - Fazer login (retorna tokens + dados do usuário)
+- **POST** `/auth/register` - Registrar novo usuário
+- **POST** `/auth/refresh` - Renovar tokens (retorna tokens + dados do usuário)
+- **GET** `/auth/me` - **Obter perfil do usuário autenticado** 🔐
+- **POST** `/auth/logout` - Fazer logout
+- **POST** `/auth/forgot-password` - Solicitar redefinição de senha
+- **POST** `/auth/reset-password` - Redefinir senha
+- **POST** `/auth/activate` - Ativar conta
+- **POST** `/auth/resend-activation` - Reenviar email de ativação
+
+#### Usuários
+- **GET** `/users` - Listar usuários (Admin)
+- **GET** `/users/:id` - Obter usuário por ID
+- **PUT** `/users/:id` - Atualizar usuário
+- **DELETE** `/users/:id` - Excluir usuário
+
+> 🔐 **Rota de Perfil:** Use `GET /auth/me` com token Bearer para obter os dados completos do usuário autenticado (userId, userName, name, email, role, avatarUrl).
+
 ### Documentação da API (OpenAPI/Swagger)
 
 O projeto gera automaticamente documentação da API usando OpenAPI 3.0 com interface moderna do Scalar.
