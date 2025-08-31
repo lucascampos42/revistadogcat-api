@@ -17,6 +17,7 @@ import { GlobalExceptionFilter } from './core/filters/global-exception.filter';
 import { ResponseFormatInterceptor } from './core/interceptors/response-format.interceptor';
 import { JwtModule } from '@nestjs/jwt';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { RacaModule } from './application/raca/raca.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
     HomeModule,
     ArtigoModule,
     CadastroCaoModule,
+    RacaModule,
     MailModule,
   ],
   controllers: [],
@@ -85,6 +87,8 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(LoggerMiddleware).forRoutes('*');
+    // A linha abaixo foi comentada para desativar o middleware de log customizado
+    // e restaurar os logs de requisição padrão do NestJS.
+    // consumer.apply(LoggerMiddleware).forRoutes('*');
   }
 }

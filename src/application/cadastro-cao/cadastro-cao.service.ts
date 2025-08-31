@@ -1,51 +1,79 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+} from '@nestjs/common';
 import { CadastroCaoRepository } from './repositories/cadastro-cao.repository';
 import { CreateCadastroCaoDto } from './dto/create-cadastro-cao.dto';
 import { UpdateCadastroCaoDto } from './dto/update-cadastro-cao.dto';
-import { ListCadastrosCaoDto, CadastrosCaoListResponseDto } from './dto/list-cadastros-cao.dto';
+import {
+  ListCadastrosCaoDto,
+  CadastrosCaoListResponseDto,
+} from './dto/list-cadastros-cao.dto';
 import { CadastroCaoResponseDto } from './dto/cadastro-cao-response.dto';
 import { CadastroCaoEntity } from './entities/cadastro-cao.entity';
 import { VideoOption } from '@prisma/client';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class CadastroCaoService {
-  constructor(private readonly cadastroCaoRepository: CadastroCaoRepository) {}
+  constructor(
+    private readonly cadastroCaoRepository: CadastroCaoRepository,
+    private readonly userService: UserService,
+  ) {}
 
-  async create(userId: string, createCadastroCaoDto: CreateCadastroCaoDto): Promise<CadastroCaoResponseDto> {
-    // Validar data de nascimento
+  async create(
+    requesterId: string,
+    createCadastroCaoDto: CreateCadastroCaoDto,
+  ): Promise<CadastroCaoResponseDto> {
+    let proprietarioFinalId: string;
+
+    if (createCadastroCaoDto.proprietarioId) {
+      const proprietario = await this.userService.findUserEntityById(
+        createCadastroCaoDto.proprietarioId,
+      );
+      if (!proprietario) {
+        throw new BadRequestException(
+          `Proprietário com ID '${createCadastroCaoDto.proprietarioId}' não encontrado.`,
+        );
+      }
+      proprietarioFinalId = createCadastroCaoDto.proprietarioId;
+    } else {
+      proprietarioFinalId = requesterId;
+    }
+
     const dataNascimento = new Date(createCadastroCaoDto.dataNascimento);
     if (isNaN(dataNascimento.getTime())) {
       throw new BadRequestException('Data de nascimento inválida');
     }
-
-    // Validar se a data não é no futuro
     if (dataNascimento > new Date()) {
       throw new BadRequestException('Data de nascimento não pode ser no futuro');
     }
 
-    // Validar se o cão não é muito velho (mais de 25 anos)
-    const hoje = new Date();
-    const idade = hoje.getFullYear() - dataNascimento.getFullYear();
-    if (idade > 25) {
-      throw new BadRequestException('Data de nascimento muito antiga. Verifique se está correta.');
-    }
-
-    // Validar dados condicionais
     this.validateConditionalData(createCadastroCaoDto);
 
-    const cadastro = await this.cadastroCaoRepository.create(userId, createCadastroCaoDto);
+    const cadastro = await this.cadastroCaoRepository.create(
+      proprietarioFinalId,
+      createCadastroCaoDto,
+    );
     return this.mapToResponseDto(cadastro);
   }
 
-  async findAll(listCadastrosCaoDto: ListCadastrosCaoDto): Promise<CadastrosCaoListResponseDto> {
-    const { data, total } = await this.cadastroCaoRepository.findAll(listCadastrosCaoDto);
-    
+  async findAll(
+    listCadastrosCaoDto: ListCadastrosCaoDto,
+  ): Promise<CadastrosCaoListResponseDto> {
+    const { data, total } = await this.cadastroCaoRepository.findAll(
+      listCadastrosCaoDto,
+    );
+
     const page = parseInt(listCadastrosCaoDto.page || '1');
     const limit = Math.min(parseInt(listCadastrosCaoDto.limit || '10'), 50);
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: data.map(cadastro => this.mapToResponseDto(cadastro)),
+      data: data.map((cadastro) => this.mapToResponseDto(cadastro)),
       pagination: {
         page,
         limit,
@@ -59,7 +87,7 @@ export class CadastroCaoService {
 
   async findOne(cadastroId: string): Promise<CadastroCaoResponseDto> {
     const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
-    
+
     if (!cadastro) {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
@@ -69,156 +97,131 @@ export class CadastroCaoService {
 
   async findByUser(userId: string): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findByUserId(userId);
-    return cadastros.map(cadastro => this.mapToResponseDto(cadastro));
+    return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
   }
 
   async update(
-    cadastroId: string, 
-    userId: string, 
-    updateCadastroCaoDto: UpdateCadastroCaoDto
+    cadastroId: string,
+    userId: string,
+    updateCadastroCaoDto: UpdateCadastroCaoDto,
   ): Promise<CadastroCaoResponseDto> {
     const existingCadastro = await this.cadastroCaoRepository.findById(cadastroId);
-    
+
     if (!existingCadastro) {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
 
-    // Verificar se o usuário é o dono do cadastro
     if (existingCadastro.userId !== userId) {
-      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+      throw new ForbiddenException(
+        'Você não tem permissão para editar este cadastro',
+      );
     }
 
-    // Validar data de nascimento se fornecida
-    if (updateCadastroCaoDto.dataNascimento) {
-      const dataNascimento = new Date(updateCadastroCaoDto.dataNascimento);
-      if (isNaN(dataNascimento.getTime())) {
-        throw new BadRequestException('Data de nascimento inválida');
-      }
-
-      if (dataNascimento > new Date()) {
-        throw new BadRequestException('Data de nascimento não pode ser no futuro');
-      }
-
-      const hoje = new Date();
-      const idade = hoje.getFullYear() - dataNascimento.getFullYear();
-      if (idade > 25) {
-        throw new BadRequestException('Data de nascimento muito antiga. Verifique se está correta.');
-      }
-    }
-
-    // Validar dados condicionais se fornecidos
     this.validateConditionalData(updateCadastroCaoDto);
 
-    const cadastro = await this.cadastroCaoRepository.update(cadastroId, updateCadastroCaoDto);
+    const cadastro = await this.cadastroCaoRepository.update(
+      cadastroId,
+      updateCadastroCaoDto,
+    );
     return this.mapToResponseDto(cadastro);
   }
 
   async remove(cadastroId: string, userId: string): Promise<void> {
     const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
-    
+
     if (!cadastro) {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
 
-    // Verificar se o usuário é o dono do cadastro
     if (cadastro.userId !== userId) {
-      throw new ForbiddenException('Você não tem permissão para excluir este cadastro');
+      throw new ForbiddenException(
+        'Você não tem permissão para excluir este cadastro',
+      );
     }
 
     await this.cadastroCaoRepository.delete(cadastroId);
   }
 
-  async findByRaca(raca: string, limit: number = 10): Promise<CadastroCaoResponseDto[]> {
+  async findByRaca(raca: string, limit: number): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findByRaca(raca, limit);
-    return cadastros.map(cadastro => this.mapToResponseDto(cadastro));
+    return cadastros.map(this.mapToResponseDto);
   }
 
-  async findBySexo(sexo: string, limit: number = 10): Promise<CadastroCaoResponseDto[]> {
+  async findBySexo(sexo: string, limit: number): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findBySexo(sexo, limit);
-    return cadastros.map(cadastro => this.mapToResponseDto(cadastro));
+    return cadastros.map(this.mapToResponseDto);
   }
 
   async findComPedigree(): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findComPedigree();
-    return cadastros.map(cadastro => this.mapToResponseDto(cadastro));
+    return cadastros.map(this.mapToResponseDto);
   }
 
   async findComMicrochip(): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findComMicrochip();
-    return cadastros.map(cadastro => this.mapToResponseDto(cadastro));
+    return cadastros.map(this.mapToResponseDto);
   }
 
   async findComVideo(): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findComVideo();
-    return cadastros.map(cadastro => this.mapToResponseDto(cadastro));
+    return cadastros.map(this.mapToResponseDto);
   }
 
-  async findRecentCadastros(limit: number = 5): Promise<CadastroCaoResponseDto[]> {
+  async findRecentCadastros(limit: number): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findRecentCadastros(limit);
-    return cadastros.map(cadastro => this.mapToResponseDto(cadastro));
+    return cadastros.map(this.mapToResponseDto);
   }
 
   async getUserCadastrosCount(userId: string): Promise<number> {
     return this.cadastroCaoRepository.countByUserId(userId);
   }
 
-  private validateConditionalData(data: CreateCadastroCaoDto | UpdateCadastroCaoDto): void {
-    // Validar dados do proprietário se proprietarioDiferente = true
-    if (data.proprietarioDiferente === true) {
-      if (!data.nomeProprietario) {
-        throw new BadRequestException('Nome do proprietário é obrigatório quando proprietário é diferente');
-      }
-      if (!data.cpfProprietario) {
-        throw new BadRequestException('CPF do proprietário é obrigatório quando proprietário é diferente');
-      }
-      if (!data.emailProprietario) {
-        throw new BadRequestException('Email do proprietário é obrigatório quando proprietário é diferente');
-      }
-      if (!data.telefoneProprietario) {
-        throw new BadRequestException('Telefone do proprietário é obrigatório quando proprietário é diferente');
-      }
-      if (!data.enderecoProprietario) {
-        throw new BadRequestException('Endereço do proprietário é obrigatório quando proprietário é diferente');
-      }
-      if (!data.cidade) {
-        throw new BadRequestException('Cidade é obrigatória quando proprietário é diferente');
-      }
-      if (!data.estado) {
-        throw new BadRequestException('Estado é obrigatório quando proprietário é diferente');
-      }
-    }
-
-    // Validar dados do pedigree se temPedigree = true
+  private validateConditionalData(
+    data: CreateCadastroCaoDto | UpdateCadastroCaoDto,
+  ): void {
     if (data.temPedigree === true) {
       if (!data.registroPedigree) {
-        throw new BadRequestException('Registro do pedigree é obrigatório quando o cão tem pedigree');
+        throw new BadRequestException(
+          'Registro do pedigree é obrigatório quando o cão tem pedigree',
+        );
       }
       if (!data.pedigreeFrente) {
-        throw new BadRequestException('Arquivo do pedigree (frente) é obrigatório quando o cão tem pedigree');
+        throw new BadRequestException(
+          'Arquivo do pedigree (frente) é obrigatório quando o cão tem pedigree',
+        );
       }
       if (!data.pedigreeVerso) {
-        throw new BadRequestException('Arquivo do pedigree (verso) é obrigatório quando o cão tem pedigree');
+        throw new BadRequestException(
+          'Arquivo do pedigree (verso) é obrigatório quando o cão tem pedigree',
+        );
       }
     }
 
-    // Validar dados do microchip se temMicrochip = true
     if (data.temMicrochip === true) {
       if (!data.numeroMicrochip) {
-        throw new BadRequestException('Número do microchip é obrigatório quando o cão tem microchip');
+        throw new BadRequestException(
+          'Número do microchip é obrigatório quando o cão tem microchip',
+        );
       }
     }
 
-    // Validar dados do vídeo conforme a opção escolhida
     if (data.videoOption) {
-      if (data.videoOption === VideoOption.UPLOAD || data.videoOption === VideoOption.URL) {
+      if (
+        data.videoOption === VideoOption.UPLOAD ||
+        data.videoOption === VideoOption.URL
+      ) {
         if (!data.videoUrl) {
-          throw new BadRequestException('URL do vídeo é obrigatória para a opção selecionada');
+          throw new BadRequestException(
+            'URL do vídeo é obrigatória para a opção selecionada',
+          );
         }
       }
-      
+
       if (data.videoOption === VideoOption.WHATSAPP) {
         if (!data.whatsappContato) {
-          throw new BadRequestException('Contato do WhatsApp é obrigatório para a opção selecionada');
+          throw new BadRequestException(
+            'Contato do WhatsApp é obrigatório para a opção selecionada',
+          );
         }
       }
     }
@@ -228,16 +231,8 @@ export class CadastroCaoService {
     return {
       cadastroId: cadastro.cadastroId,
       userId: cadastro.userId,
-      proprietarioDiferente: cadastro.proprietarioDiferente,
-      nomeProprietario: cadastro.nomeProprietario || undefined,
-      cpfProprietario: cadastro.cpfProprietario || undefined,
-      emailProprietario: cadastro.emailProprietario || undefined,
-      telefoneProprietario: cadastro.telefoneProprietario || undefined,
-      enderecoProprietario: cadastro.enderecoProprietario || undefined,
-      cidade: cadastro.cidade || undefined,
-      estado: cadastro.estado || undefined,
       nome: cadastro.nome,
-      raca: cadastro.raca,
+      raca: cadastro.raca ? cadastro.raca.nome : undefined,
       sexo: cadastro.sexo,
       dataNascimento: cadastro.dataNascimento,
       fotoPerfil: cadastro.fotoPerfil,

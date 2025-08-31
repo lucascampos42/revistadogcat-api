@@ -138,6 +138,9 @@ describe('UserRepository', () => {
 
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { userId: '1' },
+        include: {
+          enderecos: true,
+        },
       });
       expect(result).toEqual(mockUser);
     });
@@ -159,6 +162,9 @@ describe('UserRepository', () => {
 
       expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
         where: { userName: 'testuser' },
+        include: {
+          enderecos: true,
+        },
       });
       expect(result).toEqual(mockUser);
     });
@@ -180,6 +186,9 @@ describe('UserRepository', () => {
 
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email: 'test@example.com' },
+        include: {
+          enderecos: true,
+        },
       });
       expect(result).toEqual(mockUser);
     });
@@ -203,6 +212,9 @@ describe('UserRepository', () => {
 
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { email },
+        include: {
+          enderecos: true,
+        },
       });
       expect(result).toEqual(mockUser);
     });
@@ -216,6 +228,9 @@ describe('UserRepository', () => {
 
       expect(mockPrismaService.user.findUnique).toHaveBeenCalledWith({
         where: { cpf },
+        include: {
+          enderecos: true,
+        },
       });
       expect(result).toEqual(mockUser);
     });
@@ -241,6 +256,9 @@ describe('UserRepository', () => {
       expect(mockPrismaService.user.update).toHaveBeenCalledWith({
         where: { userId: '1' },
         data: updateData,
+        include: {
+          enderecos: true,
+        },
       });
       expect(result).toEqual(updatedUser);
     });
@@ -267,6 +285,9 @@ describe('UserRepository', () => {
         data: {
           deletedAt: expect.any(Date),
           active: false,
+        },
+        include: {
+          enderecos: true,
         },
       });
       expect(result).toEqual(deletedUser);
@@ -307,6 +328,9 @@ describe('UserRepository', () => {
         skip: 0,
         take: 10,
         orderBy: { createdAt: 'desc' },
+        include: {
+          enderecos: true,
+        },
       });
 
       expect(mockPrismaService.user.count).toHaveBeenCalledWith({
@@ -351,6 +375,9 @@ describe('UserRepository', () => {
         skip: 0,
         take: 10,
         orderBy: { createdAt: 'desc' },
+        include: {
+          enderecos: true,
+        },
       });
 
       expect(mockPrismaService.user.count).toHaveBeenCalledWith({
@@ -404,6 +431,9 @@ describe('UserRepository', () => {
           blocked: true,
           blockedUntil: blockUntil,
         },
+        include: {
+          enderecos: true,
+        },
       });
       expect(result).toEqual(blockedUser);
     });
@@ -438,6 +468,9 @@ describe('UserRepository', () => {
           blocked: false,
           blockedUntil: null,
           loginAttempts: 0,
+        },
+        include: {
+          enderecos: true,
         },
       });
       expect(result).toEqual(unblockedUser);

@@ -7,9 +7,13 @@ import { CreateUserDto } from './dto/create-auth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
-import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
 import * as crypto from 'crypto';
-import { User } from '@prisma/client';
+import { User, Endereco } from '@prisma/client';
+
+type UserWithEnderecos = User & {
+  enderecos?: Endereco[];
+};
 import { MailService } from '../../core/mail/mail.service';
 import { ValidationUtils } from '../../core/utils/validation.utils';
 import {
@@ -73,28 +77,42 @@ export class AuthService {
     });
   }
 
-  async issueTokens(user: User): Promise<AuthResponseDto> {
+  async issueTokens(user: UserWithEnderecos): Promise<AuthResponseDto> {
     const access_token = await this.signAccessToken(user);
     const refresh_token = await this.signRefreshToken(user);
 
-    await this.authRepository.updateUserTokens(user.userId, {
+    await this.userService.systemUpdate(user.userId, {
       refreshToken: refresh_token,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, cpf, ...publicUser } = user;
+    // Buscar apenas o endereço principal do usuário
+    const enderecoPrincipal =
+      user.enderecos?.find(
+        (endereco) => endereco.principal && endereco.ativo,
+      ) || null;
 
-    return { 
-      access_token, 
+    const responseUser: AuthUserDto = {
+      userId: user.userId,
+      userName: user.userName,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatarUrl: user.avatarUrl,
+      endereco: enderecoPrincipal ? {
+        logradouro: enderecoPrincipal.logradouro,
+        numero: enderecoPrincipal.numero,
+        complemento: enderecoPrincipal.complemento,
+        bairro: enderecoPrincipal.bairro,
+        cidade: enderecoPrincipal.cidade,
+        estado: enderecoPrincipal.estado,
+        cep: enderecoPrincipal.cep,
+      } : null,
+    };
+
+    return {
+      access_token,
       refresh_token,
-      user: {
-        userId: publicUser.userId,
-        userName: publicUser.userName,
-        name: publicUser.name,
-        email: publicUser.email,
-        role: publicUser.role,
-        avatarUrl: publicUser.avatarUrl
-      }
+      user: responseUser,
     };
   }
 
@@ -129,20 +147,29 @@ export class AuthService {
     const activationTokenExpires = this.getActivationTokenExpiration();
 
     const result = await this.authRepository.createUser({
-      ...createUserDto,
+      // Campos obrigatórios
+      name: createUserDto.name,
+      userName: createUserDto.userName,
+      email: createUserDto.email,
       password: hashedPassword,
       activationToken,
       activationTokenExpires,
-      // Adicionar campos que faltam para satisfazer a tipagem do Prisma
-      lastLogin: null,
+      // Campos opcionais (garantir que sejam null se não fornecidos)
+      cpf: createUserDto.cpf || null,
+      telefone: createUserDto.telefone || null,
+      avatarUrl: createUserDto.avatarUrl || null,
+      role: createUserDto.role || 'USUARIO',
+      // Campos com valores padrão no momento da criação
+      active: false,
+      blocked: false,
+      loginAttempts: 0,
       tokenVersion: 1,
+      lastLogin: null,
+      blockedUntil: null,
+      lastFailedLogin: null,
       refreshToken: null,
       passwordResetToken: null,
       passwordResetExpires: null,
-      blocked: false,
-      blockedUntil: null,
-      loginAttempts: 0,
-      lastFailedLogin: null,
       deletedAt: null,
     });
 
@@ -199,7 +226,7 @@ export class AuthService {
     pass: string,
     loginDetails?: { ip: string; userAgent: string },
   ): Promise<AuthResponseDto> {
-    const user = await this.userService.findUserEntityByIdentification(identification);
+    const user = await this.userService.findUserEntityByIdentification(identification, { includePassword: true });
     if (!user || user.deletedAt) {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
@@ -339,7 +366,7 @@ export class AuthService {
   }
 
   async validateUser(identifier: string, password: string) {
-    const user = await this.userService.findUserEntityByIdentification(identifier);
+    const user = await this.userService.findUserEntityByIdentification(identifier, { includePassword: true });
     if (user && user.deletedAt === null) {
       if (!user.active) {
         await this.mailService.sendUserConfirmation(user);

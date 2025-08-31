@@ -61,13 +61,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let details: any = undefined;
     let useStandardMessage = false; // Preferir mensagens específicas
 
-    // Log do erro para debugging
-    this.logger.error(`Erro capturado pelo GlobalExceptionFilter:`, {
-      message: exception instanceof Error ? exception.message : 'Unknown error',
-      stack: exception instanceof Error ? exception.stack : undefined,
-      url: request.url,
-      method: request.method,
-    });
+    // Log aprimorado para melhor debugging
+    if (exception instanceof Error) {
+      this.logger.error(exception.message, exception.stack, `[${request.method}] ${request.url}`);
+    } else {
+      this.logger.error('Erro não identificado capturado', JSON.stringify(exception), `[${request.method}] ${request.url}`);
+    }
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();

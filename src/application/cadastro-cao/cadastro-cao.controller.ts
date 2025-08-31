@@ -35,7 +35,7 @@ import { CadastroCaoResponseDto } from './dto/cadastro-cao-response.dto';
 import { FileUploadService } from '../../core/services/file-upload.service';
 
 @ApiTags('Cadastro de Cães')
-@Controller('cadastros-cao')
+@Controller('cadastro-cao')
 export class CadastroCaoController {
   constructor(
     private readonly cadastroCaoService: CadastroCaoService,
@@ -80,17 +80,13 @@ export class CadastroCaoController {
     return this.cadastroCaoService.findAll(query);
   }
 
-  @Get('meus-cadastros')
+  @Get('/meus-cadastros')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar meus cadastros de cães' })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de cadastros do usuário retornada com sucesso',
-    type: [CadastroCaoResponseDto],
-  })
+  @ApiOperation({ summary: 'Listar cadastros do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Lista de cadastros retornada com sucesso', type: [CadastroCaoResponseDto] })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
-  async findMyRegistrations(@Request() req): Promise<CadastroCaoResponseDto[]> {
+  async findByUser(@Request() req: any): Promise<CadastroCaoResponseDto[]> {
     return this.cadastroCaoService.findByUser(req.user.userId);
   }
 

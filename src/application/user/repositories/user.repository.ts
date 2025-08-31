@@ -4,13 +4,13 @@ import { PrismaService } from '../../../core/config/prisma.service';
 import { CreateUserDto } from '../../auth/dto/create-auth.dto';
 import { IUserRepository } from './user.repository.interface';
 
-/**
- * Implementação concreta do repositório User usando Prisma
- * Responsável por todas as operações de acesso a dados relacionadas ao usuário
- */
 @Injectable()
 export class UserRepository implements IUserRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly _include = {
+    enderecos: true,
+  };
 
   async create(data: CreateUserDto): Promise<User> {
     return this.prisma.user.create({
@@ -22,59 +22,65 @@ export class UserRepository implements IUserRepository {
         role: data.role ?? Role.USUARIO,
         active: data.active ?? false,
       },
+      include: this._include,
     });
   }
 
   async findById(id: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { userId: id },
+      include: this._include,
     });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
+  async findByEmail(email: string, options?: { includePassword?: boolean }): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { email },
-    });
+      include: this._include,
+      ...(options?.includePassword && { includePassword: true }),
+    } as any);
   }
 
-  async findByUsername(userName: string): Promise<User | null> {
+  async findByUsername(userName: string, options?: { includePassword?: boolean }): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: { userName },
-    });
+      include: this._include,
+      ...(options?.includePassword && { includePassword: true }),
+    } as any);
   }
 
-  async findByCpf(cpf: string): Promise<User | null> {
+  async findByCpf(cpf: string, options?: { includePassword?: boolean }): Promise<User | null> {
     if (!cpf) return null;
     return this.prisma.user.findUnique({
       where: { cpf },
-    });
+      include: this._include,
+      ...(options?.includePassword && { includePassword: true }),
+    } as any);
   }
 
-  async findByIdentification(identification: string): Promise<User | null> {
-    // Verificar se é um email válido
+  async findByIdentification(identification: string, options?: { includePassword?: boolean }): Promise<User | null> {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
     if (emailRegex.test(identification)) {
-      return this.findByEmail(identification);
-    } else {
-      // Assumir que é CPF e normalizar
-      const normalizedCpf = identification.replace(/\D/g, '');
-      if (normalizedCpf.length === 11) {
-        return this.findByCpf(normalizedCpf);
-      }
+      return this.findByEmail(identification, options);
     }
 
-    return null;
+    const normalizedCpf = identification.replace(/\D/g, '');
+    if (normalizedCpf.length === 11) {
+      return this.findByCpf(normalizedCpf, options);
+    }
+
+    return this.findByUsername(identification, options);
   }
 
   async findByPasswordResetToken(token: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: { passwordResetToken: token },
+      include: this._include,
     });
   }
 
   async findAll(): Promise<User[]> {
-    return this.prisma.user.findMany();
+    return this.prisma.user.findMany({ include: this._include });
   }
 
   async findAllPaged(params: {
@@ -92,13 +98,9 @@ export class UserRepository implements IUserRepository {
   }> {
     const { page, limit, role, search, userName, email } = params;
     const skip = (page - 1) * limit;
-
     const where: any = {};
 
-    if (role) {
-      where.role = role;
-    }
-
+    if (role) where.role = role;
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -106,21 +108,16 @@ export class UserRepository implements IUserRepository {
         { userName: { contains: search, mode: 'insensitive' } },
       ];
     }
+    if (userName) where.userName = { contains: userName, mode: 'insensitive' };
+    if (email) where.email = { contains: email, mode: 'insensitive' };
 
-    if (userName) {
-      where.userName = { contains: userName, mode: 'insensitive' };
-    }
-
-    if (email) {
-      where.email = { contains: email, mode: 'insensitive' };
-    }
-
-    const [data, total]: any = await Promise.all([
+    const [data, total] = await Promise.all([
       this.prisma.user.findMany({
         where,
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        include: this._include,
       }),
       this.prisma.user.count({ where }),
     ]);
@@ -132,6 +129,7 @@ export class UserRepository implements IUserRepository {
     return this.prisma.user.update({
       where: { userId: id },
       data,
+      include: this._include,
     });
   }
 
@@ -140,8 +138,9 @@ export class UserRepository implements IUserRepository {
       where: { userId: id },
       data: {
         blocked: true,
-        blockedUntil: blockedUntil || new Date(Date.now() + 15 * 60 * 1000), // 15 minutos por padrão
+        blockedUntil: blockedUntil || new Date(Date.now() + 15 * 60 * 1000),
       },
+      include: this._include,
     });
   }
 
@@ -153,6 +152,7 @@ export class UserRepository implements IUserRepository {
         blockedUntil: null,
         loginAttempts: 0,
       },
+      include: this._include,
     });
   }
 
@@ -165,6 +165,7 @@ export class UserRepository implements IUserRepository {
         blocked: false,
         blockedUntil: null,
       },
+      include: this._include,
     });
   }
 
@@ -175,6 +176,7 @@ export class UserRepository implements IUserRepository {
         deletedAt: new Date(),
         active: false,
       },
+      include: this._include,
     });
   }
 

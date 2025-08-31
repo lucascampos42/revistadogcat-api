@@ -192,7 +192,8 @@ describe('UserService', () => {
       };
       mockUserRepository.findById.mockResolvedValue(user);
 
-      const result = await service.findOneById('1');
+      const requestingUser = { userId: '1', role: Role.USUARIO };
+      const result = await service.findOneById('1', requestingUser);
       expect(result).toEqual(user);
       expect(mockUserRepository.findById).toHaveBeenCalledWith('1');
     });
@@ -229,7 +230,8 @@ describe('UserService', () => {
       const updatedUser: User = { ...user, name: 'User One Updated' };
       mockUserRepository.update.mockResolvedValue(updatedUser);
 
-      const result = await service.update('1', { name: 'User One Updated' });
+      const requestingUser = { userId: '1', role: Role.USUARIO };
+      const result = await service.update('1', { name: 'User One Updated' }, requestingUser);
       expect(result).toEqual(updatedUser);
       expect(mockUserRepository.update).toHaveBeenCalledWith('1', {
         name: 'User One Updated',

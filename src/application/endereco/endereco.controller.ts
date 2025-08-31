@@ -26,233 +26,135 @@ import {
   CreateEnderecoDto,
   UpdateEnderecoDto,
   EnderecoFiltersDto,
+  EnderecoResponseDto,
 } from './dto';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { EnderecoEntity } from './entities/endereco.entity';
 
 @ApiTags('Endereços')
-@Controller('enderecos')
+@Controller('users/:userId/enderecos')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class EnderecoController {
   constructor(private readonly enderecoService: EnderecoService) {}
 
-  @Post('users/:userId/enderecos')
-  @ApiOperation({ summary: 'Criar novo endereço para um usuário' })
-  @ApiParam({ name: 'userId', description: 'ID do usuário' })
+  @Post('enderecos')
+  @ApiOperation({ summary: 'Criar um novo endereço para o usuário autenticado' })
   @ApiResponse({
     status: 201,
     description: 'Endereço criado com sucesso',
-    type: EnderecoEntity,
+    type: EnderecoResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Dados inválidos ou limite excedido',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Sem permissão para criar endereço para este usuário',
-  })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async create(
-    @Param('userId') userId: string,
     @Body() createEnderecoDto: CreateEnderecoDto,
     @Request() req: any,
-  ): Promise<EnderecoEntity> {
-    const endereco = await this.enderecoService.create(
-      userId,
-      createEnderecoDto,
-      req.user,
-    );
-    return new EnderecoEntity(endereco);
+  ): Promise<EnderecoResponseDto> {
+    return this.enderecoService.create(req.user.userId, createEnderecoDto, req.user);
   }
 
-  @Get('users/:userId/enderecos')
-  @ApiOperation({ summary: 'Listar endereços de um usuário' })
-  @ApiParam({ name: 'userId', description: 'ID do usuário' })
-  @ApiQuery({
-    name: 'ativo',
-    required: false,
-    type: Boolean,
-    description: 'Filtrar por status ativo',
-  })
-  @ApiQuery({
-    name: 'tipo',
-    required: false,
-    enum: [
-      'RESIDENCIAL',
-      'COMERCIAL',
-      'ENTREGA',
-      'COBRANCA',
-      'TEMPORARIO',
-      'OUTRO',
-    ],
-    description: 'Filtrar por tipo de endereço',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de endereços retornada com sucesso',
-    schema: {
-      type: 'object',
-      properties: {
-        enderecos: {
-          type: 'array',
-          items: { $ref: '#/components/schemas/EnderecoEntity' },
-        },
-        total: { type: 'number' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Sem permissão para acessar endereços deste usuário',
-  })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
+  @Get('enderecos')
+  @ApiOperation({ summary: 'Listar endereços do usuário autenticado' })
+  @ApiQuery({ name: 'ativo', required: false, description: 'Filtrar por status ativo' })
+  @ApiQuery({ name: 'tipo', required: false, description: 'Filtrar por tipo de endereço' })
+  @ApiResponse({ status: 200, description: 'Lista de endereços', type: [EnderecoResponseDto] })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async findByUserId(
-    @Param('userId') userId: string,
-    @Query() filters: EnderecoFiltersDto,
     @Request() req: any,
-  ) {
-    const result = await this.enderecoService.findByUserId(
-      userId,
-      filters,
-      req.user,
-    );
-    return {
-      enderecos: result.enderecos.map(
-        (endereco) => new EnderecoEntity(endereco),
-      ),
-      total: result.total,
-    };
+    @Query('ativo') ativo?: string,
+    @Query('tipo') tipo?: string,
+  ): Promise<EnderecoResponseDto[]> {
+    const ativoBoolean = ativo !== undefined ? ativo === 'true' : undefined;
+    const filters: EnderecoFiltersDto = { ativo: ativoBoolean, tipo: tipo as any };
+    const result = await this.enderecoService.findByUserId(req.user.userId, filters, req.user);
+    return result.enderecos;
   }
 
-  @Get('enderecos/:enderecoId')
-  @ApiOperation({ summary: 'Obter endereço específico por ID' })
+  @Get(':enderecoId')
+  @ApiOperation({ summary: 'Obter um endereço específico pelo ID' })
+  @ApiParam({ name: 'userId', description: 'ID do usuário' })
   @ApiParam({ name: 'enderecoId', description: 'ID do endereço' })
-  @ApiResponse({
-    status: 200,
-    description: 'Endereço retornado com sucesso',
-    type: EnderecoEntity,
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Sem permissão para acessar este endereço',
-  })
+  @ApiResponse({ status: 200, description: 'Endereço retornado com sucesso', type: EnderecoEntity })
+  @ApiResponse({ status: 403, description: 'Sem permissão para acessar este endereço' })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
   async findById(
+    @Param('userId') userId: string,
     @Param('enderecoId') enderecoId: string,
     @Request() req: any,
   ): Promise<EnderecoEntity> {
-    const endereco = await this.enderecoService.findById(enderecoId, req.user);
+    const endereco = await this.enderecoService.findById(userId, enderecoId, req.user);
     return new EnderecoEntity(endereco as Partial<EnderecoEntity>);
   }
 
   @Put('enderecos/:enderecoId')
-  @ApiOperation({ summary: 'Atualizar endereço completo' })
+  @ApiOperation({ summary: 'Atualizar um endereço existente' })
   @ApiParam({ name: 'enderecoId', description: 'ID do endereço' })
-  @ApiResponse({
-    status: 200,
-    description: 'Endereço atualizado com sucesso',
-    type: EnderecoEntity,
-  })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({
-    status: 403,
-    description: 'Sem permissão para atualizar este endereço',
-  })
+  @ApiResponse({ status: 200, description: 'Endereço atualizado com sucesso', type: EnderecoResponseDto })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async update(
     @Param('enderecoId') enderecoId: string,
     @Body() updateEnderecoDto: UpdateEnderecoDto,
     @Request() req: any,
-  ): Promise<EnderecoEntity> {
-    const endereco = await this.enderecoService.update(
-      enderecoId,
-      updateEnderecoDto,
-      req.user,
-    );
-    return new EnderecoEntity(endereco);
+  ): Promise<EnderecoResponseDto> {
+    return this.enderecoService.update(req.user.userId, enderecoId, updateEnderecoDto, req.user);
   }
 
   @Patch('enderecos/:enderecoId/principal')
-  @ApiOperation({ summary: 'Definir endereço como principal' })
+  @ApiOperation({ summary: 'Definir um endereço como principal' })
   @ApiParam({ name: 'enderecoId', description: 'ID do endereço' })
-  @ApiResponse({
-    status: 200,
-    description: 'Endereço definido como principal com sucesso',
-    type: EnderecoEntity,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Endereço inativo não pode ser principal',
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Sem permissão para modificar este endereço',
-  })
+  @ApiResponse({ status: 200, description: 'Endereço definido como principal', type: EnderecoResponseDto })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async setPrincipal(
     @Param('enderecoId') enderecoId: string,
     @Request() req: any,
-  ): Promise<EnderecoEntity> {
-    const endereco = await this.enderecoService.setPrincipal(enderecoId, req.user);
-    return new EnderecoEntity(endereco);
+  ): Promise<EnderecoResponseDto> {
+    return this.enderecoService.setPrincipal(req.user.userId, enderecoId, req.user);
   }
 
   @Patch('enderecos/:enderecoId/desativar')
-  @ApiOperation({ summary: 'Desativar endereço' })
+  @ApiOperation({ summary: 'Desativar um endereço' })
   @ApiParam({ name: 'enderecoId', description: 'ID do endereço' })
-  @ApiResponse({
-    status: 200,
-    description: 'Endereço desativado com sucesso',
-    type: EnderecoEntity,
-  })
-  @ApiResponse({ status: 400, description: 'Não é possível desativar o último endereço ativo' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para modificar este endereço' })
+  @ApiResponse({ status: 200, description: 'Endereço desativado com sucesso', type: EnderecoResponseDto })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async deactivate(
     @Param('enderecoId') enderecoId: string,
     @Request() req: any,
-  ): Promise<EnderecoEntity> {
-    const endereco = await this.enderecoService.deactivate(enderecoId, req.user);
-    return new EnderecoEntity(endereco);
+  ): Promise<EnderecoResponseDto> {
+    return this.enderecoService.deactivate(req.user.userId, enderecoId, req.user);
   }
 
   @Patch('enderecos/:enderecoId/reativar')
-  @ApiOperation({ summary: 'Reativar endereço' })
+  @ApiOperation({ summary: 'Reativar um endereço' })
   @ApiParam({ name: 'enderecoId', description: 'ID do endereço' })
-  @ApiResponse({
-    status: 200,
-    description: 'Endereço reativado com sucesso',
-    type: EnderecoEntity,
-  })
-  @ApiResponse({ status: 400, description: 'Limite de endereços ativos excedido' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para modificar este endereço' })
+  @ApiResponse({ status: 200, description: 'Endereço reativado com sucesso', type: EnderecoResponseDto })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
   async reactivate(
     @Param('enderecoId') enderecoId: string,
     @Request() req: any,
-  ): Promise<EnderecoEntity> {
-    const endereco = await this.enderecoService.reactivate(enderecoId, req.user);
-    return new EnderecoEntity(endereco);
+  ): Promise<EnderecoResponseDto> {
+    return this.enderecoService.reactivate(
+      req.user.userId,
+      enderecoId,
+      req.user,
+    );
   }
 
   @Delete('enderecos/:enderecoId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Excluir endereço permanentemente' })
+  @ApiOperation({ summary: 'Excluir um endereço permanentemente' })
   @ApiParam({ name: 'enderecoId', description: 'ID do endereço' })
-  @ApiResponse({ status: 204, description: 'Endereço excluído com sucesso' })
-  @ApiResponse({ status: 400, description: 'Não é possível excluir endereço principal ou último ativo' })
-  @ApiResponse({
-    status: 403,
-    description: 'Sem permissão para excluir este endereço',
-  })
+  @ApiResponse({ status: 200, description: 'Endereço excluído com sucesso' })
   @ApiResponse({ status: 404, description: 'Endereço não encontrado' })
-  async delete(
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  async remove(
     @Param('enderecoId') enderecoId: string,
     @Request() req: any,
   ): Promise<void> {
-    await this.enderecoService.delete(enderecoId, req.user);
+    return this.enderecoService.delete(req.user.userId, enderecoId, req.user);
   }
 }

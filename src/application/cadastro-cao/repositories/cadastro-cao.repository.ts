@@ -11,16 +11,15 @@ export class CadastroCaoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(userId: string, data: CreateCadastroCaoDto): Promise<CadastroCaoEntity> {
+    const { proprietarioId, ...restOfData } = data;
+
     const cadastro = await this.prisma.cadastroCao.create({
       data: {
-        userId,
-        ...data,
+        ...restOfData,
+        userId: userId,
         dataNascimento: new Date(data.dataNascimento),
-        proprietarioDiferente: data.proprietarioDiferente || false,
-        temPedigree: data.temPedigree || false,
-        temMicrochip: data.temMicrochip || false,
-        videoOption: data.videoOption || VideoOption.NONE,
       },
+      include: { raca: true },
     });
 
     return new CadastroCaoEntity(cadastro);
@@ -31,7 +30,6 @@ export class CadastroCaoRepository {
     const limit = Math.min(parseInt(params.limit || '10'), 50);
     const skip = (page - 1) * limit;
 
-    // Construir filtros
     const where: Prisma.CadastroCaoWhereInput = {
       deletedAt: null,
     };
@@ -41,28 +39,28 @@ export class CadastroCaoRepository {
     }
 
     if (params.raca) {
-      where.raca = { contains: params.raca, mode: 'insensitive' };
+      where.raca = { nome: { contains: params.raca, mode: 'insensitive' } };
     }
 
     if (params.sexo) {
       where.sexo = params.sexo;
     }
 
-    if (params.cidade) {
-      where.OR = [
-        { cidade: { contains: params.cidade, mode: 'insensitive' } },
-        { user: { enderecos: { some: { cidade: { contains: params.cidade, mode: 'insensitive' } } } } },
-      ];
+    if (params.cidade || params.estado) {
+      const someFilter: Prisma.EnderecoWhereInput = {};
+      if (params.cidade) {
+        someFilter.cidade = { contains: params.cidade, mode: 'insensitive' };
+      }
+      if (params.estado) {
+        someFilter.estado = { contains: params.estado, mode: 'insensitive' };
+      }
+      where.user = {
+        enderecos: {
+          some: someFilter,
+        },
+      };
     }
 
-    if (params.estado) {
-      where.OR = [
-        { estado: { contains: params.estado, mode: 'insensitive' } },
-        { user: { enderecos: { some: { estado: { contains: params.estado, mode: 'insensitive' } } } } },
-      ];
-    }
-
-    // Construir ordenação
     const orderBy: Prisma.CadastroCaoOrderByWithRelationInput = {};
     const sortBy = params.sortBy || 'createdAt';
     const sortOrder = params.sortOrder || 'desc';
@@ -90,6 +88,7 @@ export class CadastroCaoRepository {
               },
             },
           },
+          raca: true,
         },
       }),
       this.prisma.cadastroCao.count({ where }),
@@ -123,6 +122,7 @@ export class CadastroCaoRepository {
             },
           },
         },
+        raca: true,
       },
     });
 
@@ -138,6 +138,7 @@ export class CadastroCaoRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      include: { raca: true },
     });
 
     return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
@@ -150,9 +151,15 @@ export class CadastroCaoRepository {
       updateData.dataNascimento = new Date(data.dataNascimento);
     }
 
+    if (data.racaId) {
+      updateData.raca = { connect: { racaId: data.racaId } };
+      delete updateData.racaId;
+    }
+
     const cadastro = await this.prisma.cadastroCao.update({
       where: { cadastroId },
       data: updateData,
+      include: { raca: true },
     });
 
     return new CadastroCaoEntity(cadastro);
@@ -169,12 +176,13 @@ export class CadastroCaoRepository {
     const cadastros = await this.prisma.cadastroCao.findMany({
       where: {
         deletedAt: null,
-        raca: { contains: raca, mode: 'insensitive' },
+        raca: { nome: { contains: raca, mode: 'insensitive' } },
       },
       orderBy: {
         createdAt: 'desc',
       },
       take: limit,
+      include: { raca: true },
     });
 
     return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
@@ -190,6 +198,7 @@ export class CadastroCaoRepository {
         createdAt: 'desc',
       },
       take: limit,
+      include: { raca: true },
     });
 
     return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
@@ -204,6 +213,7 @@ export class CadastroCaoRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      include: { raca: true },
     });
 
     return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
@@ -218,6 +228,7 @@ export class CadastroCaoRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      include: { raca: true },
     });
 
     return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
@@ -234,6 +245,7 @@ export class CadastroCaoRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      include: { raca: true },
     });
 
     return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
@@ -270,6 +282,7 @@ export class CadastroCaoRepository {
             },
           },
         },
+        raca: true,
       },
     });
 

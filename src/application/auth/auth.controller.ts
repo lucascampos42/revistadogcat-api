@@ -16,9 +16,9 @@ import {
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from './dto/create-auth.dto';
-import { LoginDto } from './dto/login.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { CreateUserDto } from './dto';
+import { LoginDto } from './dto';
+import { ForgotPasswordDto } from './dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
 import { ResendActivationDto } from './dto/resend-activation.dto';

@@ -1,10 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
-/**
- * DTO para representar os dados públicos de um usuário.
- * Usado para garantir que dados sensíveis (como senha, cpf, etc.) não sejam expostos.
- */
 export class PublicUserDto {
   @ApiProperty({ description: 'ID único do usuário' })
   userId: string;

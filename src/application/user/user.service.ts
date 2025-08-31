@@ -1,5 +1,14 @@
-import { Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ForbiddenException,
+  NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { User, Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { IUserRepository } from './repositories/user.repository.interface';
 import { PublicUserDto } from './dto/public-user.dto';
 import { UpdateUserDto } from '../auth/dto/update-auth.dto';
@@ -15,24 +24,84 @@ export class UserService {
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  private mapToPublicDto(user: User | null): PublicUserDto | null {
-    if (!user) {
-      return null;
-    }
+  private mapToPublicDto(user: User): PublicUserDto {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, cpf, refreshToken, tokenVersion, passwordResetToken, passwordResetExpires, activationToken, activationTokenExpires, ...publicData } = user;
     return publicData;
   }
 
-  // --- Métodos Públicos (retornam DTO) ---
-
-  async findOneById(id: string, requestingUser: RequestingUser): Promise<PublicUserDto> {
-    if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== id) {
-      throw new ForbiddenException('Você só pode visualizar seu próprio perfil');
-    }
+  private async findUserOrFail(id: string): Promise<User> {
     const user = await this.userRepository.findById(id);
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
+    }
+    return user;
+  }
+
+  private async generateUniqueUserName(email: string): Promise<string> {
+    if (!email || !email.includes('@')) {
+      throw new InternalServerErrorException('Email inválido para gerar nome de usuário.');
+    }
+    const baseUserName = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+    let finalUserName = baseUserName;
+    let isUnique = false;
+    let attempts = 0;
+
+    while (!isUnique && attempts < 10) {
+      const { userNameExists } = await this.userRepository.checkUserExists({ userName: finalUserName });
+      if (!userNameExists) {
+        isUnique = true;
+      } else {
+        finalUserName = `${baseUserName}${Math.floor(100 + Math.random() * 900)}`;
+        attempts++;
+      }
+    }
+
+    if (!isUnique) {
+      throw new InternalServerErrorException('Não foi possível gerar um nome de usuário único.');
+    }
+
+    return finalUserName;
+  }
+
+  async registerThirdParty(data: {
+    nome: string;
+    email: string;
+    cpf: string;
+    telefone: string;
+  }): Promise<{ userId: string }> {
+    const { nome, email, cpf, telefone } = data;
+
+    const existingUser = await this.userRepository.checkUserExists({ email, cpf });
+    if (existingUser.emailExists) {
+      throw new ConflictException(`O email '${email}' já está em uso.`);
+    }
+    if (existingUser.cpfExists) {
+      throw new ConflictException(`O CPF '${cpf}' já está em uso.`);
+    }
+
+    const userName = await this.generateUniqueUserName(email);
+    const randomPassword = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await bcrypt.hash(randomPassword, 10);
+
+    const newUser = await this.userRepository.create({
+      name: nome,
+      userName,
+      email,
+      cpf,
+      telefone,
+      password: hashedPassword,
+      role: Role.USUARIO,
+      active: true,
+    });
+
+    return { userId: newUser.userId };
+  }
+
+  async findOneById(id: string, requestingUser: RequestingUser): Promise<PublicUserDto> {
+    const user = await this.findUserOrFail(id);
+    if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== id) {
+      throw new ForbiddenException('Você só pode visualizar seu próprio perfil');
     }
     return this.mapToPublicDto(user);
   }
@@ -41,11 +110,12 @@ export class UserService {
     const result = await this.userRepository.findAllPaged(params);
     return {
       ...result,
-      data: result.data.map(user => this.mapToPublicDto(user)),
+      data: result.data.map(this.mapToPublicDto),
     };
   }
 
   async update(id: string, data: Partial<UpdateUserDto>, requestingUser: RequestingUser): Promise<PublicUserDto> {
+    await this.findUserOrFail(id);
     if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== id) {
       throw new ForbiddenException('Você só pode editar seus próprios dados');
     }
@@ -57,31 +127,37 @@ export class UserService {
   }
 
   async remove(id: string): Promise<PublicUserDto> {
-    const user = await this.userRepository.remove(id);
-    return this.mapToPublicDto(user);
+    const user = await this.findUserOrFail(id);
+    const removedUser = await this.userRepository.remove(user.userId);
+    return this.mapToPublicDto(removedUser);
   }
 
   async blockUser(id: string, blockedUntil?: Date): Promise<PublicUserDto> {
+    await this.findUserOrFail(id);
     const user = await this.userRepository.blockUser(id, blockedUntil);
     return this.mapToPublicDto(user);
   }
 
   async unblockUser(id: string): Promise<PublicUserDto> {
+    await this.findUserOrFail(id);
     const user = await this.userRepository.unblockUser(id);
     return this.mapToPublicDto(user);
   }
 
   async restoreUser(id: string): Promise<PublicUserDto> {
+    await this.findUserOrFail(id);
     const user = await this.userRepository.restoreUser(id);
     return this.mapToPublicDto(user);
   }
 
   async updateUserRole(id: string, role: Role): Promise<PublicUserDto> {
+    await this.findUserOrFail(id);
     const user = await this.userRepository.update(id, { role });
     return this.mapToPublicDto(user);
   }
 
   async uploadAvatar(id: string, avatarUrl: string): Promise<PublicUserDto> {
+    await this.findUserOrFail(id);
     const user = await this.userRepository.update(id, { avatarUrl });
     return this.mapToPublicDto(user);
   }
@@ -92,8 +168,8 @@ export class UserService {
     return this.userRepository.findById(id);
   }
 
-  async findUserEntityByIdentification(identification: string): Promise<User | null> {
-    return this.userRepository.findByIdentification(identification);
+  async findUserEntityByIdentification(identification: string, options?: { includePassword?: boolean }): Promise<User | null> {
+    return this.userRepository.findByIdentification(identification, options);
   }
 
   async checkUserExists(data: { userName?: string; email?: string; cpf?: string; }) {

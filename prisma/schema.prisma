@@ -18,24 +18,24 @@ model User {
   role      Role    @default(USUARIO)
 
   // --- Campos de Segurança ---
-  password             String?
-  lastLogin            DateTime?
-  tokenVersion         Int       @default(1)
-  refreshToken         String?
-  passwordResetToken   String?
-  passwordResetExpires DateTime?
-  activationToken      String?
+  password               String?
+  lastLogin              DateTime?
+  tokenVersion           Int       @default(1)
+  refreshToken           String?
+  passwordResetToken     String?
+  passwordResetExpires   DateTime?
+  activationToken        String?
   activationTokenExpires DateTime?
 
   // --- Campos de Controle ---
-  active           Boolean   @default(false)
-  blocked          Boolean   @default(false)
-  blockedUntil     DateTime?
-  loginAttempts    Int       @default(0)
-  lastFailedLogin  DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  deletedAt        DateTime?
+  active          Boolean   @default(false)
+  blocked         Boolean   @default(false)
+  blockedUntil    DateTime?
+  loginAttempts   Int       @default(0)
+  lastFailedLogin DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
   // --- Relações ---
   logs         Log[]
@@ -127,7 +127,7 @@ model Log {
 }
 
 model Endereco {
-  enderecoId      String        @id @default(cuid())
+  enderecoId      String       @id @default(cuid())
   userId          String
   tipo            TipoEndereco
   nome            String?
@@ -139,10 +139,10 @@ model Endereco {
   estado          String
   cep             String
   pontoReferencia String?
-  principal       Boolean       @default(false)
-  ativo           Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  principal       Boolean      @default(false)
+  ativo           Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
@@ -168,41 +168,47 @@ enum VideoOption {
 }
 
 model CadastroCao {
-  cadastroId              String       @id @default(cuid())
-  userId                  String
-  proprietarioDiferente   Boolean      @default(false)
-  nomeProprietario        String?
-  cpfProprietario         String?
-  emailProprietario       String?
-  telefoneProprietario    String?
-  enderecoProprietario    String?
-  cidade                  String?
-  estado                  String?
-  nome                    String
-  raca                    String
-  sexo                    SexoCao
-  dataNascimento          DateTime
-  fotoPerfil              String
-  fotoLateral             String
-  peso                    String?
-  altura                  String?
-  temPedigree             Boolean      @default(false)
-  registroPedigree        String?
-  pedigreeFrente          String?
-  pedigreeVerso           String?
-  temMicrochip            Boolean      @default(false)
-  numeroMicrochip         String?
-  titulos                 String?
-  caracteristicas         String?
-  videoOption             VideoOption  @default(NONE)
-  videoUrl                String?
-  whatsappContato         String?
-  observacoes             String?
-  createdAt               DateTime     @default(now())
-  updatedAt               DateTime     @updatedAt
-  deletedAt               DateTime?
+  cadastroId       String      @id @default(cuid())
+  userId           String
+  nome             String
+  sexo             SexoCao
+  dataNascimento   DateTime
+  fotoPerfil       String
+  fotoLateral      String
+  peso             String?
+  altura           String?
+  temPedigree      Boolean     @default(false)
+  registroPedigree String?
+  pedigreeFrente   String?
+  pedigreeVerso    String?
+  temMicrochip     Boolean     @default(false)
+  numeroMicrochip  String?
+  titulos          String?
+  caracteristicas  String?
+  videoOption      VideoOption @default(NONE)
+  videoUrl         String?
+  whatsappContato  String?
+  observacoes      String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  deletedAt        DateTime?
 
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
+  racaId String
+  raca   Raca   @relation(fields: [racaId], references: [racaId])
+
   @@map("cadastros_cao")
+}
+
+model Raca {
+  racaId    String   @id @default(cuid())
+  nome      String   @unique
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cadastrosCao CadastroCao[]
+
+  @@map("raca")
 }

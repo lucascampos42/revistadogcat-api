@@ -1,5 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+// Adicionando um DTO para o endereço para melhor documentação
+export class EnderecoDto {
+  @ApiProperty()
+  logradouro: string;
+
+  @ApiProperty()
+  numero: string;
+
+  @ApiProperty({ nullable: true })
+  complemento?: string | null;
+
+  @ApiProperty()
+  bairro: string;
+
+  @ApiProperty()
+  cidade: string;
+
+  @ApiProperty()
+  estado: string;
+
+  @ApiProperty()
+  cep: string;
+}
+
 export class AuthUserDto {
   @ApiProperty({ description: 'ID único do usuário' })
   userId: string;
@@ -18,6 +42,13 @@ export class AuthUserDto {
 
   @ApiProperty({ description: 'URL do avatar do usuário', nullable: true })
   avatarUrl: string | null;
+
+  @ApiProperty({ 
+    description: 'Endereço do usuário', 
+    type: EnderecoDto, 
+    nullable: true 
+  })
+  endereco?: EnderecoDto | null;
 }
 
 export class AuthResponseDto {

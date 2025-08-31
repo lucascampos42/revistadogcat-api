@@ -14,15 +14,9 @@ async function bootstrap() {
   // Configurar CORS
   app.enableCors({
     origin: [
-      process.env.FRONTEND_URL || 'http://localhost:4200',
-      'http://localhost:3000',
       'http://localhost:4200',
-      'http://localhost:3001',
-      'http://localhost:8080',
-      'http://localhost:8081',
+      'http://localhost:4201',
       'http://127.0.0.1:4200',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:8080',
       'https://revista.codesdevs.com.br',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],

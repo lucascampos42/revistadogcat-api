@@ -4,9 +4,10 @@ import { CadastroCaoController } from './cadastro-cao.controller';
 import { CadastroCaoRepository } from './repositories/cadastro-cao.repository';
 import { PrismaModule } from '../../core/config/prisma.module';
 import { FileUploadModule } from '../../core/services/file-upload.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [PrismaModule, FileUploadModule],
+  imports: [PrismaModule, FileUploadModule, UserModule],
   controllers: [CadastroCaoController],
   providers: [CadastroCaoService, CadastroCaoRepository],
   exports: [CadastroCaoService, CadastroCaoRepository],

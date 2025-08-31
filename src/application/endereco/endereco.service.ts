@@ -29,25 +29,15 @@ export class EnderecoService {
     createEnderecoDto: CreateEnderecoDto,
     requestingUser: RequestingUser,
   ): Promise<Endereco> {
-    // Verificar permissões
     this.checkUserPermission(userId, requestingUser);
-
-    // Validar estado
     this.validateEstado(createEnderecoDto.estado);
-
-    // Verificar limite de endereços
     await this.checkEnderecoLimit(userId);
 
-    // Se for o primeiro endereço, definir como principal automaticamente
     const enderecoCount = await this.enderecoRepository.countByUserId(userId);
     if (enderecoCount === 0) {
       createEnderecoDto.principal = true;
-    }
-
-    // Se definido como principal, remover principal dos outros
-    if (createEnderecoDto.principal) {
-      const endereco = await this.enderecoRepository.create(userId, createEnderecoDto);
-      return this.enderecoRepository.setPrincipal(endereco.enderecoId, userId);
+    } else if (createEnderecoDto.principal) {
+      await this.enderecoRepository.clearPrincipal(userId);
     }
 
     return this.enderecoRepository.create(userId, createEnderecoDto);
@@ -58,161 +48,118 @@ export class EnderecoService {
     filters: EnderecoFiltersDto,
     requestingUser: RequestingUser,
   ): Promise<{ enderecos: Endereco[]; total: number }> {
-    // Verificar permissões
     this.checkUserPermission(userId, requestingUser);
-
-    const enderecos = await this.enderecoRepository.findByUserId(userId, filters);
-    const total = enderecos.length;
-
+    const [enderecos, total] = await Promise.all([
+        this.enderecoRepository.findByUserId(userId, filters),
+        this.enderecoRepository.countByUserId(userId, filters)
+    ]);
     return { enderecos, total };
   }
 
   async findById(
+    userId: string,
     enderecoId: string,
     requestingUser: RequestingUser,
   ): Promise<Endereco> {
-    const endereco = await this.enderecoRepository.findById(enderecoId);
+    this.checkUserPermission(userId, requestingUser);
+    const endereco = await this.enderecoRepository.findById(enderecoId, userId);
     if (!endereco) {
-      throw new NotFoundException('Endereço não encontrado');
+      throw new NotFoundException('Endereço não encontrado para este usuário');
     }
-
-    // Verificar permissões
-    this.checkUserPermission(endereco.userId, requestingUser);
-
     return endereco;
   }
 
   async update(
+    userId: string,
     enderecoId: string,
     updateEnderecoDto: UpdateEnderecoDto,
     requestingUser: RequestingUser,
   ): Promise<Endereco> {
-    const endereco = await this.enderecoRepository.findById(enderecoId);
-    if (!endereco) {
-      throw new NotFoundException('Endereço não encontrado');
-    }
+    const endereco = await this.findById(userId, enderecoId, requestingUser);
 
-    // Verificar permissões
-    this.checkUserPermission(endereco.userId, requestingUser);
-
-    // Validar estado se fornecido
     if (updateEnderecoDto.estado) {
       this.validateEstado(updateEnderecoDto.estado);
     }
 
-    // Se definido como principal, remover principal dos outros
-    if (updateEnderecoDto.principal) {
-      await this.enderecoRepository.setPrincipal(enderecoId, endereco.userId);
-      // Remover principal do DTO para evitar conflito na atualização
-      delete updateEnderecoDto.principal;
+    if (updateEnderecoDto.principal === true && !endereco.principal) {
+      await this.enderecoRepository.clearPrincipal(userId);
+    } else if (updateEnderecoDto.principal === false && endereco.principal) {
+      throw new BadRequestException('Não é possível remover o status de principal. Defina outro endereço como principal.');
     }
 
-    return this.enderecoRepository.update(enderecoId, updateEnderecoDto);
+    return this.enderecoRepository.update(enderecoId, userId, updateEnderecoDto);
   }
 
   async setPrincipal(
+    userId: string,
     enderecoId: string,
     requestingUser: RequestingUser,
   ): Promise<Endereco> {
-    const endereco = await this.enderecoRepository.findById(enderecoId);
-    if (!endereco) {
-      throw new NotFoundException('Endereço não encontrado');
-    }
+    const endereco = await this.findById(userId, enderecoId, requestingUser);
 
-    // Verificar permissões
-    this.checkUserPermission(endereco.userId, requestingUser);
-
-    // Verificar se o endereço está ativo
     if (!endereco.ativo) {
       throw new BadRequestException('Não é possível definir um endereço inativo como principal');
     }
 
-    return this.enderecoRepository.setPrincipal(enderecoId, endereco.userId);
+    if (endereco.principal) {
+        return endereco;
+    }
+
+    return this.enderecoRepository.setPrincipal(enderecoId, userId);
   }
 
   async deactivate(
+    userId: string,
     enderecoId: string,
     requestingUser: RequestingUser,
   ): Promise<Endereco> {
-    const endereco = await this.enderecoRepository.findById(enderecoId);
-    if (!endereco) {
-      throw new NotFoundException('Endereço não encontrado');
-    }
+    await this.findById(userId, enderecoId, requestingUser);
+    const endereco = await this.findById(userId, enderecoId, requestingUser);
 
-    // Verificar permissões
-    this.checkUserPermission(endereco.userId, requestingUser);
-
-    // Verificar se não é o último endereço ativo
-    const activeCount = await this.enderecoRepository.countActiveByUserId(endereco.userId);
-    if (activeCount <= 1) {
-      throw new BadRequestException('Não é possível desativar o último endereço ativo do usuário');
-    }
-
-    // Se for o endereço principal, definir outro como principal
     if (endereco.principal) {
-      const outrosEnderecos = await this.enderecoRepository.findByUserId(
-        endereco.userId,
-        { ativo: true }
-      );
-      const novoEnderecoPrincipal = outrosEnderecos.find(e => e.enderecoId !== enderecoId);
-      if (novoEnderecoPrincipal) {
-        await this.enderecoRepository.setPrincipal(novoEnderecoPrincipal.enderecoId, endereco.userId);
-      }
+      throw new BadRequestException('Não é possível desativar o endereço principal. Defina outro como principal primeiro.');
     }
 
-    return this.enderecoRepository.deactivate(enderecoId);
+    return this.enderecoRepository.deactivate(enderecoId, userId);
   }
 
   async reactivate(
+    userId: string,
     enderecoId: string,
     requestingUser: RequestingUser,
   ): Promise<Endereco> {
-    const endereco = await this.enderecoRepository.findById(enderecoId);
-    if (!endereco) {
-      throw new NotFoundException('Endereço não encontrado');
-    }
+    await this.findById(userId, enderecoId, requestingUser);
 
-    // Verificar permissões
-    this.checkUserPermission(endereco.userId, requestingUser);
-
-    // Verificar limite de endereços ativos
-    const activeCount = await this.enderecoRepository.countActiveByUserId(endereco.userId);
+    const activeCount = await this.enderecoRepository.countActiveByUserId(userId);
     if (activeCount >= this.MAX_ENDERECOS_POR_USUARIO) {
       throw new BadRequestException(`Limite máximo de ${this.MAX_ENDERECOS_POR_USUARIO} endereços ativos excedido`);
     }
 
-    return this.enderecoRepository.reactivate(enderecoId);
+    return this.enderecoRepository.reactivate(enderecoId, userId);
   }
 
   async delete(
+    userId: string,
     enderecoId: string,
     requestingUser: RequestingUser,
   ): Promise<void> {
-    const endereco = await this.enderecoRepository.findById(enderecoId);
-    if (!endereco) {
-      throw new NotFoundException('Endereço não encontrado');
-    }
+    const endereco = await this.findById(userId, enderecoId, requestingUser);
 
-    // Verificar permissões
-    this.checkUserPermission(endereco.userId, requestingUser);
-
-    // Verificar se não é o endereço principal
     if (endereco.principal) {
       throw new BadRequestException('Não é possível excluir o endereço principal. Defina outro endereço como principal primeiro.');
     }
 
-    // Verificar se não é o último endereço ativo
-    const activeCount = await this.enderecoRepository.countActiveByUserId(endereco.userId);
-    if (activeCount <= 1 && endereco.ativo) {
-      throw new BadRequestException('Não é possível excluir o último endereço ativo do usuário');
+    const totalCount = await this.enderecoRepository.countByUserId(userId);
+    if (totalCount <= 1) {
+        throw new BadRequestException('Não é possível excluir o último endereço do usuário.');
     }
 
-    await this.enderecoRepository.delete(enderecoId);
+    await this.enderecoRepository.delete(enderecoId, userId);
   }
 
   private checkUserPermission(targetUserId: string, requestingUser: RequestingUser): void {
     if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== targetUserId) {
-      throw new ForbiddenException('Você não tem permissão para acessar endereços de outro usuário');
+      throw new ForbiddenException('Você não tem permissão para acessar ou modificar endereços de outro usuário');
     }
   }
 

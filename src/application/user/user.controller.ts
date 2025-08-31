@@ -39,6 +39,36 @@ import { AuthRequest } from '../auth/models/AuthRequest';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Post('register-third-party')
+  @ApiOperation({ summary: 'Criar usuário para terceiro (simplificado)' })
+  @ApiResponse({
+    status: 201,
+    description: 'Usuário terceiro criado com sucesso',
+    schema: { example: { userId: 'cly123abcde' } },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Email ou CPF já em uso ou dados inválidos',
+  })
+  @ApiBody({
+    description: 'Dados básicos do usuário terceiro a ser criado.',
+    schema: {
+      type: 'object',
+      properties: {
+        nome: { type: 'string', example: 'Maria Santos' },
+        email: { type: 'string', example: 'maria.santos@example.com' },
+        cpf: { type: 'string', example: '987.654.321-00' },
+        telefone: { type: 'string', example: '(11) 98888-7777' },
+      },
+      required: ['nome', 'email', 'cpf', 'telefone'],
+    },
+  })
+  registerThirdParty(
+    @Body() body: { nome: string; email: string; cpf: string; telefone: string },
+  ) {
+    return this.userService.registerThirdParty(body);
+  }
+
   @Get()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Listar usuários com paginação e filtros' })

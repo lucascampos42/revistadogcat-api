@@ -19,7 +19,9 @@ describe('AuthService', () => {
   const mockUserService = {
     findOneByUsername: jest.fn(),
     findByIdentification: jest.fn(),
+    findUserEntityByIdentification: jest.fn(),
     update: jest.fn(),
+    systemUpdate: jest.fn(),
     createUser: jest.fn(),
     checkUserExists: jest.fn(),
   };
@@ -130,6 +132,7 @@ describe('AuthService', () => {
         userName: mockUserData.userName,
         name: mockUserData.name,
         email: mockUserData.email,
+        message: 'Usuário registrado. Verifique seu email para ativar a conta.',
         cpf: mockUserData.cpf,
         telefone: mockUserData.telefone,
         avatarUrl: mockUserData.avatarUrl,
@@ -193,7 +196,7 @@ describe('AuthService', () => {
         deletedAt: null,
       };
 
-      mockUserService.findByIdentification.mockResolvedValue(user);
+      mockUserService.findUserEntityByIdentification.mockResolvedValue(user);
       (
         bcrypt.compare as jest.MockedFunction<typeof bcrypt.compare>
       ).mockImplementation(() => true);
@@ -204,8 +207,17 @@ describe('AuthService', () => {
       expect(result).toEqual({
         access_token: 'test_token',
         refresh_token: 'test_token',
+        user: {
+          userId: '1',
+          userName: 'testuser',
+          name: 'Test User',
+          email: 'test@example.com',
+          role: 'USUARIO',
+          avatarUrl: null,
+          endereco: null,
+        },
       });
-      expect(mockUserService.findByIdentification).toHaveBeenCalledWith(
+      expect(mockUserService.findUserEntityByIdentification).toHaveBeenCalledWith(
         'testuser',
       );
       expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashedpassword');
@@ -244,7 +256,7 @@ describe('AuthService', () => {
         deletedAt: null,
       };
 
-      mockUserService.findByIdentification.mockResolvedValue(user);
+      mockUserService.findUserEntityByIdentification.mockResolvedValue(user);
       (
         bcrypt.compare as jest.MockedFunction<typeof bcrypt.compare>
       ).mockImplementation(() => false);
@@ -255,7 +267,7 @@ describe('AuthService', () => {
     });
 
     it('should throw an UnauthorizedException for non-existent user', async () => {
-      mockUserService.findByIdentification.mockResolvedValue(null);
+      mockUserService.findUserEntityByIdentification.mockResolvedValue(null);
 
       await expect(service.signIn('unknownuser', 'password')).rejects.toThrow(
         UnauthorizedException,
