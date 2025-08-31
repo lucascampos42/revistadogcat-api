@@ -54,11 +54,11 @@ O campo `tipo` define a categoria do endereço:
 - Não é possível desativar o último endereço ativo do usuário
 - Não é possível excluir o endereço principal (deve definir outro como principal primeiro)
 
-## Endpoints da API
+## Endpoints
 
 ### 1. Listar Endereços do Usuário
 
-- **Endpoint:** `GET /api/users/{userId}/enderecos`
+- **Endpoint:** `GET /users/{userId}/enderecos`
 - **Descrição:** Lista todos os endereços de um usuário específico.
 - **Permissões:** Usuário pode ver apenas seus próprios endereços, ADMIN pode ver de qualquer usuário.
 - **Parâmetros de Query:**
@@ -90,12 +90,13 @@ O campo `tipo` define a categoria do endereço:
     "total": 1
   }
   ```
+- **Nota sobre Resposta Vazia:** Se o usuário não possuir endereços cadastrados, o endpoint retornará uma resposta de sucesso (`200 OK`) com uma lista vazia (`"enderecos": []`) e `total: 0`.
 - **Resposta de Erro (403 Forbidden):** Se tentar acessar endereços de outro usuário sem ser ADMIN.
 - **Resposta de Erro (404 Not Found):** Se o usuário não for encontrado.
 
 ### 2. Obter Endereço Específico
 
-- **Endpoint:** `GET /api/enderecos/{enderecoId}`
+- **Endpoint:** `GET /enderecos/{enderecoId}`
 - **Descrição:** Obtém detalhes de um endereço específico.
 - **Permissões:** Usuário pode ver apenas seus próprios endereços, ADMIN pode ver qualquer endereço.
 - **Resposta de Sucesso (200 OK):** Objeto do endereço
@@ -104,7 +105,7 @@ O campo `tipo` define a categoria do endereço:
 
 ### 3. Criar Novo Endereço
 
-- **Endpoint:** `POST /api/users/{userId}/enderecos`
+- **Endpoint:** `POST /users/{userId}/enderecos`
 - **Descrição:** Cria um novo endereço para o usuário.
 - **Permissões:** Usuário pode criar apenas para si mesmo, ADMIN pode criar para qualquer usuário.
 - **Corpo da Requisição:**
@@ -129,7 +130,7 @@ O campo `tipo` define a categoria do endereço:
 
 ### 4. Atualizar Endereço
 
-- **Endpoint:** `PUT /api/enderecos/{enderecoId}`
+- **Endpoint:** `PUT /enderecos/{enderecoId}`
 - **Descrição:** Atualiza um endereço existente.
 - **Permissões:** Usuário pode atualizar apenas seus próprios endereços, ADMIN pode atualizar qualquer endereço.
 - **Corpo da Requisição:** Mesma estrutura do POST (campos opcionais)
@@ -140,7 +141,7 @@ O campo `tipo` define a categoria do endereço:
 
 ### 5. Definir Endereço como Principal
 
-- **Endpoint:** `PATCH /api/enderecos/{enderecoId}/principal`
+- **Endpoint:** `PATCH /enderecos/{enderecoId}/principal`
 - **Descrição:** Define um endereço como principal do usuário.
 - **Permissões:** Usuário pode definir apenas seus próprios endereços, ADMIN pode definir qualquer endereço.
 - **Resposta de Sucesso (200 OK):** Objeto do endereço atualizado
@@ -149,7 +150,7 @@ O campo `tipo` define a categoria do endereço:
 
 ### 6. Desativar Endereço
 
-- **Endpoint:** `PATCH /api/enderecos/{enderecoId}/desativar`
+- **Endpoint:** `PATCH /enderecos/{enderecoId}/desativar`
 - **Descrição:** Desativa um endereço (soft delete).
 - **Permissões:** Usuário pode desativar apenas seus próprios endereços, ADMIN pode desativar qualquer endereço.
 - **Resposta de Sucesso (200 OK):** Objeto do endereço atualizado
@@ -159,7 +160,7 @@ O campo `tipo` define a categoria do endereço:
 
 ### 7. Reativar Endereço
 
-- **Endpoint:** `PATCH /api/enderecos/{enderecoId}/reativar`
+- **Endpoint:** `PATCH /enderecos/{enderecoId}/reativar`
 - **Descrição:** Reativa um endereço desativado.
 - **Permissões:** Usuário pode reativar apenas seus próprios endereços, ADMIN pode reativar qualquer endereço.
 - **Resposta de Sucesso (200 OK):** Objeto do endereço atualizado
@@ -169,7 +170,7 @@ O campo `tipo` define a categoria do endereço:
 
 ### 8. Excluir Endereço
 
-- **Endpoint:** `DELETE /api/enderecos/{enderecoId}`
+- **Endpoint:** `DELETE /enderecos/{enderecoId}`
 - **Descrição:** Exclui permanentemente um endereço.
 - **Permissões:** Usuário pode excluir apenas seus próprios endereços, ADMIN pode excluir qualquer endereço.
 - **Resposta de Sucesso (204 No Content)**
@@ -177,7 +178,7 @@ O campo `tipo` define a categoria do endereço:
 - **Resposta de Erro (403 Forbidden):** Se tentar excluir endereço de outro usuário.
 - **Resposta de Erro (404 Not Found):** Se o endereço não for encontrado.
 
-## Integração com Outras APIs
+## Integração com Outros Módulos
 
 ### Cadastro de Pets (ExpoDog)
 Quando um usuário cadastra um pet, o sistema pode:
@@ -194,13 +195,13 @@ Quando um usuário cadastra um pet, o sistema pode:
 
 ### Fluxo de Cadastro de Endereço
 1. **Usuário acessa perfil:** Visualiza endereços existentes
-2. **Adiciona novo endereço:** `POST /api/users/{userId}/enderecos`
-3. **Define como principal:** `PATCH /api/enderecos/{enderecoId}/principal`
+2. **Adiciona novo endereço:** `POST /users/{userId}/enderecos`
+3. **Define como principal:** `PATCH /enderecos/{enderecoId}/principal`
 
 ### Fluxo de Mudança
-1. **Cadastra novo endereço:** `POST /api/users/{userId}/enderecos`
-2. **Define como principal:** `PATCH /api/enderecos/{enderecoId}/principal`
-3. **Desativa endereço antigo:** `PATCH /api/enderecos/{enderecoId}/desativar`
+1. **Cadastra novo endereço:** `POST /users/{userId}/enderecos`
+2. **Define como principal:** `PATCH /enderecos/{enderecoId}/principal`
+3. **Desativa endereço antigo:** `PATCH /enderecos/{enderecoId}/desativar`
 
 ## Códigos de Erro Específicos
 
