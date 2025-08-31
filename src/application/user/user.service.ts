@@ -15,7 +15,10 @@ export class UserService {
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  private mapToPublicDto(user: User): PublicUserDto {
+  private mapToPublicDto(user: User | null): PublicUserDto | null {
+    if (!user) {
+      return null;
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, cpf, refreshToken, tokenVersion, passwordResetToken, passwordResetExpires, activationToken, activationTokenExpires, ...publicData } = user;
     return publicData;
@@ -38,7 +41,7 @@ export class UserService {
     const result = await this.userRepository.findAllPaged(params);
     return {
       ...result,
-      data: result.data.map(this.mapToPublicDto),
+      data: result.data.map(user => this.mapToPublicDto(user)),
     };
   }
 

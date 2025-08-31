@@ -8,13 +8,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private userService: UserService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: true,
-      secretOrKey: process.env.JWT_SECRET || 'default_secret',
+      ignoreExpiration: false, // Deixa o GlobalAuthGuard tratar a expiração
+      secretOrKey: process.env.JWT_SECRET || 'default-secret',
     });
   }
 
   async validate(payload: any) {
-    const user = await this.userService.findOneById(payload.sub);
+    // Correção: Usar o método interno que não requer verificação de permissão.
+    const user = await this.userService.findUserEntityById(payload.sub);
+    // A estratégia apenas anexa o usuário encontrado ao request.
+    // O GlobalAuthGuard fará as validações de segurança completas.
     return user;
   }
 }
