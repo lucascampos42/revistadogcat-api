@@ -91,6 +91,7 @@ enum CategoriaArtigo {
   TREINAMENTO
   RACAS
   NOTICIAS
+  OUTROS
 }
 
 enum Role {
