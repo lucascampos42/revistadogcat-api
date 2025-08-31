@@ -357,7 +357,10 @@ export class AuthService {
       activationTokenExpires,
     });
 
-    await this.mailService.sendActivationEmail({ ...user, activationToken, activationTokenExpires }, activationToken);
+    await this.mailService.sendActivationEmail(
+      { ...user, activationToken, activationTokenExpires },
+      activationToken,
+    );
     return { message: 'Email de ativação reenviado com sucesso' };
   }
 
@@ -366,7 +369,10 @@ export class AuthService {
   }
 
   async validateUser(identifier: string, password: string) {
-    const user = await this.userService.findUserEntityByIdentification(identifier, { includePassword: true });
+    const user = await this.userService.findUserEntityByIdentification(
+      identifier,
+      { includePassword: true },
+    );
     if (user && user.deletedAt === null) {
       if (!user.active) {
         await this.mailService.sendUserConfirmation(user);

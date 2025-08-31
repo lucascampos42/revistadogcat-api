@@ -16,16 +16,10 @@ import {
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from './dto';
-import { LoginDto } from './dto';
-import { ForgotPasswordDto } from './dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
-import { ActivateAccountDto } from './dto/activate-account.dto';
-import { ResendActivationDto } from './dto/resend-activation.dto';
+import { CreateUserDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, ActivateAccountDto, ResendActivationDto, RefreshTokenDto } from './dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
 import { AuthRequest } from './models/AuthRequest';
-import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthThrottle } from '../../core/decorators/auth-throttle.decorator';
 
 @ApiTags('Autenticação')
@@ -33,10 +27,10 @@ import { AuthThrottle } from '../../core/decorators/auth-throttle.decorator';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Post('login')
   @HttpCode(HttpStatus.OK)
   @IsPublic()
   @AuthThrottle()
-  @Post('login')
   @ApiOperation({ summary: 'Fazer login no sistema' })
   @ApiResponse({
     status: 200,
@@ -50,10 +44,7 @@ export class AuthController {
     description: 'Muitas tentativas de login - rate limit atingido',
   })
   signIn(@Body() loginDto: LoginDto, @Req() req: Request) {
-    const loginDetails = {
-      ip: req.ip || 'unknown',
-      userAgent: req.headers['user-agent'] || 'unknown',
-    };
+    const loginDetails = this.getLoginDetails(req);
     return this.authService.signIn(
       loginDto.identification,
       loginDto.password,
@@ -142,8 +133,9 @@ export class AuthController {
     return this.authService.resendActivationEmail(resendDto.email);
   }
 
-  @IsPublic()
   @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  @IsPublic()
   @ApiOperation({ summary: 'Renovar token de acesso' })
   @ApiResponse({ 
     status: 200, 
@@ -177,6 +169,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Fazer logout e invalidar tokens' })
   @ApiResponse({ status: 200, description: 'Logout realizado com sucesso' })
@@ -185,21 +178,34 @@ export class AuthController {
     description: 'Token de acesso inválido ou expirado',
   })
   async logout(@Req() req: AuthRequest): Promise<{ message: string }> {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-      throw new UnauthorizedException('Authorization header is missing');
+    if (!req.user?.userId) {
+      throw new UnauthorizedException('User not found in request');
+    }
+    await this.authService.logout(req.user.userId);
+    return { message: 'Logout realizado com sucesso.' };
+  }
+
+  /**
+   * Extrai os detalhes relevantes da requisição para fins de log e segurança.
+   * Prioriza o cabeçalho 'x-forwarded-for' para obter o IP real do cliente
+   * em ambientes com proxy.
+   * @param req O objeto de requisição do Express.
+   * @returns Um objeto com o IP e o User-Agent do cliente.
+   */
+  private getLoginDetails(req: Request): { ip: string; userAgent: string } {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    let ip: string;
+
+    if (typeof forwardedFor === 'string') {
+      // O cabeçalho pode conter uma lista de IPs. O primeiro é o do cliente original.
+      ip = forwardedFor.split(',')[0].trim();
+    } else {
+      // Fallback para req.ip, que pode ser o IP do proxy ou o do cliente.
+      ip = req.ip || 'unknown';
     }
 
-    const token = authHeader.split(' ')[1];
-    console.log('Token JWT:', token);
-    console.log('User:', req.user);
+    const userAgent = req.headers['user-agent'] || 'unknown';
 
-    if (!req.user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const userId = req.user.userId;
-    await this.authService.logout(userId);
-    return { message: 'Saindo do sistema' };
+    return { ip, userAgent };
   }
 }
