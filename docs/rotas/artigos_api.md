@@ -1,190 +1,138 @@
 # Documentação da API de Artigos
 
-Esta documentação descreve os endpoints da API necessários para o gerenciamento de artigos e seus assets no site.
+Esta documentação descreve os endpoints da API para o gerenciamento de artigos, alinhada com as necessidades do painel de administração.
+
+**Prefixo da Rota:** `/artigos`
+
+**Autenticação:** Endpoints marcados com 🔒 requerem autenticação via Bearer Token (JWT) e permissões de acesso específicas (ADMIN ou EDITOR).
+
+---
 
 ## Modelo de Dados: Artigo
 
-O objeto `Artigo` representa uma notícia ou artigo no sistema.
+Este é o modelo de dados completo para a entidade `Artigo`.
 
-| Campo | Tipo | Descrição | Obrigatório |
+| Campo | Tipo | Descrição | Obrigatório na Criação |
 | --- | --- | --- | --- |
-| `id` | `number` | Identificador único do artigo. | Sim (na resposta) |
-| `titulo` | `string` | Título do artigo. | Sim |
-| `conteudo` | `object` | Conteúdo do artigo em formato JSON, gerado pelo editor TipTap. | Sim |
-| `resumo` | `string` | Um breve resumo do artigo. | Não |
-| `autor` | `string` | Nome do autor do artigo. | Sim |
-| `categoria` | `string` | Categoria do artigo (ex: "Cuidados", "Nutrição", "Saúde"). | Sim |
-| `status` | `string` | Status do artigo (`publicado`, `rascunho`, `revisao`). | Sim |
-| `dataPublicacao` | `string` | Data de publicação no formato ISO 8601 (ex: "2024-01-15T10:00:00Z"). | Sim |
-| `imagemCapa` | `string` | URL da foto de destaque do artigo. | Sim |
-| `visualizacoes` | `number` | Número de visualizações do artigo. | Sim (na resposta) |
-| `curtidas` | `number` | Número de curtidas do artigo. | Sim (na resposta) |
-| `comentarios` | `number` | Número de comentários no artigo. | Sim (na resposta) |
-| `destaque` | `boolean` | Indica se o artigo está em destaque. | Sim |
-| `tags` | `string[]` | Uma lista de tags associadas ao artigo. | Não |
+| `id` | `string` | Identificador único do artigo (UUID). | Não (gerado pelo servidor) |
+| `titulo` | `string` | Título principal do artigo. | Sim |
+| `conteudo` | `object` | Conteúdo do artigo em formato JSON (padrão TipTap). | Sim |
+| `autor` | `object` | Objeto contendo `{ id: string, nome: string }` do autor. | Sim (enviar `autorId`) |
+| `categoria` | `object` | Objeto contendo `{ id: string, nome: string }` da categoria. | Sim (enviar `categoriaId`) |
+| `status` | `string` | Status do artigo. Valores: `RASCUNHO`, `REVISAO`, `PUBLICADO`, `ARQUIVADO`. | Sim |
+| `publico` | `string` | Nível de acesso. Valores: `PUBLICO`, `ASSINANTES`, `PRIVADO`. | Sim |
+| `dataPublicacao` | `string` | Data de publicação no formato ISO 8601 (`YYYY-MM-DD`). | Sim |
+| `fotoDestaqueUrl` | `string` | URL da imagem de destaque do artigo. | Sim |
+| `destaque` | `boolean` | Indica se o artigo está em destaque na home. | Não (padrão: `false`) |
+| `visualizacoes` | `number` | Contagem de visualizações (gerenciado pelo servidor). | Não |
+| `curtidas` | `number` | Contagem de curtidas (gerenciado pelo servidor). | Não |
+| `comentarios` | `number` | Contagem de comentários (gerenciado pelo servidor). | Não |
+| `createdAt` | `string` | Data de criação (gerado pelo servidor). | Não |
+| `updatedAt` | `string` | Data da última atualização (gerado pelo servidor). | Não |
 
-## Endpoints da API de Artigos
+---
 
-### 1. Listar todos os artigos
+## Modelo de Dados: Categoria
 
-- **Endpoint:** `GET /api/artigos`
-- **Descrição:** Retorna uma lista de todos os artigos.
-- **Parâmetros de Query (Opcionais):**
-  - `q`: Busca por título ou autor.
-  - `categoria`: Filtra por categoria.
-  - `status`: Filtra por status.
-  - `sort`: Ordena os resultados (ex: `dataPublicacao:desc`).
-- **Resposta de Sucesso (200 OK - O raro momento em que tudo funciona.):**
-  ```json
-  [
-    {
-      "id": 1,
-      "titulo": "Como Cuidar do Seu Cão no Inverno",
-      "autor": "Dr. Maria Silva",
-      "categoria": "Cuidados",
-      "status": "publicado",
-      "dataPublicacao": "2024-01-15T10:00:00Z",
-      "imagemCapa": "https://example.com/imagem.jpg",
-      "visualizacoes": 1250,
-      "curtidas": 89,
-      "comentarios": 23,
-      "destaque": true
-    }
-  ]
-  ```
+| Campo | Tipo | Descrição |
+| --- | --- | --- |
+| `id` | `string` | Identificador único da categoria (UUID). |
+| `nome` | `string` | Nome de exibição da categoria (ex: "Saúde & Bem-estar"). |
+| `slug` | `string` | Versão amigável para URL (ex: "saude-e-bem-estar"). |
 
-### 2. Obter um artigo específico
+### Categorias Sugeridas para Pets
 
-- **Endpoint:** `GET /api/artigos/{id}`
-- **Descrição:** Retorna os detalhes de um artigo específico.
-- **Resposta de Sucesso (200 OK - O raro momento em que tudo funciona.):**
-  ```json
-  {
-    "id": 1,
-    "titulo": "Como Cuidar do Seu Cão no Inverno",
-    "conteudo": {
-      "type": "doc",
-      "content": [
-        {"type": "paragraph", "content": [{"type": "text", "text": "Conteúdo inicial do artigo..."}]},
-        {
-          "type": "image",
-          "attrs": {
-            "src": "https://example.com/uploads/imagem_1.jpg",
-            "alt": "Cão brincando na neve."
-          }
-        },
-        {"type": "paragraph", "content": [{"type": "text", "text": "Mais texto sobre o assunto."}]},
-        {
-          "type": "image",
-          "attrs": {
-            "src": "https://example.com/uploads/imagem_2.jpg",
-            "alt": "Outra foto do cão."
-          }
-        }
-      ]
-    },
-    "resumo": "Um resumo do artigo...",
-    "autor": "Dr. Maria Silva",
-    "categoria": "Cuidados",
-    "status": "publicado",
-    "dataPublicacao": "2024-01-15T10:00:00Z",
-    "imagemCapa": "https://example.com/imagem_capa.jpg",
-    "visualizacoes": 1250,
-    "curtidas": 89,
-    "comentarios": 23,
-    "destaque": true,
-    "tags": ["cães", "inverno", "cuidados"]
-  }
-  ```
-- **Resposta de Erro (404 Not Found - O clássico: só existe em produção.):** Se o artigo não for encontrado.
+- Saúde & Bem-estar
+- Alimentação & Nutrição
+- Comportamento & Treinamento
+- Cuidados & Higiene
+- Raças & Guias
+- Notícias & Eventos
+- Adoção & Resgate
+- Produtos & Acessórios
 
-### 3. Criar um novo artigo
+---
 
-- **Endpoint:** `POST /api/artigos`
+## Endpoints da API
+
+### 1. 🔒 Criar Novo Artigo
+
+- **Endpoint:** `POST /artigos`
 - **Descrição:** Cria um novo artigo.
 - **Corpo da Requisição:**
   ```json
   {
-    "titulo": "Novo Artigo",
-    "conteudo": {
-      "type": "doc",
-      "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Conteúdo do novo artigo."}]}]
-    },
-    "resumo": "Resumo do novo artigo (opcional).",
-    "autor": "Novo Autor",
-    "categoria": "Saúde",
-    "status": "rascunho",
-    "imagemCapa": "https://example.com/imagem_destaque.jpg",
-    "destaque": false,
-    "tags": ["novo", "artigo"]
+    "titulo": "Como Cuidar da Saúde do seu Pet",
+    "conteudo": { "type": "doc", "content": [...] },
+    "autorId": "user-uuid-123",
+    "categoriaId": "category-uuid-456",
+    "status": "RASCUNHO",
+    "publico": "PUBLICO",
+    "dataPublicacao": "2024-08-31",
+    "fotoDestaqueUrl": "https://example.com/imagem.jpg",
+    "destaque": false
   }
   ```
-- **Resposta de Sucesso (201 Created - E você jurando que não ia dar certo.):** Retorna o artigo recém-criado.
-- **Resposta de Erro (400 Bad Request - A culpa é do usuário. Sempre.):** Se os dados fornecidos forem inválidos.
+- **Resposta de Sucesso (201 Created):** Retorna o objeto completo do artigo recém-criado.
 
-**Exemplo de artigo sem resumo (campo opcional):**
-```json
-{
-  "titulo": "Dicas de Adestramento para Filhotes",
-  "conteudo": {
-    "type": "doc",
-    "content": [{"type": "paragraph", "content": [{"type": "text", "text": "Conteúdo sobre adestramento de filhotes..."}]}]
-  },
-  "autor": "Especialista em Comportamento",
-  "categoria": "Comportamento",
-  "status": "publicado",
-  "imagemCapa": "https://example.com/filhote_adestramento.jpg",
-  "destaque": true,
-  "tags": ["adestramento", "filhotes", "comportamento"]
-}
-```
+### 2. 🔒 Listar Todos os Artigos (para o Painel)
 
-### 4. Atualizar um artigo
+- **Endpoint:** `GET /artigos`
+- **Descrição:** Retorna uma lista paginada de todos os artigos para o painel de gerenciamento.
+- **Parâmetros de Query (Opcionais):**
+    - `page`: Número da página (padrão: 1).
+    - `limit`: Itens por página (padrão: 10).
+    - `q`: Termo de busca para o título.
+    - `status`: Filtrar por status (`RASCUNHO`, `PUBLICADO`, etc.).
+    - `categoriaId`: Filtrar por ID da categoria.
+- **Resposta de Sucesso (200 OK):** Retorna um objeto de paginação contendo um array de artigos. Cada artigo na lista deve incluir os campos necessários para a tabela, como `autor.nome` e `categoria.nome`.
 
-- **Endpoint:** `PUT /api/artigos/{id}`
-- **Descrição:** Atualiza um artigo existente.
-- **Corpo da Requisição:** Um objeto `Artigo` completo.
-- **Resposta de Sucesso (200 OK - O raro momento em que tudo funciona.):** Retorna o artigo atualizado.
-- **Resposta de Erro (400 Bad Request - A culpa é do usuário. Sempre.):** Se os dados fornecidos forem inválidos.
-- **Resposta de Erro (404 Not Found - O clássico: só existe em produção.):** Se o artigo não for encontrado.
+### 3. 🔒 Obter Artigo por ID
 
-### 5. Atualizar parcialmente um artigo
+- **Endpoint:** `GET /artigos/{id}`
+- **Descrição:** Retorna os detalhes completos de um artigo específico para preencher o formulário de edição.
+- **Resposta de Sucesso (200 OK):** Retorna o objeto completo do artigo.
+- **Resposta de Erro (404 Not Found):** Se o artigo não for encontrado.
 
-- **Endpoint:** `PATCH /api/artigos/{id}`
-- **Descrição:** Atualiza parcialmente um artigo. Útil para alterar o status ou o destaque.
+### 4. 🔒 Atualizar Artigo
+
+- **Endpoint:** `PATCH /artigos/{id}`
+- **Descrição:** Atualiza parcialmente um artigo existente. Enviar apenas os campos que foram modificados.
+- **Corpo da Requisição:** (Exemplo: atualizando o título e o status)
+  ```json
+  {
+    "titulo": "Título Atualizado do Artigo",
+    "status": "PUBLICADO"
+  }
+  ```
+- **Resposta de Sucesso (200 OK):** Retorna o objeto completo do artigo atualizado.
+
+### 5. 🔒 Excluir Artigo
+
+- **Endpoint:** `DELETE /artigos/{id}`
+- **Descrição:** Exclui um artigo de forma lógica (soft delete).
+- **Resposta de Sucesso (204 No Content):** Resposta vazia indicando sucesso.
+
+### 6. 🔒 Alternar Destaque
+
+- **Endpoint:** `PATCH /artigos/{id}/destaque`
+- **Descrição:** Alterna o status de `destaque` de um artigo.
 - **Corpo da Requisição:**
   ```json
   {
     "destaque": true
   }
   ```
-- **Resposta de Sucesso (200 OK - O raro momento em que tudo funciona.):** Retorna o artigo atualizado.
-- **Resposta de Erro (400 Bad Request - A culpa é do usuário. Sempre.):** Se os dados fornecidos forem inválidos.
-- **Resposta de Erro (404 Not Found - O clássico: só existe em produção.):** Se o artigo não for encontrado.
+- **Resposta de Sucesso (200 OK):** Retorna o artigo atualizado.
 
-### 6. Excluir um artigo
+### 7. Listar Categorias
 
-- **Endpoint:** `DELETE /api/artigos/{id}`
-- **Descrição:** Exclui um artigo.
-- **Resposta de Sucesso (204 No Content - OK, mas sem resposta... tipo ghosting.):** Nenhum conteúdo.
-- **Resposta de Erro (404 Not Found - O clássico: só existe em produção.):** Se o artigo não for encontrado.
-
-## Endpoint de Upload de Imagens
-
-### 1. Upload de Imagem
-
-- **Endpoint:** `POST /api/imagens/upload`
-- **Descrição:** Recebe um arquivo de imagem, salva-o e retorna a URL pública.
-- **Corpo da Requisição:** `multipart/form-data` com um campo `image` contendo o arquivo.
-- **Resposta de Sucesso (200 OK - O raro momento em que tudo funciona.):**
+- **Endpoint:** `GET /categorias`
+- **Descrição:** Retorna uma lista de todas as categorias disponíveis para preencher seletores no frontend.
+- **Resposta de Sucesso (200 OK):**
   ```json
-  {
-    "url": "https://example.com/uploads/nome_da_imagem_12345.jpg"
-  }
+  [
+    { "id": "uuid-1", "nome": "Saúde & Bem-estar", "slug": "saude-e-bem-estar" },
+    { "id": "uuid-2", "nome": "Alimentação & Nutrição", "slug": "alimentacao-e-nutricao" }
+  ]
   ```
-- **Resposta de Erro (400 Bad Request - A culpa é do usuário. Sempre.):** Se nenhum arquivo for enviado ou se o tipo de arquivo não for suportado.
-
-- **Notas de Uso:**
-  - Para adicionar **múltiplas imagens** ao conteúdo de um artigo, o front-end deve chamar este endpoint **uma vez para cada imagem**.
-  - Após cada chamada bem-sucedida, o front-end deve pegar a `url` retornada e inseri-la em um nó do tipo `image` dentro do JSON do campo `conteudo` do artigo.
-  - A `imagemCapa` do artigo também deve ser enviada por este endpoint para obter uma URL antes de ser associada ao artigo.

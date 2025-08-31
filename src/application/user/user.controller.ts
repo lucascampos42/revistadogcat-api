@@ -127,7 +127,11 @@ export class UserController {
   })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
   @ApiParam({ name: 'id', description: 'ID único do usuário' })
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Req() req: AuthRequest) {
+  update(
+    @Param('id') id: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: AuthRequest,
+  ) {
     return this.userService.update(id, updateUserDto, req.user);
   }
 
@@ -183,7 +187,10 @@ export class UserController {
   @Patch(':id/role')
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualizar role do usuário (apenas Admin)' })
-  @ApiResponse({ status: 200, description: 'Role do usuário atualizado com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Role do usuário atualizado com sucesso',
+  })
   @ApiResponse({ status: 400, description: 'Role inválido fornecido' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({
@@ -216,7 +223,10 @@ export class UserController {
 
   @Get('me')
   @ApiOperation({ summary: 'Obter perfil do usuário autenticado' })
-  @ApiResponse({ status: 200, description: 'Perfil do usuário retornado com sucesso' })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil do usuário retornado com sucesso',
+  })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   getMyProfile(@Req() req: AuthRequest) {
     return this.userService.findOneById(req.user.userId, req.user);
@@ -231,7 +241,10 @@ export class UserController {
     status: 403,
     description: 'Acesso negado - usuário não pode alterar seu próprio role',
   })
-  updateMyProfile(@Body() updateUserDto: UpdateUserDto, @Req() req: AuthRequest) {
+  updateMyProfile(
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: AuthRequest,
+  ) {
     return this.userService.update(req.user.userId, updateUserDto, req.user);
   }
 
@@ -248,7 +261,8 @@ export class UserController {
         avatar: {
           type: 'string',
           format: 'binary',
-          description: 'Arquivo de imagem do avatar (JPEG, PNG, WebP - máx. 5MB)',
+          description:
+            'Arquivo de imagem do avatar (JPEG, PNG, WebP - máx. 5MB)',
         },
         description: {
           type: 'string',
@@ -271,7 +285,10 @@ export class UserController {
       },
     },
   })
-  @ApiResponse({ status: 400, description: 'Arquivo inválido ou dados incorretos' })
+  @ApiResponse({
+    status: 400,
+    description: 'Arquivo inválido ou dados incorretos',
+  })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({ status: 413, description: 'Arquivo muito grande (máx. 5MB)' })
   async uploadAvatar(
@@ -285,7 +302,7 @@ export class UserController {
 
     // Construir URL do avatar baseada no caminho do arquivo
     const avatarUrl = `/uploads/avatars/${file.filename}`;
-    
+
     // Atualizar o usuário com a nova URL do avatar
     const updatedUser = await this.userService.uploadAvatar(
       req.user.userId,

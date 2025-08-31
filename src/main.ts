@@ -23,6 +23,7 @@ async function bootstrap() {
       'http://127.0.0.1:4200',
       'http://127.0.0.1:3000',
       'http://127.0.0.1:8080',
+      'https://revista.codesdevs.com.br',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
     allowedHeaders: [

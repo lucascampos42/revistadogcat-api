@@ -23,9 +23,9 @@ model User {
   tokenVersion         Int       @default(1)
   refreshToken         String?
   passwordResetToken   String?
-  passwordResetExpires DateTime? // Adicionado para "esqueci AuthRequest.ts senha"
-  activationToken      String?   // Token para ativação da conta
-  activationTokenExpires DateTime? // Expiração do token de ativação
+  passwordResetExpires DateTime?
+  activationToken      String?
+  activationTokenExpires DateTime?
 
   // --- Campos de Controle ---
   active           Boolean   @default(false)
@@ -37,11 +37,60 @@ model User {
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
 
-  logs Log[]
-  enderecos Endereco[]
+  // --- Relações ---
+  logs         Log[]
+  enderecos    Endereco[]
   cadastrosCao CadastroCao[]
+  artigos      Artigo[]
+  comentarios  Comentario[]
 
   @@map("users")
+}
+
+model Comentario {
+  comentarioId String   @id @default(cuid())
+  conteudo     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  artigoId     String
+  artigo       Artigo   @relation(fields: [artigoId], references: [artigoId], onDelete: Cascade)
+  autorId      String
+  autor        User     @relation(fields: [autorId], references: [userId], onDelete: Cascade)
+
+  @@map("comentarios")
+}
+
+model Artigo {
+  artigoId       String          @id @default(cuid())
+  titulo         String
+  conteudo       Json
+  resumo         String?
+  autorId        String
+  autor          User            @relation(fields: [autorId], references: [userId])
+  categoria      CategoriaArtigo
+  status         StatusArtigo    @default(RASCUNHO)
+  dataPublicacao DateTime
+  imagemCapa     String
+  visualizacoes  Int             @default(0)
+  curtidas       Int             @default(0)
+  destaque       Boolean         @default(false)
+  tags           String[]        @default([])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+  comentarios    Comentario[]
+
+  @@map("artigos")
+}
+
+enum CategoriaArtigo {
+  NUTRICAO
+  CUIDADOS
+  SAUDE
+  COMPORTAMENTO
+  TREINAMENTO
+  RACAS
+  NOTICIAS
 }
 
 enum Role {
@@ -117,33 +166,9 @@ enum VideoOption {
   NONE
 }
 
-model Artigo {
-  artigoId        String        @id @default(cuid())
-  titulo          String
-  conteudo        Json          // Conteúdo em formato JSON do TipTap
-  resumo          String?
-  autor           String
-  categoria       String
-  status          StatusArtigo  @default(RASCUNHO)
-  dataPublicacao  DateTime
-  imagemCapa      String
-  visualizacoes   Int           @default(0)
-  curtidas        Int           @default(0)
-  comentarios     Int           @default(0)
-  destaque        Boolean       @default(false)
-  tags            String[]      @default([])
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  deletedAt       DateTime?
-
-  @@map("artigos")
-}
-
 model CadastroCao {
   cadastroId              String       @id @default(cuid())
-  userId                  String       // Usuário que fez o cadastro
-  
-  // Dados do proprietário (condicionais)
+  userId                  String
   proprietarioDiferente   Boolean      @default(false)
   nomeProprietario        String?
   cpfProprietario         String?
@@ -152,37 +177,26 @@ model CadastroCao {
   enderecoProprietario    String?
   cidade                  String?
   estado                  String?
-  
-  // Dados do cão (obrigatórios)
   nome                    String
   raca                    String
   sexo                    SexoCao
   dataNascimento          DateTime
-  fotoPerfil              String       // URL da foto de perfil
-  fotoLateral             String       // URL da foto lateral
+  fotoPerfil              String
+  fotoLateral             String
   peso                    String?
   altura                  String?
-  
-  // Pedigree (condicional)
   temPedigree             Boolean      @default(false)
   registroPedigree        String?
-  pedigreeFrente          String?      // URL do arquivo
-  pedigreeVerso           String?      // URL do arquivo
-  
-  // Microchip (condicional)
+  pedigreeFrente          String?
+  pedigreeVerso           String?
   temMicrochip            Boolean      @default(false)
   numeroMicrochip         String?
-  
-  // Informações adicionais
   titulos                 String?
   caracteristicas         String?
-  
-  // Vídeo (opcional)
   videoOption             VideoOption  @default(NONE)
   videoUrl                String?
   whatsappContato         String?
   observacoes             String?
-  
   createdAt               DateTime     @default(now())
   updatedAt               DateTime     @updatedAt
   deletedAt               DateTime?
