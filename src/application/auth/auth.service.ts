@@ -133,6 +133,17 @@ export class AuthService {
       password: hashedPassword,
       activationToken,
       activationTokenExpires,
+      // Adicionar campos que faltam para satisfazer a tipagem do Prisma
+      lastLogin: null,
+      tokenVersion: 1,
+      refreshToken: null,
+      passwordResetToken: null,
+      passwordResetExpires: null,
+      blocked: false,
+      blockedUntil: null,
+      loginAttempts: 0,
+      lastFailedLogin: null,
+      deletedAt: null,
     });
 
     await this.mailService.sendActivationEmail(result, activationToken);
