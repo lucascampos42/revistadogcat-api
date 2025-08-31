@@ -5,7 +5,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from '../decorators/is-public.decorator';
 import { PrismaService } from '../config/prisma.service';
 
@@ -18,7 +18,6 @@ export class GlobalAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    // Verificar se a rota está marcada como pública
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -28,17 +27,11 @@ export class GlobalAuthGuard implements CanActivate {
       return true;
     }
 
-    // Se não for pública, verificar JWT
     const request = context.switchToHttp().getRequest();
     const token = this.extractTokenFromHeader(request);
 
     if (!token) {
-      throw new UnauthorizedException({
-        statusCode: 401,
-        message: 'Token de acesso é obrigatório',
-        error: 'Unauthorized',
-        timestamp: new Date().toISOString(),
-      } as any);
+      throw new UnauthorizedException('Token de acesso é obrigatório');
     }
 
     try {
@@ -48,20 +41,16 @@ export class GlobalAuthGuard implements CanActivate {
         tokenVersion?: number;
       }>(token);
 
-      // validar tokenVersion atual com o usuário
       const user = await this.prisma.user.findUnique({
         where: { userId: payload.sub },
       });
+
       if (!user) {
-        throw new UnauthorizedException('Usuário não encontrado');
+        throw new UnauthorizedException('Usuário associado ao token não foi encontrado');
       }
-      if (
-        typeof payload.tokenVersion === 'number' &&
-        payload.tokenVersion !== user.tokenVersion
-      ) {
-        throw new UnauthorizedException(
-          'Token invalidado. Faça login novamente.',
-        );
+
+      if (typeof payload.tokenVersion === 'number' && payload.tokenVersion !== user.tokenVersion) {
+        throw new UnauthorizedException('Token de acesso revogado. Por favor, faça login novamente.');
       }
 
       request.user = {
@@ -71,12 +60,11 @@ export class GlobalAuthGuard implements CanActivate {
         role: user.role,
       };
     } catch (error) {
-      throw new UnauthorizedException({
-        statusCode: 401,
-        message: 'Token de acesso inválido ou expirado',
-        error: 'Unauthorized',
-        timestamp: new Date().toISOString(),
-      } as any);
+      if (error instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Token de acesso expirado');
+      }
+      // Para outros erros de JWT (malformado, assinatura inválida, etc.)
+      throw new UnauthorizedException('Token de acesso inválido');
     }
 
     return true;
