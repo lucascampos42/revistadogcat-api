@@ -1,145 +1,103 @@
-import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
-import { CreateUserDto } from '../auth/dto/create-auth.dto';
+import { Injectable, Inject, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { User, Role } from '@prisma/client';
 import { IUserRepository } from './repositories/user.repository.interface';
+import { PublicUserDto } from './dto/public-user.dto';
+import { UpdateUserDto } from '../auth/dto/update-auth.dto';
 
 interface RequestingUser {
   userId: string;
   role: Role;
 }
 
-/**
- * Service responsável pela lógica de negócio relacionada aos usuários
- * Utiliza o padrão Repository para separar a lógica de negócio do acesso a dados
- */
 @Injectable()
 export class UserService {
   constructor(
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  async createUser(data: CreateUserDto): Promise<User> {
-    return this.userRepository.create(data);
+  private mapToPublicDto(user: User): PublicUserDto {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, cpf, refreshToken, tokenVersion, passwordResetToken, passwordResetExpires, activationToken, activationTokenExpires, ...publicData } = user;
+    return publicData;
   }
 
-  async findOneByUsername(userName: string): Promise<User | null> {
-    return this.userRepository.findByUsername(userName);
-  }
+  // --- Métodos Públicos (retornam DTO) ---
 
-  async findOneByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findByEmail(email);
-  }
-
-  async findOneByCpf(cpf: string): Promise<User | null> {
-    return this.userRepository.findByCpf(cpf);
-  }
-
-  async findByIdentification(identification: string): Promise<User | null> {
-    return this.userRepository.findByIdentification(identification);
-  }
-
-  async checkUserExists(data: {
-    userName?: string;
-    email?: string;
-    cpf?: string;
-  }): Promise<{
-    userNameExists: boolean;
-    emailExists: boolean;
-    cpfExists: boolean;
-  }> {
-    return this.userRepository.checkUserExists(data);
-  }
-
-  async findOneByPasswordResetToken(token: string): Promise<User | null> {
-    return this.userRepository.findByPasswordResetToken(token);
-  }
-
-  async findAll(): Promise<User[]> {
-    return this.userRepository.findAll();
-  }
-
-  async findAllPaged(params: {
-    page: number;
-    limit: number;
-    role?: Role;
-    search?: string;
-    userName?: string;
-    email?: string;
-  }): Promise<{ data: User[]; total: number; page: number; limit: number }> {
-    return this.userRepository.findAllPaged(params);
-  }
-
-  async findOneById(id: string, requestingUser?: RequestingUser): Promise<User | null> {
-    // Se não há usuário requisitante, comportamento original (para compatibilidade)
-    if (!requestingUser) {
-      return this.userRepository.findById(id);
-    }
-
-    // ADMIN pode ver qualquer usuário
-    if (requestingUser.role === Role.ADMIN) {
-      return this.userRepository.findById(id);
-    }
-
-    // Usuários só podem ver seu próprio perfil
-    if (requestingUser.userId !== id) {
+  async findOneById(id: string, requestingUser: RequestingUser): Promise<PublicUserDto> {
+    if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== id) {
       throw new ForbiddenException('Você só pode visualizar seu próprio perfil');
     }
+    const user = await this.userRepository.findById(id);
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    return this.mapToPublicDto(user);
+  }
 
+  async findAllPaged(params: { page: number; limit: number; role?: Role; search?: string; }) {
+    const result = await this.userRepository.findAllPaged(params);
+    return {
+      ...result,
+      data: result.data.map(this.mapToPublicDto),
+    };
+  }
+
+  async update(id: string, data: Partial<UpdateUserDto>, requestingUser: RequestingUser): Promise<PublicUserDto> {
+    if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== id) {
+      throw new ForbiddenException('Você só pode editar seus próprios dados');
+    }
+    if (data.role && requestingUser.role !== Role.ADMIN) {
+      throw new ForbiddenException('Você não tem permissão para alterar seu próprio role');
+    }
+    const updatedUser = await this.userRepository.update(id, data);
+    return this.mapToPublicDto(updatedUser);
+  }
+
+  async remove(id: string): Promise<PublicUserDto> {
+    const user = await this.userRepository.remove(id);
+    return this.mapToPublicDto(user);
+  }
+
+  async blockUser(id: string, blockedUntil?: Date): Promise<PublicUserDto> {
+    const user = await this.userRepository.blockUser(id, blockedUntil);
+    return this.mapToPublicDto(user);
+  }
+
+  async unblockUser(id: string): Promise<PublicUserDto> {
+    const user = await this.userRepository.unblockUser(id);
+    return this.mapToPublicDto(user);
+  }
+
+  async restoreUser(id: string): Promise<PublicUserDto> {
+    const user = await this.userRepository.restoreUser(id);
+    return this.mapToPublicDto(user);
+  }
+
+  async updateUserRole(id: string, role: Role): Promise<PublicUserDto> {
+    const user = await this.userRepository.update(id, { role });
+    return this.mapToPublicDto(user);
+  }
+
+  async uploadAvatar(id: string, avatarUrl: string): Promise<PublicUserDto> {
+    const user = await this.userRepository.update(id, { avatarUrl });
+    return this.mapToPublicDto(user);
+  }
+
+  // --- Métodos Internos (para uso de outros serviços como Auth) ---
+
+  async findUserEntityById(id: string): Promise<User | null> {
     return this.userRepository.findById(id);
   }
 
-  async update(id: string, data: Partial<User>, requestingUser?: RequestingUser): Promise<User> {
-    // Se não há usuário requisitante, comportamento original (para compatibilidade)
-    if (!requestingUser) {
-      return this.userRepository.update(id, data);
-    }
+  async findUserEntityByIdentification(identification: string): Promise<User | null> {
+    return this.userRepository.findByIdentification(identification);
+  }
 
-    // ADMIN pode editar qualquer usuário
-    if (requestingUser.role === Role.ADMIN) {
-      return this.userRepository.update(id, data);
-    }
+  async checkUserExists(data: { userName?: string; email?: string; cpf?: string; }) {
+    return this.userRepository.checkUserExists(data);
+  }
 
-    // Usuários só podem editar seus próprios dados
-    if (requestingUser.userId !== id) {
-      throw new ForbiddenException('Você só pode editar seus próprios dados');
-    }
-
-    // Usuários não-ADMIN não podem alterar o próprio role
-    if (data.role && (requestingUser.role as Role) !== Role.ADMIN) {
-      throw new ForbiddenException('Você não tem permissão para alterar seu próprio role');
-    }
-
+  async systemUpdate(id: string, data: Partial<User>): Promise<User> {
     return this.userRepository.update(id, data);
-  }
-
-  async remove(id: string): Promise<User> {
-    return this.userRepository.remove(id);
-  }
-
-  async blockUser(id: string, blockedUntil?: Date): Promise<User> {
-    return this.userRepository.blockUser(id, blockedUntil);
-  }
-
-  async unblockUser(id: string): Promise<User> {
-    return this.userRepository.unblockUser(id);
-  }
-
-  async restoreUser(id: string): Promise<User> {
-    return this.userRepository.restoreUser(id);
-  }
-
-  /**
-   * Atualiza o role de um usuário
-   * Apenas usuários com role ADMIN podem executar esta operação
-   */
-  async updateUserRole(id: string, role: Role): Promise<User> {
-    return this.userRepository.update(id, { role });
-  }
-
-  /**
-   * Atualiza o avatar do usuário
-   */
-  async uploadAvatar(id: string, avatarUrl: string): Promise<User> {
-    return this.userRepository.update(id, { avatarUrl });
   }
 }

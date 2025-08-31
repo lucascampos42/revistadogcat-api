@@ -24,26 +24,27 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
       isGlobal: true,
       load: [mailConfig],
     }),
+    // Aumentar os limites para facilitar o desenvolvimento
     ThrottlerModule.forRoot([
       {
         name: 'short',
         ttl: 1000, // 1 segundo
-        limit: 3, // 3 requests por segundo
+        limit: 30, // ANTES: 3
       },
       {
         name: 'medium',
         ttl: 10000, // 10 segundos
-        limit: 20, // 20 requests por 10 segundos
+        limit: 200, // ANTES: 20
       },
       {
         name: 'long',
         ttl: 60000, // 1 minuto
-        limit: 100, // 100 requests por minuto
+        limit: 100,
       },
       {
         name: 'auth',
         ttl: 60000, // 1 minuto
-        limit: 5, // 5 tentativas de login por minuto
+        limit: 10, // ANTES: 5
       },
     ]),
     JwtModule.register({

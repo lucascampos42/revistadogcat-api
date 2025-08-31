@@ -42,7 +42,6 @@ export class AuthService {
   }
 
   private getRefreshTokenExpiry(): string {
-    // Ex: '7d' via env JWT_REFRESH_TTL (fallback para REFRESH_TOKEN_TTL)
     return (
       this.configService.get<string>('JWT_REFRESH_TTL') ||
       this.configService.get<string>('REFRESH_TOKEN_TTL') ||
@@ -78,21 +77,23 @@ export class AuthService {
     const access_token = await this.signAccessToken(user);
     const refresh_token = await this.signRefreshToken(user);
 
-    // opcional: persistir hash do refreshToken
     await this.authRepository.updateUserTokens(user.userId, {
       refreshToken: refresh_token,
     });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, cpf, ...publicUser } = user;
 
     return { 
       access_token, 
       refresh_token,
       user: {
-        userId: user.userId,
-        userName: user.userName,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatarUrl: user.avatarUrl
+        userId: publicUser.userId,
+        userName: publicUser.userName,
+        name: publicUser.name,
+        email: publicUser.email,
+        role: publicUser.role,
+        avatarUrl: publicUser.avatarUrl
       }
     };
   }
@@ -100,16 +101,14 @@ export class AuthService {
   async register(
     createUserDto: CreateUserDto,
   ): Promise<Omit<User, 'password' | 'activationToken'> & { message: string }> {
-    // Validar CPF se fornecido
     if (createUserDto.cpf) {
       const normalizedCpf = ValidationUtils.normalizeCpf(createUserDto.cpf);
       if (!ValidationUtils.isValidCpf(normalizedCpf)) {
         throw new BadRequestException('CPF inválido');
       }
-      createUserDto.cpf = normalizedCpf; // Normalizar CPF antes de continuar
+      createUserDto.cpf = normalizedCpf;
     }
 
-    // Verificar se o usuário já existe
     const existingUser = await this.userService.checkUserExists({
       userName: createUserDto.userName,
       email: createUserDto.email,
@@ -117,54 +116,23 @@ export class AuthService {
     });
 
     const errors: string[] = [];
-
-    if (existingUser.userNameExists) {
-      errors.push('Username já está em uso');
-    }
-
-    if (existingUser.emailExists) {
-      errors.push('Email já está cadastrado');
-    }
-
-    if (existingUser.cpfExists) {
-      errors.push('CPF já está cadastrado');
-    }
+    if (existingUser.userNameExists) errors.push('Username já está em uso');
+    if (existingUser.emailExists) errors.push('Email já está cadastrado');
+    if (existingUser.cpfExists) errors.push('CPF já está cadastrado');
 
     if (errors.length > 0) {
-      throw new ConflictException(
-        `Dados já existem no sistema: ${errors.join(', ')}`,
-      );
+      throw new ConflictException(`Dados já existem: ${errors.join(', ')}`);
     }
 
-    const saltOrRounds = 10;
-    const hashedPassword = await bcrypt.hash(
-      createUserDto.password,
-      saltOrRounds,
-    );
-
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const activationToken = crypto.randomBytes(32).toString('hex');
     const activationTokenExpires = this.getActivationTokenExpiration();
 
     const result = await this.authRepository.createUser({
       ...createUserDto,
-      cpf: createUserDto.cpf || null,
-      telefone: createUserDto.telefone || null,
-      avatarUrl: createUserDto.avatarUrl || null,
-      role: createUserDto.role || 'USUARIO',
       password: hashedPassword,
-      active: false,
       activationToken,
       activationTokenExpires,
-      lastLogin: null,
-      tokenVersion: 1,
-      refreshToken: null,
-      passwordResetToken: null,
-      passwordResetExpires: null,
-      blocked: false,
-      blockedUntil: null,
-      loginAttempts: 0,
-      lastFailedLogin: null,
-      deletedAt: null,
     });
 
     await this.mailService.sendActivationEmail(result, activationToken);
@@ -173,62 +141,46 @@ export class AuthService {
     const { password, activationToken: token, ...user } = result;
     return {
       ...user,
-      message:
-        'Usuário registrado com sucesso. Verifique seu email para ativar a conta.',
+      message: 'Usuário registrado. Verifique seu email para ativar a conta.',
     };
   }
 
   private async handleFailedLogin(user: User): Promise<void> {
     const maxAttempts = 5;
-    const lockoutDuration = 15 * 60 * 1000; // 15 minutos em millisegundos
-
+    const lockoutDuration = 15 * 60 * 1000;
     const newAttempts = user.loginAttempts + 1;
-    const updateData: {
-      loginAttempts: number;
-      lastFailedLogin: Date;
-      blocked?: boolean;
-      blockedUntil?: Date;
-    } = {
+
+    const updateData: Partial<User> = {
       loginAttempts: newAttempts,
       lastFailedLogin: new Date(),
     };
 
-    // Enviar alerta de múltiplas tentativas se estiver próximo do limite
     if (newAttempts >= 3) {
       await this.mailService.sendMultipleLoginAttemptsAlert(user, newAttempts);
     }
 
-    // Se atingiu o máximo de tentativas, bloquear a conta
     if (newAttempts >= maxAttempts) {
       updateData.blocked = true;
       updateData.blockedUntil = new Date(Date.now() + lockoutDuration);
-      updateData.loginAttempts = 0; // Reset contador após bloqueio
-
-      // Enviar alerta de conta bloqueada
+      updateData.loginAttempts = 0;
       await this.mailService.sendAccountBlockedAlert(user, '15 minutos');
     }
 
-    await this.userService.update(user.userId, updateData);
+    await this.userService.systemUpdate(user.userId, updateData);
   }
 
   private async handleSuccessfulLogin(user: User): Promise<void> {
-    const updateData: {
-      lastLogin: Date;
-      loginAttempts: number;
-      blocked?: boolean;
-      blockedUntil?: Date | null;
-    } = {
+    const updateData: Partial<User> = {
       lastLogin: new Date(),
-      loginAttempts: 0, // Reset contador de tentativas
+      loginAttempts: 0,
     };
 
-    // Se estava bloqueado temporariamente, desbloquear
     if (user.blocked && user.blockedUntil && user.blockedUntil <= new Date()) {
       updateData.blocked = false;
       updateData.blockedUntil = null;
     }
 
-    await this.userService.update(user.userId, updateData);
+    await this.userService.systemUpdate(user.userId, updateData);
   }
 
   async signIn(
@@ -236,34 +188,24 @@ export class AuthService {
     pass: string,
     loginDetails?: { ip: string; userAgent: string },
   ): Promise<AuthResponseDto> {
-    const user = await this.userService.findByIdentification(identification);
-    if (!user) {
+    const user = await this.userService.findUserEntityByIdentification(identification);
+    if (!user || user.deletedAt) {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    // Verificar se a conta está excluída
-    if (user.deletedAt) {
-      throw new UnauthorizedException('Conta excluída.');
-    }
-
-    // Verificar se a conta está ativa
     if (!user.active) {
       throw new UnauthorizedException('Conta inativa.');
     }
 
-    // Verificar se a conta está bloqueada
     if (user.blocked) {
-      // Se o bloqueio expirou, desbloquear automaticamente
       if (user.blockedUntil && user.blockedUntil <= new Date()) {
-        await this.userService.update(user.userId, {
+        await this.userService.systemUpdate(user.userId, {
           blocked: false,
           blockedUntil: null,
           loginAttempts: 0,
         });
       } else {
-        throw new UnauthorizedException(
-          `Conta temporariamente bloqueada devido a muitas tentativas de login. Tente novamente em alguns minutos.`,
-        );
+        throw new UnauthorizedException('Conta temporariamente bloqueada.');
       }
     }
 
@@ -273,27 +215,12 @@ export class AuthService {
 
     const isMatch = await bcrypt.compare(pass, user.password);
     if (!isMatch) {
-      // Registrar tentativa de login falhada
       await this.handleFailedLogin(user);
-
-      // Verificar se a conta foi bloqueada após esta tentativa
-      const updatedUser =
-        await this.userService.findByIdentification(identification);
-      if (updatedUser?.blocked) {
-        throw new UnauthorizedException(
-          'Muitas tentativas de login incorretas. Conta temporariamente bloqueada.',
-        );
-      }
-
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    // Login bem-sucedido - verificar se é suspeito
     if (loginDetails && this.isSuspiciousLogin(user)) {
-      await this.mailService.sendSuspiciousLoginAlert(user, {
-        ...loginDetails,
-        timestamp: new Date(),
-      });
+      await this.mailService.sendSuspiciousLoginAlert(user, { ...loginDetails, timestamp: new Date() });
     }
 
     await this.handleSuccessfulLogin(user);
@@ -301,50 +228,22 @@ export class AuthService {
   }
 
   private isSuspiciousLogin(user: User): boolean {
-    // Critérios simples para detectar login suspeito:
-    // 1. Primeiro login do usuário
-    // 2. Login após muito tempo inativo (mais de 30 dias)
-    // 3. Mudança significativa no User-Agent
-
-    if (!user.lastLogin) {
-      return false; // Primeiro login não é suspeito
-    }
-
-    const daysSinceLastLogin = Math.floor(
-      (Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24),
-    );
-
-    // Login após mais de 30 dias de inatividade
-    if (daysSinceLastLogin > 30) {
-      return true;
-    }
-
-    // Aqui você pode adicionar mais lógica de detecção:
-    // - Verificar se o IP está em uma lista de IPs conhecidos
-    // - Verificar geolocalização do IP
-    // - Analisar padrões de User-Agent
-
-    return false;
+    if (!user.lastLogin) return false;
+    const daysSinceLastLogin = Math.floor((Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24));
+    return daysSinceLastLogin > 30;
   }
 
-  async refreshToken(
-    token: string,
-  ): Promise<AuthResponseDto> {
+  async refreshToken(token: string): Promise<AuthResponseDto> {
     try {
-      const payload = await this.jwtService.verifyAsync<{
-        sub: string;
-        tv: number;
-        type: string;
-      }>(token, {
-        secret:
-          this.configService.get<string>('JWT_REFRESH_SECRET') ||
-          process.env.JWT_SECRET ||
-          'default-secret',
+      const payload = await this.jwtService.verifyAsync<{ sub: string; tv: number; type: string; }>(token, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'default-secret',
       });
+
       if (payload.type !== 'refresh') {
         throw new UnauthorizedException('Token inválido');
       }
-      const user = await this.userService.findOneById(payload.sub);
+
+      const user = await this.userService.findUserEntityById(payload.sub);
       if (!user) throw new UnauthorizedException('Usuário não encontrado');
       if (user.tokenVersion !== payload.tv) {
         throw new UnauthorizedException('Refresh token expirado/invalidado');
@@ -355,109 +254,72 @@ export class AuthService {
     }
   }
 
-  async forgotPassword(
-    forgotPasswordDto: ForgotPasswordDto,
-  ): Promise<{ message: string; token: string }> {
-    const user = await this.userService.findOneByEmail(forgotPasswordDto.email);
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string; token: string }> {
+    const user = await this.userService.findUserEntityByIdentification(forgotPasswordDto.email);
     if (!user) {
       throw new NotFoundException('Usuário não encontrado.');
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const passwordResetToken = crypto
-      .createHash('sha256')
-      .update(resetToken)
-      .digest('hex');
+    const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const passwordResetExpires = new Date(Date.now() + 3600000);
 
-    const passwordResetExpires = new Date(Date.now() + 3600000); // 1 hora
-
-    await this.userService.update(user.userId, {
+    await this.userService.systemUpdate(user.userId, {
       passwordResetToken,
       passwordResetExpires,
     });
 
     return {
-      message:
-        'Token de redefinição de senha gerado com sucesso. Verifique seu e-mail.',
+      message: 'Token de redefinição de senha gerado. Verifique seu e-mail.',
       token: resetToken,
     };
   }
 
-  async resetPassword(
-    resetPasswordDto: ResetPasswordDto,
-  ): Promise<{ message: string }> {
+  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
     const { token, password, passwordConfirmation } = resetPasswordDto;
-
     if (password !== passwordConfirmation) {
       throw new BadRequestException('As senhas não conferem.');
     }
 
-    // O token enviado é aleatório; validar comparando o hash sha256 salvo no banco
-    const passwordResetToken = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-
-    const user =
-      await this.authRepository.findUserByPasswordResetToken(
-        passwordResetToken,
-      );
-
+    const passwordResetToken = crypto.createHash('sha256').update(token).digest('hex');
+    const user = await this.authRepository.findUserByPasswordResetToken(passwordResetToken);
     if (!user) {
       throw new UnauthorizedException('Token inválido ou expirado.');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     await this.authRepository.updateUserPassword(user.userId, hashedPassword);
-
-    return { message: 'Redefinição de senha com sucesso' };
+    return { message: 'Senha redefinida com sucesso' };
   }
 
-  async activateAccount(
-    activateDto: ActivateAccountDto,
-  ): Promise<{ message: string }> {
+  async activateAccount(activateDto: ActivateAccountDto): Promise<{ message: string }> {
     const { token } = activateDto;
-
     const user = await this.authRepository.findUserByActivationToken(token);
-
     if (!user) {
       throw new BadRequestException('Token de ativação inválido ou expirado');
     }
-
     await this.authRepository.activateUser(user.userId);
-
-    return { message: 'Conta ativada com sucesso! Você já pode fazer login.' };
+    return { message: 'Conta ativada com sucesso!' };
   }
 
   async resendActivationEmail(email: string): Promise<{ message: string }> {
-    // Buscar usuário pelo email
     const user = await this.authRepository.findUserByEmail(email);
-
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
     }
-
     if (user.active) {
       throw new BadRequestException('Esta conta já está ativada');
     }
 
-    // Gerar novo token de ativação
     const activationToken = crypto.randomBytes(32).toString('hex');
     const activationTokenExpires = this.getActivationTokenExpiration();
 
-    // Atualizar o token no banco
     await this.authRepository.updateUserTokens(user.userId, {
       activationToken,
       activationTokenExpires,
     });
 
-    // Enviar email de ativação
-    await this.mailService.sendActivationEmail(
-      { ...user, activationToken, activationTokenExpires },
-      activationToken,
-    );
-
+    await this.mailService.sendActivationEmail({ ...user, activationToken, activationTokenExpires }, activationToken);
     return { message: 'Email de ativação reenviado com sucesso' };
   }
 
@@ -466,28 +328,22 @@ export class AuthService {
   }
 
   async validateUser(identifier: string, password: string) {
-    const user = await this.userService.findOneByEmail(identifier);
+    const user = await this.userService.findUserEntityByIdentification(identifier);
     if (user && user.deletedAt === null) {
       if (!user.active) {
         await this.mailService.sendUserConfirmation(user);
-        throw new UnauthorizedException(
-          'A conta do usuário não está ativada. Um e-mail de ativação foi enviado.',
-        );
+        throw new UnauthorizedException('A conta do usuário não está ativada.');
       }
       if (!user.password) {
-        throw new UnauthorizedException(
-          'Senha não definida para este usuário.',
-        );
+        throw new UnauthorizedException('Senha não definida.');
       }
       const isValid = await bcrypt.compare(password, user.password);
       if (isValid) {
-        return { ...user, password: undefined };
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...result } = user;
+        return result;
       }
     }
-    throw new UnauthorizedException(
-      user && user.deletedAt !== null
-        ? 'A conta do usuário foi excluída.'
-        : 'A identificação e ou a senha fornecidos estão incorretos.',
-    );
+    throw new UnauthorizedException('Identificação ou senha incorretos.');
   }
 }
