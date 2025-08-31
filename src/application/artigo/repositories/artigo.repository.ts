@@ -4,11 +4,35 @@ import { ArtigoEntity } from '../entities/artigo.entity';
 import { CreateArtigoDto } from '../dto/create-artigo.dto';
 import { UpdateArtigoDto } from '../dto/update-artigo.dto';
 import { ListArtigosDto } from '../dto/list-artigos.dto';
-import { StatusArtigo, Prisma } from '@prisma/client';
+import { StatusArtigo, Prisma, CategoriaArtigo } from '@prisma/client';
 
 @Injectable()
 export class ArtigoRepository {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly includeAutorAndComentarios = {
+    autor: {
+      select: {
+        userId: true,
+        name: true,
+        avatarUrl: true,
+      },
+    },
+    comentarios: {
+      include: {
+        autor: {
+          select: {
+            userId: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc' as const,
+      },
+    },
+  };
 
   async create(data: CreateArtigoDto): Promise<ArtigoEntity> {
     const artigo = await this.prisma.artigo.create({
@@ -19,8 +43,8 @@ export class ArtigoRepository {
         destaque: data.destaque || false,
         tags: data.tags || [],
       },
+      include: this.includeAutorAndComentarios,
     });
-
     return new ArtigoEntity(artigo);
   }
 
@@ -29,7 +53,6 @@ export class ArtigoRepository {
     const limit = Math.min(parseInt(params.limit || '10'), 50);
     const skip = (page - 1) * limit;
 
-    // Construir filtros
     const where: Prisma.ArtigoWhereInput = {
       deletedAt: null,
     };
@@ -42,7 +65,7 @@ export class ArtigoRepository {
     }
 
     if (params.categoria) {
-      where.categoria = { contains: params.categoria, mode: 'insensitive' };
+      where.categoria = { equals: params.categoria as CategoriaArtigo };
     }
 
     if (params.status) {
@@ -57,18 +80,18 @@ export class ArtigoRepository {
       where.tags = { has: params.tag };
     }
 
-    // Construir ordenação
     const orderBy: Prisma.ArtigoOrderByWithRelationInput = {};
     const sortBy = params.sortBy || 'dataPublicacao';
     const sortOrder = params.sortOrder || 'desc';
     orderBy[sortBy] = sortOrder;
 
-    const [artigos, total] = await Promise.all([
+    const [artigos, total] = await this.prisma.$transaction([
       this.prisma.artigo.findMany({
         where,
         orderBy,
         skip,
         take: limit,
+        include: this.includeAutorAndComentarios,
       }),
       this.prisma.artigo.count({ where }),
     ]);
@@ -85,6 +108,7 @@ export class ArtigoRepository {
         artigoId,
         deletedAt: null,
       },
+      include: this.includeAutorAndComentarios,
     });
 
     return artigo ? new ArtigoEntity(artigo) : null;
@@ -100,6 +124,7 @@ export class ArtigoRepository {
     const artigo = await this.prisma.artigo.update({
       where: { artigoId },
       data: updateData,
+      include: this.includeAutorAndComentarios,
     });
 
     return new ArtigoEntity(artigo);
@@ -115,33 +140,21 @@ export class ArtigoRepository {
   async incrementVisualizacoes(artigoId: string): Promise<void> {
     await this.prisma.artigo.update({
       where: { artigoId },
-      data: {
-        visualizacoes: {
-          increment: 1,
-        },
-      },
+      data: { visualizacoes: { increment: 1 } },
     });
   }
 
   async incrementCurtidas(artigoId: string): Promise<void> {
     await this.prisma.artigo.update({
       where: { artigoId },
-      data: {
-        curtidas: {
-          increment: 1,
-        },
-      },
+      data: { curtidas: { increment: 1 } },
     });
   }
 
   async decrementCurtidas(artigoId: string): Promise<void> {
     await this.prisma.artigo.update({
       where: { artigoId },
-      data: {
-        curtidas: {
-          decrement: 1,
-        },
-      },
+      data: { curtidas: { decrement: 1 } },
     });
   }
 
@@ -159,10 +172,9 @@ export class ArtigoRepository {
         status: StatusArtigo.PUBLICADO,
         destaque: true,
       },
-      orderBy: {
-        dataPublicacao: 'desc',
-      },
+      orderBy: { dataPublicacao: 'desc' },
       take: limit,
+      include: this.includeAutorAndComentarios,
     });
 
     return artigos.map(artigo => new ArtigoEntity(artigo));

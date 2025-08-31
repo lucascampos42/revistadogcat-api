@@ -1,24 +1,30 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { ArtigoRepository } from './repositories/artigo.repository';
+import { ComentarioRepository } from './repositories/comentario.repository';
 import { CreateArtigoDto } from './dto/create-artigo.dto';
 import { UpdateArtigoDto } from './dto/update-artigo.dto';
 import { ListArtigosDto, ArtigosListResponseDto } from './dto/list-artigos.dto';
 import { ArtigoResponseDto } from './dto/artigo-response.dto';
+import { ComentarioResponseDto } from './dto/comentario-response.dto';
+import { CreateComentarioDto } from './dto/create-comentario.dto';
+import { UpdateComentarioDto } from './dto/update-comentario.dto';
 import { ArtigoEntity } from './entities/artigo.entity';
+import { ComentarioEntity } from './entities/comentario.entity';
 import { StatusArtigo } from '@prisma/client';
 
 @Injectable()
 export class ArtigoService {
-  constructor(private readonly artigoRepository: ArtigoRepository) {}
+  constructor(
+    private readonly artigoRepository: ArtigoRepository,
+    private readonly comentarioRepository: ComentarioRepository,
+  ) {}
 
   async create(createArtigoDto: CreateArtigoDto): Promise<ArtigoResponseDto> {
-    // Validar data de publicação
     const dataPublicacao = new Date(createArtigoDto.dataPublicacao);
     if (isNaN(dataPublicacao.getTime())) {
       throw new BadRequestException('Data de publicação inválida');
     }
 
-    // Se o status for PUBLICADO, validar se a data não é no passado
     if (createArtigoDto.status === StatusArtigo.PUBLICADO && dataPublicacao < new Date()) {
       throw new BadRequestException('Data de publicação não pode ser no passado para artigos publicados');
     }
@@ -29,7 +35,6 @@ export class ArtigoService {
 
   async findAll(listArtigosDto: ListArtigosDto): Promise<ArtigosListResponseDto> {
     const { data, total } = await this.artigoRepository.findAll(listArtigosDto);
-    
     const page = parseInt(listArtigosDto.page || '1');
     const limit = Math.min(parseInt(listArtigosDto.limit || '10'), 50);
     const totalPages = Math.ceil(total / limit);
@@ -49,7 +54,6 @@ export class ArtigoService {
 
   async findPublicados(listArtigosDto: ListArtigosDto): Promise<ArtigosListResponseDto> {
     const { data, total } = await this.artigoRepository.findPublicados(listArtigosDto);
-    
     const page = parseInt(listArtigosDto.page || '1');
     const limit = Math.min(parseInt(listArtigosDto.limit || '10'), 50);
     const totalPages = Math.ceil(total / limit);
@@ -69,12 +73,10 @@ export class ArtigoService {
 
   async findOne(artigoId: string, incrementView: boolean = false): Promise<ArtigoResponseDto> {
     const artigo = await this.artigoRepository.findById(artigoId);
-    
     if (!artigo) {
       throw new NotFoundException('Artigo não encontrado');
     }
 
-    // Incrementar visualizações se solicitado
     if (incrementView) {
       await this.artigoRepository.incrementVisualizacoes(artigoId);
       artigo.incrementarVisualizacoes();
@@ -85,23 +87,8 @@ export class ArtigoService {
 
   async update(artigoId: string, updateArtigoDto: UpdateArtigoDto): Promise<ArtigoResponseDto> {
     const existingArtigo = await this.artigoRepository.findById(artigoId);
-    
     if (!existingArtigo) {
       throw new NotFoundException('Artigo não encontrado');
-    }
-
-    // Validar data de publicação se fornecida
-    if (updateArtigoDto.dataPublicacao) {
-      const dataPublicacao = new Date(updateArtigoDto.dataPublicacao);
-      if (isNaN(dataPublicacao.getTime())) {
-        throw new BadRequestException('Data de publicação inválida');
-      }
-
-      // Se o status for PUBLICADO, validar se a data não é no passado
-      const novoStatus = updateArtigoDto.status || existingArtigo.status;
-      if (novoStatus === StatusArtigo.PUBLICADO && dataPublicacao < new Date()) {
-        throw new BadRequestException('Data de publicação não pode ser no passado para artigos publicados');
-      }
     }
 
     const artigo = await this.artigoRepository.update(artigoId, updateArtigoDto);
@@ -110,40 +97,27 @@ export class ArtigoService {
 
   async remove(artigoId: string): Promise<void> {
     const artigo = await this.artigoRepository.findById(artigoId);
-    
     if (!artigo) {
       throw new NotFoundException('Artigo não encontrado');
     }
-
     await this.artigoRepository.delete(artigoId);
   }
 
   async curtir(artigoId: string): Promise<ArtigoResponseDto> {
     const artigo = await this.artigoRepository.findById(artigoId);
-    
-    if (!artigo) {
-      throw new NotFoundException('Artigo não encontrado');
-    }
-
-    if (!artigo.isPublicado()) {
-      throw new BadRequestException('Não é possível curtir artigos não publicados');
+    if (!artigo || !artigo.isPublicado()) {
+      throw new NotFoundException('Artigo publicado não encontrado');
     }
 
     await this.artigoRepository.incrementCurtidas(artigoId);
     artigo.incrementarCurtidas();
-
     return this.mapToResponseDto(artigo);
   }
 
   async descurtir(artigoId: string): Promise<ArtigoResponseDto> {
     const artigo = await this.artigoRepository.findById(artigoId);
-    
-    if (!artigo) {
-      throw new NotFoundException('Artigo não encontrado');
-    }
-
-    if (!artigo.isPublicado()) {
-      throw new BadRequestException('Não é possível descurtir artigos não publicados');
+    if (!artigo || !artigo.isPublicado()) {
+      throw new NotFoundException('Artigo publicado não encontrado');
     }
 
     if (artigo.curtidas > 0) {
@@ -159,24 +133,89 @@ export class ArtigoService {
     return artigos.map(artigo => this.mapToResponseDto(artigo));
   }
 
+  // --- Comentários ---
+
+  async findComentariosByArtigoId(artigoId: string): Promise<ComentarioResponseDto[]> {
+    const comentarios = await this.comentarioRepository.findByArtigoId(artigoId);
+    return comentarios.map(c => this.mapComentarioToResponseDto(new ComentarioEntity(c)));
+  }
+
+  async addComentario(artigoId: string, dto: CreateComentarioDto & { autorId: string }): Promise<ComentarioResponseDto> {
+    const artigo = await this.artigoRepository.findById(artigoId);
+    if (!artigo || !artigo.isPublicado()) {
+      throw new NotFoundException('Artigo publicado não encontrado para comentar.');
+    }
+
+    const comentario = await this.comentarioRepository.create({ ...dto, artigoId });
+    return this.mapComentarioToResponseDto(new ComentarioEntity(comentario));
+  }
+
+  async updateComentario(comentarioId: string, autorId: string, dto: UpdateComentarioDto): Promise<ComentarioResponseDto> {
+    const comentario = await this.comentarioRepository.findById(comentarioId);
+    if (!comentario) {
+      throw new NotFoundException('Comentário não encontrado');
+    }
+
+    if (comentario.autorId !== autorId) {
+      throw new ForbiddenException('Você não tem permissão para editar este comentário');
+    }
+
+    const updatedComentario = await this.comentarioRepository.update(comentarioId, dto);
+    return this.mapComentarioToResponseDto(new ComentarioEntity(updatedComentario));
+  }
+
+  async deleteComentario(comentarioId: string, autorId: string): Promise<void> {
+    const comentario = await this.comentarioRepository.findById(comentarioId);
+    if (!comentario) {
+      throw new NotFoundException('Comentário não encontrado');
+    }
+
+    if (comentario.autorId !== autorId) {
+      throw new ForbiddenException('Você não tem permissão para excluir este comentário');
+    }
+
+    await this.comentarioRepository.delete(comentarioId);
+  }
+
+  // --- Mappers ---
+
   private mapToResponseDto(artigo: ArtigoEntity): ArtigoResponseDto {
     return {
       artigoId: artigo.artigoId,
       titulo: artigo.titulo,
       conteudo: artigo.conteudo,
       resumo: artigo.resumo || undefined,
-      autor: artigo.autor,
+      autor: {
+        userId: artigo.autor.userId,
+        name: artigo.autor.name,
+        avatarUrl: artigo.autor.avatarUrl || undefined,
+      },
       categoria: artigo.categoria,
       status: artigo.status,
       dataPublicacao: artigo.dataPublicacao,
       imagemCapa: artigo.imagemCapa,
       visualizacoes: artigo.visualizacoes,
       curtidas: artigo.curtidas,
-      comentarios: artigo.comentarios,
+      comentarios: artigo.comentarios.map(c => this.mapComentarioToResponseDto(c)),
       destaque: artigo.destaque,
       tags: artigo.tags,
       createdAt: artigo.createdAt,
       updatedAt: artigo.updatedAt,
+    };
+  }
+
+  private mapComentarioToResponseDto(comentario: ComentarioEntity): ComentarioResponseDto {
+    return {
+      comentarioId: comentario.comentarioId,
+      conteudo: comentario.conteudo,
+      createdAt: comentario.createdAt,
+      updatedAt: comentario.updatedAt,
+      artigoId: comentario.artigoId,
+      autor: {
+        userId: comentario.autor.userId,
+        name: comentario.autor.name,
+        avatarUrl: comentario.autor.avatarUrl || undefined,
+      },
     };
   }
 }

@@ -1,6 +1,6 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { StatusArtigo } from '@prisma/client';
+import { StatusArtigo, CategoriaArtigo } from '@prisma/client';
 
 export class CreateArtigoDto {
   @ApiProperty({
@@ -40,20 +40,21 @@ export class CreateArtigoDto {
   resumo?: string;
 
   @ApiProperty({
-    description: 'Autor do artigo',
-    example: 'Dr. João Silva'
+    description: 'ID do autor do artigo',
+    example: 'user-uuid-goes-here'
   })
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
-  autor: string;
+  autorId: string;
 
   @ApiProperty({
     description: 'Categoria do artigo',
-    example: 'Saúde'
+    enum: CategoriaArtigo,
+    example: CategoriaArtigo.SAUDE
   })
-  @IsString()
+  @IsEnum(CategoriaArtigo)
   @IsNotEmpty()
-  categoria: string;
+  categoria: CategoriaArtigo;
 
   @ApiPropertyOptional({
     description: 'Status do artigo',

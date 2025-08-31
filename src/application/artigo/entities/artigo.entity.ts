@@ -1,18 +1,21 @@
-import { StatusArtigo } from '@prisma/client';
+import { StatusArtigo, CategoriaArtigo } from '@prisma/client';
+import { ComentarioEntity } from './comentario.entity';
+import { UserEntity } from './user.entity';
 
 export class ArtigoEntity {
   artigoId: string;
   titulo: string;
   conteudo: any;
   resumo?: string | null;
-  autor: string;
-  categoria: string;
+  autorId: string;
+  autor: UserEntity;
+  categoria: CategoriaArtigo;
   status: StatusArtigo;
   dataPublicacao: Date;
   imagemCapa: string;
   visualizacoes: number;
   curtidas: number;
-  comentarios: number;
+  comentarios: ComentarioEntity[];
   destaque: boolean;
   tags: string[];
   createdAt: Date;
@@ -21,46 +24,32 @@ export class ArtigoEntity {
 
   constructor(data: Partial<ArtigoEntity>) {
     Object.assign(this, data);
+    if (data.autor) {
+      this.autor = new UserEntity(data.autor);
+    }
+    if (data.comentarios) {
+      this.comentarios = data.comentarios.map(c => new ComentarioEntity(c));
+    }
   }
 
-  // Método para incrementar visualizações
   incrementarVisualizacoes(): void {
     this.visualizacoes += 1;
   }
 
-  // Método para incrementar curtidas
   incrementarCurtidas(): void {
     this.curtidas += 1;
   }
 
-  // Método para decrementar curtidas
   decrementarCurtidas(): void {
     if (this.curtidas > 0) {
       this.curtidas -= 1;
     }
   }
 
-  // Método para verificar se está publicado
   isPublicado(): boolean {
     return this.status === StatusArtigo.PUBLICADO;
   }
 
-  // Método para verificar se é destaque
-  isDestaque(): boolean {
-    return this.destaque;
-  }
-
-  // Método para soft delete
-  softDelete(): void {
-    this.deletedAt = new Date();
-  }
-
-  // Método para restaurar
-  restore(): void {
-    this.deletedAt = null;
-  }
-
-  // Método para verificar se foi deletado
   isDeleted(): boolean {
     return this.deletedAt !== null;
   }

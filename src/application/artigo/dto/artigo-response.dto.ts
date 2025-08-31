@@ -1,113 +1,64 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { StatusArtigo } from '@prisma/client';
+import { StatusArtigo, CategoriaArtigo } from '@prisma/client';
+import { ComentarioResponseDto } from './comentario-response.dto';
+
+class ArtigoAutorResponseDto {
+  @ApiProperty()
+  userId: string;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiPropertyOptional()
+  avatarUrl?: string;
+}
 
 export class ArtigoResponseDto {
-  @ApiProperty({
-    description: 'ID único do artigo',
-    example: 'clx1234567890abcdef'
-  })
+  @ApiProperty({ description: 'ID único do artigo' })
   artigoId: string;
 
-  @ApiProperty({
-    description: 'Título do artigo',
-    example: 'Como cuidar do seu cão no verão'
-  })
+  @ApiProperty({ description: 'Título do artigo' })
   titulo: string;
 
-  @ApiProperty({
-    description: 'Conteúdo do artigo em formato JSON (TipTap)',
-    example: {
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: [
-            {
-              type: 'text',
-              text: 'Este é o conteúdo do artigo...'
-            }
-          ]
-        }
-      ]
-    }
-  })
+  @ApiProperty({ description: 'Conteúdo do artigo em formato JSON (TipTap)' })
   conteudo: any;
 
-  @ApiPropertyOptional({
-    description: 'Resumo do artigo',
-    example: 'Dicas importantes para manter seu cão saudável durante o verão'
-  })
+  @ApiPropertyOptional({ description: 'Resumo do artigo' })
   resumo?: string;
 
-  @ApiProperty({
-    description: 'Autor do artigo',
-    example: 'Dr. João Silva'
-  })
-  autor: string;
+  @ApiProperty({ description: 'Autor do artigo', type: ArtigoAutorResponseDto })
+  autor: ArtigoAutorResponseDto;
 
-  @ApiProperty({
-    description: 'Categoria do artigo',
-    example: 'Saúde'
-  })
-  categoria: string;
+  @ApiProperty({ description: 'Categoria do artigo', enum: CategoriaArtigo })
+  categoria: CategoriaArtigo;
 
-  @ApiProperty({
-    description: 'Status do artigo',
-    enum: StatusArtigo
-  })
+  @ApiProperty({ description: 'Status do artigo', enum: StatusArtigo })
   status: StatusArtigo;
 
-  @ApiProperty({
-    description: 'Data de publicação do artigo',
-    example: '2024-01-15T10:00:00Z'
-  })
+  @ApiProperty({ description: 'Data de publicação do artigo' })
   dataPublicacao: Date;
 
-  @ApiProperty({
-    description: 'URL da imagem de capa',
-    example: 'https://example.com/images/capa-artigo.jpg'
-  })
+  @ApiProperty({ description: 'URL da imagem de capa' })
   imagemCapa: string;
 
-  @ApiProperty({
-    description: 'Número de visualizações',
-    example: 150
-  })
+  @ApiProperty({ description: 'Número de visualizações' })
   visualizacoes: number;
 
-  @ApiProperty({
-    description: 'Número de curtidas',
-    example: 25
-  })
+  @ApiProperty({ description: 'Número de curtidas' })
   curtidas: number;
 
-  @ApiProperty({
-    description: 'Número de comentários',
-    example: 8
-  })
-  comentarios: number;
+  @ApiProperty({ description: 'Comentários do artigo', type: [ComentarioResponseDto] })
+  comentarios: ComentarioResponseDto[];
 
-  @ApiProperty({
-    description: 'Se o artigo é destaque',
-    example: false
-  })
+  @ApiProperty({ description: 'Se o artigo é destaque' })
   destaque: boolean;
 
-  @ApiProperty({
-    description: 'Tags do artigo',
-    example: ['saúde', 'verão', 'cuidados']
-  })
+  @ApiProperty({ description: 'Tags do artigo' })
   tags: string[];
 
-  @ApiProperty({
-    description: 'Data de criação',
-    example: '2024-01-15T08:00:00Z'
-  })
+  @ApiProperty({ description: 'Data de criação' })
   createdAt: Date;
 
-  @ApiProperty({
-    description: 'Data de última atualização',
-    example: '2024-01-15T10:30:00Z'
-  })
+  @ApiProperty({ description: 'Data de última atualização' })
   updatedAt: Date;
 }
