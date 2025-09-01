@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { PrismaService } from '../../../core/config/prisma.service';
 import { IAuthRepository } from './auth.repository.interface';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class AuthRepository implements IAuthRepository {
+  private readonly logger = new Logger(AuthRepository.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async createUser(
@@ -42,40 +45,11 @@ export class AuthRepository implements IAuthRepository {
 
   async updateUserTokens(
     userId: string,
-    data: {
-      refreshToken?: string | null;
-      tokenVersion?: number;
-      passwordResetToken?: string | null;
-      passwordResetExpires?: Date | null;
-      activationToken?: string | null;
-      activationTokenExpires?: Date | null;
-    },
-  ): Promise<User> {
-    const updateData: {
-      refreshToken?: string | null;
-      tokenVersion?: number;
-      passwordResetToken?: string | null;
-      passwordResetExpires?: Date | null;
-      activationToken?: string | null;
-      activationTokenExpires?: Date | null;
-    } = {};
-
-    if (data.refreshToken !== undefined)
-      updateData.refreshToken = data.refreshToken;
-    if (data.tokenVersion !== undefined)
-      updateData.tokenVersion = data.tokenVersion;
-    if (data.passwordResetToken !== undefined)
-      updateData.passwordResetToken = data.passwordResetToken;
-    if (data.passwordResetExpires !== undefined)
-      updateData.passwordResetExpires = data.passwordResetExpires;
-    if (data.activationToken !== undefined)
-      updateData.activationToken = data.activationToken;
-    if (data.activationTokenExpires !== undefined)
-      updateData.activationTokenExpires = data.activationTokenExpires;
-
+    data: Partial<Pick<User, 'refreshToken' | 'tokenVersion' | 'passwordResetToken' | 'passwordResetExpires' | 'activationToken' | 'activationTokenExpires'>
+  >): Promise<User> {
     return this.prisma.user.update({
       where: { userId },
-      data: updateData,
+      data,
     });
   }
 
@@ -106,13 +80,24 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
-  async incrementTokenVersion(userId: string): Promise<User> {
-    return this.prisma.user.update({
-      where: { userId },
-      data: {
-        tokenVersion: { increment: 1 },
-        refreshToken: null,
-      },
-    });
+  async incrementTokenVersion(userId: string): Promise<User | null> {
+    try {
+      return await this.prisma.user.update({
+        where: { userId },
+        data: {
+          tokenVersion: { increment: 1 },
+          refreshToken: null, // Invalida o refresh token ao fazer logout
+        },
+      });
+    } catch (error) {
+      // Se o erro for "Record to update not found", o usuário já foi deletado.
+      // Isso não é um erro no contexto do logout, então retornamos null.
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        this.logger.warn(`Tentativa de logout para usuário não existente: ${userId}`);
+        return null;
+      }
+      // Para todos os outros erros, nós os lançamos para serem tratados pelo filtro global.
+      throw error;
+    }
   }
 }

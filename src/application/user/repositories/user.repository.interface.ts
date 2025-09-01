@@ -4,10 +4,11 @@ import { CreateUserDto } from '../../auth/dto/create-auth.dto';
 export interface IUserRepository {
   create(data: CreateUserDto): Promise<User>;
   findById(id: string): Promise<User | null>;
-  findByEmail(email: string, options?: { includePassword?: boolean }): Promise<User | null>;
-  findByUsername(userName: string, options?: { includePassword?: boolean }): Promise<User | null>;
-  findByCpf(cpf: string, options?: { includePassword?: boolean }): Promise<User | null>;
-  findByIdentification(identification: string, options?: { includePassword?: boolean }): Promise<User | null>;
+  findByEmail(email: string): Promise<User | null>;
+  findByUsername(userName: string): Promise<User | null>;
+  findByCpf(cpf: string): Promise<User | null>;
+  findByIdentification(identification: string): Promise<User | null>;
+  findForAuthByIdentification(identification: string): Promise<User | null>;
   findByPasswordResetToken(token: string): Promise<User | null>;
   findAll(): Promise<User[]>;
   findAllPaged(params: {
@@ -23,7 +24,11 @@ export interface IUserRepository {
   unblockUser(id: string): Promise<User>;
   restoreUser(id: string): Promise<User>;
   remove(id: string): Promise<User>;
-  checkUserExists(data: { userName?: string; email?: string; cpf?: string }): Promise<{
+  checkUserExists(data: {
+    userName?: string;
+    email?: string;
+    cpf?: string;
+  }): Promise<{
     userNameExists: boolean;
     emailExists: boolean;
     cpfExists: boolean;

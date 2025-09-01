@@ -33,43 +33,51 @@ export class UserRepository implements IUserRepository {
     });
   }
 
-  async findByEmail(email: string, options?: { includePassword?: boolean }): Promise<User | null> {
+  async findByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { email },
       include: this._include,
-      ...(options?.includePassword && { includePassword: true }),
-    } as any);
+    });
   }
 
-  async findByUsername(userName: string, options?: { includePassword?: boolean }): Promise<User | null> {
+  async findByUsername(userName: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: { userName },
       include: this._include,
-      ...(options?.includePassword && { includePassword: true }),
-    } as any);
+    });
   }
 
-  async findByCpf(cpf: string, options?: { includePassword?: boolean }): Promise<User | null> {
+  async findByCpf(cpf: string): Promise<User | null> {
     if (!cpf) return null;
     return this.prisma.user.findUnique({
       where: { cpf },
       include: this._include,
-      ...(options?.includePassword && { includePassword: true }),
-    } as any);
+    });
   }
 
-  async findByIdentification(identification: string, options?: { includePassword?: boolean }): Promise<User | null> {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (emailRegex.test(identification)) {
-      return this.findByEmail(identification, options);
+  async findByIdentification(identification: string): Promise<User | null> {
+    const user = await this.findForAuthByIdentification(identification);
+    if (user) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user;
+      return result as User;
+    }
+    return null;
+  }
+
+  async findForAuthByIdentification(identification: string): Promise<User | null> {
+    const isEmail = identification.includes('@');
+    const isCpf = /^\d{11}$/.test(identification.replace(/\D/g, ''));
+
+    if (isEmail) {
+      return this.prisma.user.findUnique({ where: { email: identification } });
     }
 
-    const normalizedCpf = identification.replace(/\D/g, '');
-    if (normalizedCpf.length === 11) {
-      return this.findByCpf(normalizedCpf, options);
+    if (isCpf) {
+      return this.prisma.user.findUnique({ where: { cpf: identification.replace(/\D/g, '') } });
     }
 
-    return this.findByUsername(identification, options);
+    return this.prisma.user.findFirst({ where: { userName: identification } });
   }
 
   async findByPasswordResetToken(token: string): Promise<User | null> {

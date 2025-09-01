@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
@@ -9,11 +9,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ActivateAccountDto } from './dto/activate-account.dto';
 import { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
 import * as crypto from 'crypto';
-import { User, Endereco } from '@prisma/client';
-
-type UserWithEnderecos = User & {
-  enderecos?: Endereco[];
-};
+import { User, Role } from '@prisma/client';
 import { MailService } from '../../core/mail/mail.service';
 import { ValidationUtils } from '../../core/utils/validation.utils';
 import {
@@ -27,8 +23,30 @@ import {
   ConflictException,
 } from '../../core/exceptions/custom-exceptions';
 
+// --- Interfaces de Payload para Tokens ---
+
+/**
+ * Define a estrutura de dados dentro do Access Token.
+ * Usar uma interface garante a segurança de tipos e auto-documenta o código.
+ */
+interface AccessTokenPayload {
+  sub: string; // Subject (padrão JWT para o ID do usuário)
+  email: string; // Email é um identificador único e mais estável que o username.
+  role: Role;
+}
+
+/**
+ * Define a estrutura de dados dentro do Refresh Token.
+ */
+interface RefreshTokenPayload {
+  sub: string; // Subject (User ID)
+  tv: number; // Token Version: usado para invalidar todos os tokens de um usuário de uma vez.
+}
+
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
@@ -38,59 +56,63 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  private getActivationTokenExpiration(): Date {
-    const hoursToExpire = Number(
-      this.configService.get('ACTIVATION_TOKEN_EXPIRY_HOURS', '24'),
-    );
-    return new Date(Date.now() + hoursToExpire * 60 * 60 * 1000);
+  // --- Métodos de Configuração Segura ---
+
+  private getRefreshTokenSecret(): string {
+    const secret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    if (!secret) {
+      this.logger.warn('JWT_REFRESH_SECRET não configurado. Usando valor padrão inseguro.');
+      return 'default-refresh-secret';
+    }
+    return secret;
   }
 
   private getRefreshTokenExpiry(): string {
-    return (
-      this.configService.get<string>('JWT_REFRESH_TTL') ||
-      this.configService.get<string>('REFRESH_TOKEN_TTL') ||
-      '7d'
-    );
+    return this.configService.get<string>('JWT_REFRESH_TTL', '7d');
+  }
+
+  // --- Geração e Manipulação de Tokens ---
+
+  private hashToken(token: string): string {
+    return crypto.createHash('sha256').update(token).digest('hex');
   }
 
   private async signAccessToken(user: User): Promise<string> {
-    const payload = {
+    const payload: AccessTokenPayload = {
       sub: user.userId,
-      username: user.userName,
-      tokenVersion: user.tokenVersion,
+      email: user.email, // Corrigido: Usando email em vez de userName.
+      role: user.role,
     };
+    // A configuração do Access Token (segredo e expiração) é gerenciada
+    // centralmente pelo JwtModule, conforme definido no AuthModule.
     return this.jwtService.signAsync(payload);
   }
 
   private async signRefreshToken(user: User): Promise<string> {
-    const payload = {
+    const payload: RefreshTokenPayload = {
       sub: user.userId,
       tv: user.tokenVersion,
-      type: 'refresh',
     };
+    // Para o Refresh Token, usamos configurações específicas e separadas.
     return this.jwtService.signAsync(payload, {
+      secret: this.getRefreshTokenSecret(),
       expiresIn: this.getRefreshTokenExpiry(),
-      secret:
-        this.configService.get<string>('JWT_REFRESH_SECRET') ||
-        process.env.JWT_SECRET ||
-        'default-secret',
     });
   }
 
-  async issueTokens(user: UserWithEnderecos): Promise<AuthResponseDto> {
-    const access_token = await this.signAccessToken(user);
-    const refresh_token = await this.signRefreshToken(user);
+  async issueTokens(user: User): Promise<AuthResponseDto> {
+    const [access_token, refresh_token] = await Promise.all([
+      this.signAccessToken(user),
+      this.signRefreshToken(user),
+    ]);
 
+    const hashedRefreshToken = this.hashToken(refresh_token);
     await this.userService.systemUpdate(user.userId, {
-      refreshToken: refresh_token,
+      refreshToken: hashedRefreshToken,
     });
 
-    // Buscar apenas o endereço principal do usuário
-    const enderecoPrincipal =
-      user.enderecos?.find(
-        (endereco) => endereco.principal && endereco.ativo,
-      ) || null;
-
+    // O endereço do usuário não é mais retornado no payload de login para
+    // aumentar a segurança e diminuir o tamanho da resposta.
     const responseUser: AuthUserDto = {
       userId: user.userId,
       userName: user.userName,
@@ -98,22 +120,45 @@ export class AuthService {
       email: user.email,
       role: user.role,
       avatarUrl: user.avatarUrl,
-      endereco: enderecoPrincipal ? {
-        logradouro: enderecoPrincipal.logradouro,
-        numero: enderecoPrincipal.numero,
-        complemento: enderecoPrincipal.complemento,
-        bairro: enderecoPrincipal.bairro,
-        cidade: enderecoPrincipal.cidade,
-        estado: enderecoPrincipal.estado,
-        cep: enderecoPrincipal.cep,
-      } : null,
     };
 
-    return {
-      access_token,
-      refresh_token,
-      user: responseUser,
-    };
+    return { access_token, refresh_token, user: responseUser };
+  }
+
+  // --- Lógica de Autenticação ---
+
+  async signIn(
+    identification: string,
+    pass: string,
+    loginDetails?: { ip: string; userAgent: string },
+  ): Promise<AuthResponseDto> {
+    const user = await this.userService.findUserForAuth(identification);
+    if (!user || !user.password || user.deletedAt) {
+      throw new UnauthorizedException('Credenciais inválidas.');
+    }
+
+    const isMatch = await bcrypt.compare(pass, user.password);
+    if (!isMatch) {
+      await this.handleFailedLogin(user);
+      throw new UnauthorizedException('Credenciais inválidas.');
+    }
+
+    if (!user.active) {
+      throw new UnauthorizedException('Conta inativa. Verifique seu e-mail para ativar.');
+    }
+
+    if (user.blocked) {
+      if (user.blockedUntil && user.blockedUntil > new Date()) {
+        throw new UnauthorizedException('Conta temporariamente bloqueada.');
+      }
+    }
+
+    if (loginDetails && this.isSuspiciousLogin(user)) {
+      await this.mailService.sendSuspiciousLoginAlert(user, { ...loginDetails, timestamp: new Date() });
+    }
+
+    await this.handleSuccessfulLogin(user);
+    return this.issueTokens(user);
   }
 
   async register(
@@ -127,39 +172,37 @@ export class AuthService {
       createUserDto.cpf = normalizedCpf;
     }
 
-    const existingUser = await this.userService.checkUserExists({
+    const { userNameExists, emailExists, cpfExists } = await this.userService.checkUserExists({
       userName: createUserDto.userName,
       email: createUserDto.email,
       cpf: createUserDto.cpf,
     });
 
-    const errors: string[] = [];
-    if (existingUser.userNameExists) errors.push('Username já está em uso');
-    if (existingUser.emailExists) errors.push('Email já está cadastrado');
-    if (existingUser.cpfExists) errors.push('CPF já está cadastrado');
-
-    if (errors.length > 0) {
+    if (userNameExists || emailExists || cpfExists) {
+      const errors: string[] = [];
+      if (userNameExists) errors.push('Username');
+      if (emailExists) errors.push('Email');
+      if (cpfExists) errors.push('CPF');
       throw new ConflictException(`Dados já existem: ${errors.join(', ')}`);
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const activationToken = crypto.randomBytes(32).toString('hex');
-    const activationTokenExpires = this.getActivationTokenExpiration();
 
-    const result = await this.authRepository.createUser({
-      // Campos obrigatórios
+    const userToCreate = {
+      // Campos obrigatórios do DTO
       name: createUserDto.name,
       userName: createUserDto.userName,
       email: createUserDto.email,
-      password: hashedPassword,
-      activationToken,
-      activationTokenExpires,
-      // Campos opcionais (garantir que sejam null se não fornecidos)
+      // Campos opcionais do DTO (garantir que sejam null se não fornecidos)
       cpf: createUserDto.cpf || null,
       telefone: createUserDto.telefone || null,
       avatarUrl: createUserDto.avatarUrl || null,
-      role: createUserDto.role || 'USUARIO',
-      // Campos com valores padrão no momento da criação
+      role: createUserDto.role || Role.USUARIO,
+      // Campos gerenciados pelo sistema
+      password: hashedPassword,
+      activationToken,
+      activationTokenExpires: new Date(Date.now() + 24 * 3600 * 1000),
       active: false,
       blocked: false,
       loginAttempts: 0,
@@ -171,31 +214,29 @@ export class AuthService {
       passwordResetToken: null,
       passwordResetExpires: null,
       deletedAt: null,
-    });
+    };
 
-    await this.mailService.sendActivationEmail(result, activationToken);
+    const newUser = await this.authRepository.createUser(userToCreate);
+    await this.mailService.sendActivationEmail(newUser, activationToken);
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, activationToken: token, ...user } = result;
+    const { password, activationToken: token, ...user } = newUser;
     return {
       ...user,
       message: 'Usuário registrado. Verifique seu email para ativar a conta.',
     };
   }
 
+  // --- Tratamento de Falhas e Sucesso de Login ---
+
   private async handleFailedLogin(user: User): Promise<void> {
     const maxAttempts = 5;
     const lockoutDuration = 15 * 60 * 1000;
-    const newAttempts = user.loginAttempts + 1;
+    const newAttempts = (user.loginAttempts || 0) + 1;
 
     const updateData: Partial<User> = {
       loginAttempts: newAttempts,
       lastFailedLogin: new Date(),
     };
-
-    if (newAttempts >= 3) {
-      await this.mailService.sendMultipleLoginAttemptsAlert(user, newAttempts);
-    }
 
     if (newAttempts >= maxAttempts) {
       updateData.blocked = true;
@@ -211,115 +252,71 @@ export class AuthService {
     const updateData: Partial<User> = {
       lastLogin: new Date(),
       loginAttempts: 0,
+      blocked: false,
+      blockedUntil: null,
     };
-
-    if (user.blocked && user.blockedUntil && user.blockedUntil <= new Date()) {
-      updateData.blocked = false;
-      updateData.blockedUntil = null;
-    }
 
     await this.userService.systemUpdate(user.userId, updateData);
   }
 
-  async signIn(
-    identification: string,
-    pass: string,
-    loginDetails?: { ip: string; userAgent: string },
-  ): Promise<AuthResponseDto> {
-    const user = await this.userService.findUserEntityByIdentification(identification, { includePassword: true });
-    if (!user || user.deletedAt) {
-      throw new UnauthorizedException('Credenciais inválidas.');
-    }
-
-    if (!user.active) {
-      throw new UnauthorizedException('Conta inativa.');
-    }
-
-    if (user.blocked) {
-      if (user.blockedUntil && user.blockedUntil <= new Date()) {
-        await this.userService.systemUpdate(user.userId, {
-          blocked: false,
-          blockedUntil: null,
-          loginAttempts: 0,
-        });
-      } else {
-        throw new UnauthorizedException('Conta temporariamente bloqueada.');
-      }
-    }
-
-    if (!user.password) {
-      throw new UnauthorizedException('Credenciais inválidas.');
-    }
-
-    const isMatch = await bcrypt.compare(pass, user.password);
-    if (!isMatch) {
-      await this.handleFailedLogin(user);
-      throw new UnauthorizedException('Credenciais inválidas.');
-    }
-
-    if (loginDetails && this.isSuspiciousLogin(user)) {
-      await this.mailService.sendSuspiciousLoginAlert(user, { ...loginDetails, timestamp: new Date() });
-    }
-
-    await this.handleSuccessfulLogin(user);
-    return this.issueTokens(user);
-  }
-
   private isSuspiciousLogin(user: User): boolean {
     if (!user.lastLogin) return false;
-    const daysSinceLastLogin = Math.floor((Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24));
+    const daysSinceLastLogin = (Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24);
     return daysSinceLastLogin > 30;
   }
 
+  // --- Outros Métodos de Autenticação ---
+
   async refreshToken(token: string): Promise<AuthResponseDto> {
     try {
-      const payload = await this.jwtService.verifyAsync<{ sub: string; tv: number; type: string; }>(token, {
-        secret: this.configService.get<string>('JWT_REFRESH_SECRET') || 'default-secret',
+      const payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(token, {
+        secret: this.getRefreshTokenSecret(),
       });
 
-      if (payload.type !== 'refresh') {
-        throw new UnauthorizedException('Token inválido');
+      const user = await this.userService.findUserForAuth(payload.sub);
+
+      if (!user || !user.refreshToken) {
+        throw new UnauthorizedException('Acesso negado.');
       }
 
-      const user = await this.userService.findUserEntityById(payload.sub);
-      if (!user) throw new UnauthorizedException('Usuário não encontrado');
-      if (user.tokenVersion !== payload.tv) {
-        throw new UnauthorizedException('Refresh token expirado/invalidado');
+      const hashedToken = this.hashToken(token);
+      if (hashedToken !== user.refreshToken) {
+        throw new UnauthorizedException('Acesso negado.');
       }
+
+      if (user.tokenVersion !== payload.tv) {
+        throw new UnauthorizedException('Acesso negado.');
+      }
+
       return this.issueTokens(user);
-    } catch {
+    } catch (error) {
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
   }
 
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string; token: string }> {
-    const user = await this.userService.findUserEntityByIdentification(forgotPasswordDto.email);
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
+    const user = await this.userService.findUserForAuth(forgotPasswordDto.email);
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
+      return { message: 'Se um usuário com este e-mail existir, um link de redefinição de senha será enviado.' };
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const passwordResetExpires = new Date(Date.now() + 3600000);
+    const passwordResetToken = this.hashToken(resetToken);
 
     await this.userService.systemUpdate(user.userId, {
       passwordResetToken,
-      passwordResetExpires,
+      passwordResetExpires: new Date(Date.now() + 3600000),
     });
 
-    return {
-      message: 'Token de redefinição de senha gerado. Verifique seu e-mail.',
-      token: resetToken,
-    };
+    await this.mailService.sendPasswordResetEmail(user.email, user.name, resetToken);
+
+    return { message: 'Se um usuário com este e-mail existir, um link de redefinição de senha será enviado.' };
   }
 
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
-    const { token, password, passwordConfirmation } = resetPasswordDto;
-    if (password !== passwordConfirmation) {
-      throw new BadRequestException('As senhas não conferem.');
-    }
+    const { token, password } = resetPasswordDto;
+    const passwordResetToken = this.hashToken(token);
 
-    const passwordResetToken = crypto.createHash('sha256').update(token).digest('hex');
     const user = await this.authRepository.findUserByPasswordResetToken(passwordResetToken);
     if (!user) {
       throw new UnauthorizedException('Token inválido ou expirado.');
@@ -331,8 +328,7 @@ export class AuthService {
   }
 
   async activateAccount(activateDto: ActivateAccountDto): Promise<{ message: string }> {
-    const { token } = activateDto;
-    const user = await this.authRepository.findUserByActivationToken(token);
+    const user = await this.authRepository.findUserByActivationToken(activateDto.token);
     if (!user) {
       throw new BadRequestException('Token de ativação inválido ou expirado');
     }
@@ -343,51 +339,32 @@ export class AuthService {
   async resendActivationEmail(email: string): Promise<{ message: string }> {
     const user = await this.authRepository.findUserByEmail(email);
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      return { message: 'Se um usuário com este e-mail existir e não estiver ativo, um novo link de ativação será enviado.' };
     }
     if (user.active) {
       throw new BadRequestException('Esta conta já está ativada');
     }
 
     const activationToken = crypto.randomBytes(32).toString('hex');
-    const activationTokenExpires = this.getActivationTokenExpiration();
-
     await this.authRepository.updateUserTokens(user.userId, {
       activationToken,
-      activationTokenExpires,
+      activationTokenExpires: new Date(Date.now() + 24 * 3600 * 1000),
     });
 
-    await this.mailService.sendActivationEmail(
-      { ...user, activationToken, activationTokenExpires },
-      activationToken,
-    );
-    return { message: 'Email de ativação reenviado com sucesso' };
+    await this.mailService.sendActivationEmail({ ...user, activationToken }, activationToken);
+    return { message: 'Se um usuário com este e-mail existir e não estiver ativo, um novo link de ativação será enviado.' };
   }
 
   async logout(userId: string): Promise<void> {
     await this.authRepository.incrementTokenVersion(userId);
   }
 
-  async validateUser(identifier: string, password: string) {
-    const user = await this.userService.findUserEntityByIdentification(
-      identifier,
-      { includePassword: true },
-    );
-    if (user && user.deletedAt === null) {
-      if (!user.active) {
-        await this.mailService.sendUserConfirmation(user);
-        throw new UnauthorizedException('A conta do usuário não está ativada.');
-      }
-      if (!user.password) {
-        throw new UnauthorizedException('Senha não definida.');
-      }
-      const isValid = await bcrypt.compare(password, user.password);
-      if (isValid) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...result } = user;
-        return result;
-      }
+  async validateUser(identifier: string, pass: string): Promise<Omit<User, 'password'> | null> {
+    const user = await this.userService.findUserForAuth(identifier);
+    if (user && user.password && (await bcrypt.compare(pass, user.password))) {
+      const { password, ...result } = user;
+      return result;
     }
-    throw new UnauthorizedException('Identificação ou senha incorretos.');
+    return null;
   }
 }

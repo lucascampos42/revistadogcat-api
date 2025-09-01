@@ -168,8 +168,8 @@ export class UserService {
     return this.userRepository.findById(id);
   }
 
-  async findUserEntityByIdentification(identification: string, options?: { includePassword?: boolean }): Promise<User | null> {
-    return this.userRepository.findByIdentification(identification, options);
+  async findUserForAuth(identification: string): Promise<User | null> {
+    return this.userRepository.findForAuthByIdentification(identification);
   }
 
   async checkUserExists(data: { userName?: string; email?: string; cpf?: string; }) {

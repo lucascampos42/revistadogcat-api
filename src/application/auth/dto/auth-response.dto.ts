@@ -1,28 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-// Adicionando um DTO para o endereço para melhor documentação
-export class EnderecoDto {
-  @ApiProperty()
-  logradouro: string;
-
-  @ApiProperty()
-  numero: string;
-
-  @ApiProperty({ nullable: true })
-  complemento?: string | null;
-
-  @ApiProperty()
-  bairro: string;
-
-  @ApiProperty()
-  cidade: string;
-
-  @ApiProperty()
-  estado: string;
-
-  @ApiProperty()
-  cep: string;
-}
+import { Role } from '@prisma/client';
 
 export class AuthUserDto {
   @ApiProperty({ description: 'ID único do usuário' })
@@ -37,18 +14,11 @@ export class AuthUserDto {
   @ApiProperty({ description: 'Email do usuário' })
   email: string;
 
-  @ApiProperty({ description: 'Role/função do usuário no sistema' })
-  role: string;
+  @ApiProperty({ description: 'Role/função do usuário no sistema', enum: Role })
+  role: Role;
 
   @ApiProperty({ description: 'URL do avatar do usuário', nullable: true })
   avatarUrl: string | null;
-
-  @ApiProperty({ 
-    description: 'Endereço do usuário', 
-    type: EnderecoDto, 
-    nullable: true 
-  })
-  endereco?: EnderecoDto | null;
 }
 
 export class AuthResponseDto {
