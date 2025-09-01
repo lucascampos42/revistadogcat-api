@@ -10,8 +10,6 @@ Esta documentação descreve os endpoints para autenticação de usuários.
 
 ### Objeto User (Resposta Pública)
 
-Este é o objeto de usuário retornado na maioria das respostas da API.
-
 | Campo | Tipo | Descrição |
 | --- | --- | --- |
 | `userId` | `string` | Identificador único do usuário. |
@@ -43,8 +41,8 @@ Este é o objeto de usuário retornado na maioria das respostas da API.
 
 - **Endpoint:** `POST /auth/register`
 - **Descrição:** Cria uma nova conta de usuário. Um e-mail de ativação é enviado.
-- **Corpo da Requisição:** `CreateUserDto` (contém `name`, `userName`, `email`, `password`, e campos opcionais como `cpf`, `telefone`).
-- **Resposta (201 Created):** Objeto do usuário criado (sem dados sensíveis) e uma mensagem de sucesso.
+- **Corpo da Requisição:** `CreateUserDto`.
+- **Resposta (201 Created):** Mensagem de sucesso indicando que o e-mail foi enviado.
 
 ### 2. Ativar Conta
 
@@ -53,26 +51,25 @@ Este é o objeto de usuário retornado na maioria das respostas da API.
 - **Corpo da Requisição:** `{ "token": "activation-token-from-email" }`
 - **Resposta (200 OK):** Mensagem de sucesso.
 
-### 3. Login
+### 3. Reenviar Email de Ativação
+
+- **Endpoint:** `POST /auth/resend-activation`
+- **Descrição:** Reenvia o e-mail com o link de ativação para um usuário que ainda não ativou a conta.
+- **Corpo da Requisição:** `{ "email": "user@email.com" }`
+- **Resposta (200 OK):** Mensagem de sucesso.
+
+### 4. Login
 
 - **Endpoint:** `POST /auth/login`
-- **Descrição:** Autentica um usuário e retorna um par de tokens (acesso e refresh).
+- **Descrição:** Autentica um usuário e retorna um token de acesso e os dados do usuário.
 - **Corpo da Requisição:** `{ "identification": "user@email.com", "password": "user_password" }`
 - **Resposta (200 OK):**
   ```json
   {
     "access_token": "...",
-    "refresh_token": "...",
     "user": { ... } // Objeto User
   }
   ```
-
-### 4. Renovar Token de Acesso
-
-- **Endpoint:** `POST /auth/refresh`
-- **Descrição:** Gera um novo `access_token` usando um `refresh_token` válido.
-- **Corpo da Requisição:** `{ "refreshToken": "..." }`
-- **Resposta (200 OK):** Novo par de `access_token` e `refresh_token`.
 
 ### 5. Obter Perfil do Usuário Logado
 
@@ -85,7 +82,7 @@ Este é o objeto de usuário retornado na maioria das respostas da API.
 
 - **Endpoint:** `POST /auth/logout`
 - **Autenticação:** 🔒 Requer `access_token`.
-- **Descrição:** Invalida os tokens do usuário no servidor (incrementa `tokenVersion`).
+- **Descrição:** Invalida o token de acesso atual no servidor. O cliente também deve remover o token localmente.
 - **Resposta (200 OK):** Mensagem de sucesso.
 
 ### 7. Esqueci Minha Senha
@@ -111,13 +108,18 @@ Quando uma requisição a um endpoint protegido falha, a API retorna uma das seg
 | Mensagem | Causa Provável |
 | --- | --- |
 | `Token de acesso é obrigatório` | O header `Authorization` com o Bearer token não foi enviado. |
-| `Token de acesso expirado` | O `access_token` enviado ultrapassou seu tempo de vida (ex: 15 minutos). |
-| `Token de acesso inválido` | O token está malformado, com assinatura incorreta ou qualquer outro erro de validação. |
-| `Token de acesso revogado` | O token é válido, mas sua versão (`tokenVersion`) não corresponde à do usuário no banco, indicando que um logout ou troca de senha ocorreu. |
+| `Token de acesso expirado` | O `access_token` enviado ultrapassou seu tempo de vida. O usuário precisa fazer login novamente. |
+| `Token de acesso inválido` | O token está malformado ou com assinatura incorreta. |
+| `Token de acesso revogado` | O token é válido, mas o usuário fez logout ou trocou a senha. O usuário precisa fazer login novamente. |
 | `Usuário associado ao token não foi encontrado` | O usuário referenciado no token foi deletado do sistema. |
 
 ---
 
 ## Guia de Integração Frontend (Fluxo de Tokens)
 
-O fluxo recomendado permanece o mesmo: use o `access_token` para chamadas de API e o `refresh_token` para obter um novo `access_token` quando receber um erro `401 Unauthorized` com a mensagem `Token de acesso expirado`.
+Com a remoção do refresh token, o fluxo de autenticação foi simplificado:
+
+1.  **Login:** Após o login, armazene o `access_token` de forma segura (ex: em memória ou `localStorage`).
+2.  **Requisições:** Envie o `access_token` no cabeçalho `Authorization` de todas as requisições para endpoints protegidos (`Authorization: Bearer <token>`).
+3.  **Token Expirado:** Se uma requisição retornar um erro `401 Unauthorized`, a sessão do usuário expirou. Você deve limpar o token armazenado e redirecionar o usuário para a tela de login.
+4.  **Logout:** Ao fazer logout, chame o endpoint `POST /auth/logout` e remova o `access_token` do armazenamento local.

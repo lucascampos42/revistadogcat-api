@@ -23,24 +23,11 @@ import {
   ConflictException,
 } from '../../core/exceptions/custom-exceptions';
 
-// --- Interfaces de Payload para Tokens ---
-
-/**
- * Define a estrutura de dados dentro do Access Token.
- * Usar uma interface garante a segurança de tipos e auto-documenta o código.
- */
+// --- Interface de Payload para o Token ---
 interface AccessTokenPayload {
-  sub: string; // Subject (padrão JWT para o ID do usuário)
-  email: string; // Email é um identificador único e mais estável que o username.
+  sub: string;
+  email: string;
   role: Role;
-}
-
-/**
- * Define a estrutura de dados dentro do Refresh Token.
- */
-interface RefreshTokenPayload {
-  sub: string; // Subject (User ID)
-  tv: number; // Token Version: usado para invalidar todos os tokens de um usuário de uma vez.
 }
 
 @Injectable()
@@ -56,63 +43,20 @@ export class AuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  // --- Métodos de Configuração Segura ---
-
-  private getRefreshTokenSecret(): string {
-    const secret = this.configService.get<string>('JWT_REFRESH_SECRET');
-    if (!secret) {
-      this.logger.warn('JWT_REFRESH_SECRET não configurado. Usando valor padrão inseguro.');
-      return 'default-refresh-secret';
-    }
-    return secret;
-  }
-
-  private getRefreshTokenExpiry(): string {
-    return this.configService.get<string>('JWT_REFRESH_TTL', '7d');
-  }
-
-  // --- Geração e Manipulação de Tokens ---
-
-  private hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
-  }
+  // --- Geração de Token ---
 
   private async signAccessToken(user: User): Promise<string> {
     const payload: AccessTokenPayload = {
       sub: user.userId,
-      email: user.email, // Corrigido: Usando email em vez de userName.
+      email: user.email,
       role: user.role,
     };
-    // A configuração do Access Token (segredo e expiração) é gerenciada
-    // centralmente pelo JwtModule, conforme definido no AuthModule.
     return this.jwtService.signAsync(payload);
   }
 
-  private async signRefreshToken(user: User): Promise<string> {
-    const payload: RefreshTokenPayload = {
-      sub: user.userId,
-      tv: user.tokenVersion,
-    };
-    // Para o Refresh Token, usamos configurações específicas e separadas.
-    return this.jwtService.signAsync(payload, {
-      secret: this.getRefreshTokenSecret(),
-      expiresIn: this.getRefreshTokenExpiry(),
-    });
-  }
-
   async issueTokens(user: User): Promise<AuthResponseDto> {
-    const [access_token, refresh_token] = await Promise.all([
-      this.signAccessToken(user),
-      this.signRefreshToken(user),
-    ]);
+    const access_token = await this.signAccessToken(user);
 
-    const hashedRefreshToken = this.hashToken(refresh_token);
-    await this.userService.systemUpdate(user.userId, {
-      refreshToken: hashedRefreshToken,
-    });
-
-    // O endereço do usuário não é mais retornado no payload de login para
-    // aumentar a segurança e diminuir o tamanho da resposta.
     const responseUser: AuthUserDto = {
       userId: user.userId,
       userName: user.userName,
@@ -122,7 +66,7 @@ export class AuthService {
       avatarUrl: user.avatarUrl,
     };
 
-    return { access_token, refresh_token, user: responseUser };
+    return { access_token, user: responseUser };
   }
 
   // --- Lógica de Autenticação ---
@@ -190,16 +134,13 @@ export class AuthService {
     const activationToken = crypto.randomBytes(32).toString('hex');
 
     const userToCreate = {
-      // Campos obrigatórios do DTO
       name: createUserDto.name,
       userName: createUserDto.userName,
       email: createUserDto.email,
-      // Campos opcionais do DTO (garantir que sejam null se não fornecidos)
       cpf: createUserDto.cpf || null,
       telefone: createUserDto.telefone || null,
       avatarUrl: createUserDto.avatarUrl || null,
       role: createUserDto.role || Role.USUARIO,
-      // Campos gerenciados pelo sistema
       password: hashedPassword,
       activationToken,
       activationTokenExpires: new Date(Date.now() + 24 * 3600 * 1000),
@@ -210,7 +151,7 @@ export class AuthService {
       lastLogin: null,
       blockedUntil: null,
       lastFailedLogin: null,
-      refreshToken: null,
+      refreshToken: null, // Adicionado para corrigir o erro de compilação
       passwordResetToken: null,
       passwordResetExpires: null,
       deletedAt: null,
@@ -267,33 +208,6 @@ export class AuthService {
 
   // --- Outros Métodos de Autenticação ---
 
-  async refreshToken(token: string): Promise<AuthResponseDto> {
-    try {
-      const payload = await this.jwtService.verifyAsync<RefreshTokenPayload>(token, {
-        secret: this.getRefreshTokenSecret(),
-      });
-
-      const user = await this.userService.findUserForAuth(payload.sub);
-
-      if (!user || !user.refreshToken) {
-        throw new UnauthorizedException('Acesso negado.');
-      }
-
-      const hashedToken = this.hashToken(token);
-      if (hashedToken !== user.refreshToken) {
-        throw new UnauthorizedException('Acesso negado.');
-      }
-
-      if (user.tokenVersion !== payload.tv) {
-        throw new UnauthorizedException('Acesso negado.');
-      }
-
-      return this.issueTokens(user);
-    } catch (error) {
-      throw new UnauthorizedException('Refresh token inválido ou expirado');
-    }
-  }
-
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
     const user = await this.userService.findUserForAuth(forgotPasswordDto.email);
     if (!user) {
@@ -301,7 +215,7 @@ export class AuthService {
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const passwordResetToken = this.hashToken(resetToken);
+    const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     await this.userService.systemUpdate(user.userId, {
       passwordResetToken,
@@ -315,7 +229,7 @@ export class AuthService {
 
   async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
     const { token, password } = resetPasswordDto;
-    const passwordResetToken = this.hashToken(token);
+    const passwordResetToken = crypto.createHash('sha256').update(token).digest('hex');
 
     const user = await this.authRepository.findUserByPasswordResetToken(passwordResetToken);
     if (!user) {
@@ -356,6 +270,9 @@ export class AuthService {
   }
 
   async logout(userId: string): Promise<void> {
+    // Com a remoção dos refresh tokens, o logout do lado do servidor (invalidando o token)
+    // se torna mais complexo (ex: blacklist). Para um sistema simples, o logout é
+    // efetivamente gerenciado pelo cliente, que deve descartar o access_token.
     await this.authRepository.incrementTokenVersion(userId);
   }
 

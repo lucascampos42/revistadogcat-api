@@ -104,15 +104,6 @@ enum Role {
   FUNCIONARIO
 }
 
-enum TipoEndereco {
-  RESIDENCIAL
-  COMERCIAL
-  ENTREGA
-  COBRANCA
-  TEMPORARIO
-  OUTRO
-}
-
 model Log {
   logId     Int      @id @default(autoincrement())
   timestamp DateTime @default(now())
@@ -127,9 +118,8 @@ model Log {
 }
 
 model Endereco {
-  enderecoId      String       @id @default(cuid())
+  enderecoId      String   @id @default(cuid())
   userId          String
-  tipo            TipoEndereco
   nome            String?
   logradouro      String
   numero          String
@@ -139,10 +129,10 @@ model Endereco {
   estado          String
   cep             String
   pontoReferencia String?
-  principal       Boolean      @default(false)
-  ativo           Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  principal       Boolean  @default(false)
+  ativo           Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 

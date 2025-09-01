@@ -23,12 +23,10 @@ import {
   ResetPasswordDto,
   ActivateAccountDto,
   ResendActivationDto,
-  RefreshTokenDto,
 } from './dto';
-import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthResponseDto } from './dto';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
 import { AuthRequest } from './models/AuthRequest';
-import { AuthThrottle } from '../../core/decorators/auth-throttle.decorator';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -38,20 +36,15 @@ export class AuthController {
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @IsPublic()
-  @AuthThrottle()
   @ApiOperation({ summary: 'Fazer login no sistema' })
   @ApiResponse({
     status: 200,
     description:
-      'Login realizado com sucesso - retorna tokens de acesso e dados do usuário',
+      'Login realizado com sucesso - retorna token de acesso e dados do usuário',
     type: AuthResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Dados de login inválidos' })
   @ApiResponse({ status: 401, description: 'Credenciais incorretas' })
-  @ApiResponse({
-    status: 429,
-    description: 'Muitas tentativas de login - rate limit atingido',
-  })
   signIn(@Body() loginDto: LoginDto, @Req() req: Request) {
     const loginDetails = this.getLoginDetails(req);
     return this.authService.signIn(
@@ -63,7 +56,6 @@ export class AuthController {
 
   @Post('register')
   @IsPublic()
-  @AuthThrottle()
   @ApiOperation({ summary: 'Registrar novo usuário' })
   @ApiResponse({
     status: 201,
@@ -74,10 +66,6 @@ export class AuthController {
     status: 409,
     description: 'Usuário já existe (email, username ou CPF duplicado)',
   })
-  @ApiResponse({
-    status: 429,
-    description: 'Muitas tentativas de registro - rate limit atingido',
-  })
   async signUp(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto);
   }
@@ -85,7 +73,6 @@ export class AuthController {
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @IsPublic()
-  @AuthThrottle()
   @ApiOperation({ summary: 'Solicitar redefinição de senha' })
   @ApiResponse({
     status: 200,
@@ -93,10 +80,6 @@ export class AuthController {
   })
   @ApiResponse({ status: 400, description: 'Email inválido' })
   @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
-  @ApiResponse({
-    status: 429,
-    description: 'Muitas tentativas - rate limit atingido',
-  })
   forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
     return this.authService.forgotPassword(forgotPasswordDto);
   }
@@ -142,24 +125,6 @@ export class AuthController {
     return this.authService.resendActivationEmail(resendDto.email);
   }
 
-  @Post('refresh')
-  @HttpCode(HttpStatus.OK)
-  @IsPublic()
-  @ApiOperation({ summary: 'Renovar token de acesso' })
-  @ApiResponse({
-    status: 200,
-    description:
-      'Tokens renovados com sucesso - retorna tokens e dados do usuário',
-    type: AuthResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Refresh token inválido ou expirado',
-  })
-  async refresh(@Body() body: RefreshTokenDto) {
-    return this.authService.refreshToken(body.refreshToken);
-  }
-
   @Get('me')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Obter perfil do usuário autenticado' })
@@ -197,8 +162,6 @@ export class AuthController {
 
   /**
    * Extrai os detalhes relevantes da requisição para fins de log e segurança.
-   * Prioriza o cabeçalho 'x-forwarded-for' para obter o IP real do cliente
-   * em ambientes com proxy.
    * @param req O objeto de requisição do Express.
    * @returns Um objeto com o IP e o User-Agent do cliente.
    */
@@ -207,10 +170,8 @@ export class AuthController {
     let ip: string;
 
     if (typeof forwardedFor === 'string') {
-      // O cabeçalho pode conter uma lista de IPs. O primeiro é o do cliente original.
       ip = forwardedFor.split(',')[0].trim();
     } else {
-      // Fallback para req.ip, que pode ser o IP do proxy ou o do cliente.
       ip = req.ip || 'unknown';
     }
 

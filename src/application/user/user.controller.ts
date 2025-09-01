@@ -16,7 +16,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiQuery,
-  ApiParam,
   ApiBearerAuth,
   ApiConsumes,
   ApiBody,
@@ -26,7 +25,6 @@ import { UserService } from './user.service';
 import { UpdateUserDto } from '../auth/dto/update-auth.dto';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { BlockUserDto } from './dto/block-user.dto';
 import { RestoreUserDto } from './dto/restore-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UploadAvatarDto } from './dto/upload-avatar.dto';
@@ -64,7 +62,13 @@ export class UserController {
     },
   })
   registerThirdParty(
-    @Body() body: { nome: string; email: string; cpf: string; telefone: string },
+    @Body()
+    body: {
+      nome: string;
+      email: string;
+      cpf: string;
+      telefone: string;
+    },
   ) {
     return this.userService.registerThirdParty(body);
   }
@@ -72,11 +76,31 @@ export class UserController {
   @Get()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Listar usuários com paginação e filtros' })
-  @ApiResponse({ status: 200, description: 'Lista de usuários retornada com sucesso' })
-  @ApiQuery({ name: 'page', required: false, description: 'Número da página (padrão: 1)' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Itens por página (padrão: 20)' })
-  @ApiQuery({ name: 'role', required: false, enum: Role, description: 'Filtrar por papel' })
-  @ApiQuery({ name: 'search', required: false, description: 'Buscar por nome, email ou username' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de usuários retornada com sucesso',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Número da página (padrão: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Itens por página (padrão: 20)',
+  })
+  @ApiQuery({
+    name: 'role',
+    required: false,
+    enum: Role,
+    description: 'Filtrar por papel',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Buscar por nome, email ou username',
+  })
   findAll(
     @Query('page') page = '1',
     @Query('limit') limit = '20',
@@ -101,7 +125,10 @@ export class UserController {
 
   @Patch('me')
   @ApiOperation({ summary: 'Atualizar perfil do usuário autenticado' })
-  updateMyProfile(@Body() updateUserDto: UpdateUserDto, @Req() req: AuthRequest) {
+  updateMyProfile(
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: AuthRequest,
+  ) {
     return this.userService.update(req.user.userId, updateUserDto, req.user);
   }
 
@@ -126,21 +153,6 @@ export class UserController {
   @ApiOperation({ summary: 'Excluir usuário (soft delete)' })
   remove(@Param('id') id: string) {
     return this.userService.remove(id);
-  }
-
-  @Post(':id/block')
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Bloquear usuário' })
-  async blockUser(@Param('id') id: string, @Body() dto: BlockUserDto) {
-    const blockedUntil = dto.blockedUntil ? new Date(dto.blockedUntil) : undefined;
-    return this.userService.blockUser(id, blockedUntil);
-  }
-
-  @Post(':id/unblock')
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Desbloquear usuário' })
-  async unblockUser(@Param('id') id: string) {
-    return this.userService.unblockUser(id);
   }
 
   @Patch(':id/role')
