@@ -9,7 +9,7 @@ import { existsSync, mkdirSync } from 'fs';
 import { GlobalExceptionFilter } from './core/filters/global-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: ['log', 'error', 'warn', 'debug', 'verbose'] });
   const port = process.env.PORT ?? 3099;
 
   // Ativar o filtro de exceções global

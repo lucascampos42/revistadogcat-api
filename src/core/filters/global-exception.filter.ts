@@ -29,13 +29,6 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    // Log do erro completo no console, independentemente do tipo.
-    // Isso garante que o desenvolvedor SEMPRE veja o erro original.
-    this.logger.error(
-      `Erro capturado na rota: ${request.method} ${request.url}`,
-      exception instanceof Error ? exception.stack : JSON.stringify(exception),
-    );
-
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message: string | object = 'Internal Server Error';
     let error = 'Error';

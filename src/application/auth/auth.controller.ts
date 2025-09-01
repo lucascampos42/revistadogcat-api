@@ -16,7 +16,15 @@ import {
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { CreateUserDto, LoginDto, ForgotPasswordDto, ResetPasswordDto, ActivateAccountDto, ResendActivationDto, RefreshTokenDto } from './dto';
+import {
+  CreateUserDto,
+  LoginDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  ActivateAccountDto,
+  ResendActivationDto,
+  RefreshTokenDto,
+} from './dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
 import { AuthRequest } from './models/AuthRequest';
@@ -34,7 +42,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Fazer login no sistema' })
   @ApiResponse({
     status: 200,
-    description: 'Login realizado com sucesso - retorna tokens de acesso e dados do usuário',
+    description:
+      'Login realizado com sucesso - retorna tokens de acesso e dados do usuário',
     type: AuthResponseDto,
   })
   @ApiResponse({ status: 400, description: 'Dados de login inválidos' })
@@ -137,9 +146,10 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @IsPublic()
   @ApiOperation({ summary: 'Renovar token de acesso' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Tokens renovados com sucesso - retorna tokens e dados do usuário',
+  @ApiResponse({
+    status: 200,
+    description:
+      'Tokens renovados com sucesso - retorna tokens e dados do usuário',
     type: AuthResponseDto,
   })
   @ApiResponse({
