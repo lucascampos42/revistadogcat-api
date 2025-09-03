@@ -11,7 +11,7 @@ export class AuthRepository implements IAuthRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async createUser(
-    userData: Omit<User, 'userId' | 'createdAt' | 'updatedAt'>,
+    userData: Prisma.UserCreateInput,
   ): Promise<User> {
     return this.prisma.user.create({
       data: userData,
@@ -27,16 +27,6 @@ export class AuthRepository implements IAuthRepository {
     });
   }
 
-  async findUserByActivationToken(token: string): Promise<User | null> {
-    return this.prisma.user.findFirst({
-      where: {
-        activationToken: token,
-        activationTokenExpires: { gte: new Date() },
-        active: false,
-      },
-    });
-  }
-
   async findUserByEmail(email: string): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { email },
@@ -45,7 +35,7 @@ export class AuthRepository implements IAuthRepository {
 
   async updateUserTokens(
     userId: string,
-    data: Partial<Pick<User, 'refreshToken' | 'tokenVersion' | 'passwordResetToken' | 'passwordResetExpires' | 'activationToken' | 'activationTokenExpires'>
+    data: Partial<Pick<User, 'refreshToken' | 'tokenVersion' | 'passwordResetToken' | 'passwordResetExpires'>
   >): Promise<User> {
     return this.prisma.user.update({
       where: { userId },
@@ -65,17 +55,6 @@ export class AuthRepository implements IAuthRepository {
         passwordResetExpires: null,
         tokenVersion: { increment: 1 },
         refreshToken: null,
-      },
-    });
-  }
-
-  async activateUser(userId: string): Promise<User> {
-    return this.prisma.user.update({
-      where: { userId },
-      data: {
-        active: true,
-        activationToken: null,
-        activationTokenExpires: null,
       },
     });
   }

@@ -21,8 +21,6 @@ import {
   LoginDto,
   ForgotPasswordDto,
   ResetPasswordDto,
-  ActivateAccountDto,
-  ResendActivationDto,
 } from './dto';
 import { AuthResponseDto } from './dto';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
@@ -59,7 +57,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Registrar novo usuário' })
   @ApiResponse({
     status: 201,
-    description: 'Usuário registrado com sucesso - email de ativação enviado',
+    description: 'Usuário registrado e ativado com sucesso',
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos fornecidos' })
   @ApiResponse({
@@ -96,33 +94,6 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Token inválido ou expirado' })
   resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
     return this.authService.resetPassword(resetPasswordDto);
-  }
-
-  @Post('activate')
-  @HttpCode(HttpStatus.OK)
-  @IsPublic()
-  @ApiOperation({ summary: 'Ativar conta de usuário' })
-  @ApiResponse({ status: 200, description: 'Conta ativada com sucesso' })
-  @ApiResponse({
-    status: 400,
-    description: 'Token de ativação inválido ou expirado',
-  })
-  activateAccount(@Body() activateDto: ActivateAccountDto) {
-    return this.authService.activateAccount(activateDto);
-  }
-
-  @Post('resend-activation')
-  @HttpCode(HttpStatus.OK)
-  @IsPublic()
-  @ApiOperation({ summary: 'Reenviar email de ativação' })
-  @ApiResponse({
-    status: 200,
-    description: 'Email de ativação reenviado com sucesso',
-  })
-  @ApiResponse({ status: 400, description: 'Conta já está ativada' })
-  @ApiResponse({ status: 404, description: 'Usuário não encontrado' })
-  resendActivationEmail(@Body() resendDto: ResendActivationDto) {
-    return this.authService.resendActivationEmail(resendDto.email);
   }
 
   @Get('me')

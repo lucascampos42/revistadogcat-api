@@ -24,8 +24,6 @@ export class UserMapper {
       refreshToken: prismaUser.refreshToken || undefined,
       passwordResetToken: prismaUser.passwordResetToken || undefined,
       passwordResetExpires: prismaUser.passwordResetExpires || undefined,
-      activationToken: prismaUser.activationToken || undefined,
-      activationTokenExpires: prismaUser.activationTokenExpires || undefined,
       active: prismaUser.active,
       blocked: prismaUser.blocked,
       blockedUntil: prismaUser.blockedUntil || undefined,
@@ -57,9 +55,7 @@ export class UserMapper {
       refreshToken: userEntity.refreshToken || null,
       passwordResetToken: userEntity.passwordResetToken || null,
       passwordResetExpires: userEntity.passwordResetExpires || null,
-      activationToken: userEntity.activationToken || null,
-      activationTokenExpires: userEntity.activationTokenExpires || null,
-      active: userEntity.active ?? false,
+      active: userEntity.active ?? true, // Default to true
       blocked: userEntity.blocked ?? false,
       blockedUntil: userEntity.blockedUntil || null,
       loginAttempts: userEntity.loginAttempts || 0,
@@ -97,11 +93,6 @@ export class UserMapper {
       updateData.passwordResetToken = userEntity.passwordResetToken || null;
     if (userEntity.passwordResetExpires !== undefined)
       updateData.passwordResetExpires = userEntity.passwordResetExpires || null;
-    if (userEntity.activationToken !== undefined)
-      updateData.activationToken = userEntity.activationToken || null;
-    if (userEntity.activationTokenExpires !== undefined)
-      updateData.activationTokenExpires =
-        userEntity.activationTokenExpires || null;
     if (userEntity.active !== undefined) updateData.active = userEntity.active;
     if (userEntity.blocked !== undefined)
       updateData.blocked = userEntity.blocked;
@@ -130,13 +121,13 @@ export class UserMapper {
   private static mapPrismaRoleToUserRole(prismaRole: PrismaRole): UserRole {
     switch (prismaRole) {
       case PrismaRole.USUARIO:
-      return UserRole.USUARIO;
-    case PrismaRole.DONO_PET_APROVADO:
-      return UserRole.DONO_PET_APROVADO;
-    case PrismaRole.EDITOR:
-      return UserRole.EDITOR;
-    case PrismaRole.FUNCIONARIO:
-      return UserRole.FUNCIONARIO;
+        return UserRole.USUARIO;
+      case PrismaRole.DONO_PET_APROVADO:
+        return UserRole.DONO_PET_APROVADO;
+      case PrismaRole.EDITOR:
+        return UserRole.EDITOR;
+      case PrismaRole.FUNCIONARIO:
+        return UserRole.FUNCIONARIO;
       case PrismaRole.ASSINANTE:
         return UserRole.ASSINANTE;
       case PrismaRole.DONO_PET_APROVADO_ASSINANTE:
@@ -154,13 +145,13 @@ export class UserMapper {
   private static mapUserRoleToPrismaRole(userRole: UserRole): PrismaRole {
     switch (userRole) {
       case UserRole.USUARIO:
-      return PrismaRole.USUARIO;
-    case UserRole.DONO_PET_APROVADO:
-      return PrismaRole.DONO_PET_APROVADO;
-    case UserRole.EDITOR:
-      return PrismaRole.EDITOR;
-    case UserRole.FUNCIONARIO:
-      return PrismaRole.FUNCIONARIO;
+        return PrismaRole.USUARIO;
+      case UserRole.DONO_PET_APROVADO:
+        return PrismaRole.DONO_PET_APROVADO;
+      case UserRole.EDITOR:
+        return PrismaRole.EDITOR;
+      case UserRole.FUNCIONARIO:
+        return PrismaRole.FUNCIONARIO;
       case UserRole.ASSINANTE:
         return PrismaRole.ASSINANTE;
       case UserRole.DONO_PET_APROVADO_ASSINANTE:

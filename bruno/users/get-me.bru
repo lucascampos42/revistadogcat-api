@@ -1,0 +1,13 @@
+meta {
+  name: Get Me
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{host}}/users/me
+}
+
+headers {
+  Authorization: Bearer {{jwt_token}}
+}

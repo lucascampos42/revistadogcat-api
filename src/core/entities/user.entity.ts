@@ -19,8 +19,6 @@ export class UserEntity {
   refreshToken?: string;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
-  activationToken?: string;
-  activationTokenExpires?: Date;
 
   // Campos de Controle
   active: boolean;
@@ -64,17 +62,6 @@ export class UserEntity {
   }
 
   /**
-   * Verifica se o token de ativação é válido
-   */
-  isActivationTokenValid(): boolean {
-    return (
-      !!this.activationToken &&
-      !!this.activationTokenExpires &&
-      new Date() < this.activationTokenExpires
-    );
-  }
-
-  /**
    * Remove dados sensíveis para retorno público
    */
   toPublic() {
@@ -82,11 +69,9 @@ export class UserEntity {
       password,
       refreshToken,
       passwordResetToken,
-      activationToken,
       isActive,
       isBlocked,
       isPasswordResetTokenValid,
-      isActivationTokenValid,
       toPublic,
       ...publicData
     } = this;

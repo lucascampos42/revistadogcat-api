@@ -8,7 +8,7 @@ Esta documentação descreve os endpoints para autenticação de usuários.
 
 ## Modelo de Dados e Enums
 
-### Objeto User (Resposta Pública)
+### Objeto User (Resposta de Autenticação)
 
 | Campo | Tipo | Descrição |
 | --- | --- | --- |
@@ -18,8 +18,6 @@ Esta documentação descreve os endpoints para autenticação de usuários.
 | `email` | `string` | Endereço de e-mail do usuário. |
 | `avatarUrl` | `string` | URL da imagem de perfil. |
 | `role` | `Role` | Nível de acesso do usuário. |
-| `active` | `boolean`| Se a conta do usuário está ativa. |
-| `createdAt` | `string` | Data de criação da conta. |
 
 ### Enum: `Role`
 
@@ -40,25 +38,11 @@ Esta documentação descreve os endpoints para autenticação de usuários.
 ### 1. Registrar Novo Usuário
 
 - **Endpoint:** `POST /auth/register`
-- **Descrição:** Cria uma nova conta de usuário. Um e-mail de ativação é enviado.
-- **Corpo da Requisição:** `CreateUserDto`.
-- **Resposta (201 Created):** Mensagem de sucesso indicando que o e-mail foi enviado.
+- **Descrição:** Cria uma nova conta de usuário, que já nasce **ativa**.
+- **Corpo da Requisição:** `CreateUserDto` (contendo `name`, `email`, `password`, etc.).
+- **Resposta (201 Created):** Mensagem de sucesso e os dados do usuário criado.
 
-### 2. Ativar Conta
-
-- **Endpoint:** `POST /auth/activate`
-- **Descrição:** Ativa a conta de um usuário usando o token enviado por e-mail.
-- **Corpo da Requisição:** `{ "token": "activation-token-from-email" }`
-- **Resposta (200 OK):** Mensagem de sucesso.
-
-### 3. Reenviar Email de Ativação
-
-- **Endpoint:** `POST /auth/resend-activation`
-- **Descrição:** Reenvia o e-mail com o link de ativação para um usuário que ainda não ativou a conta.
-- **Corpo da Requisição:** `{ "email": "user@email.com" }`
-- **Resposta (200 OK):** Mensagem de sucesso.
-
-### 4. Login
+### 2. Login
 
 - **Endpoint:** `POST /auth/login`
 - **Descrição:** Autentica um usuário e retorna um token de acesso e os dados do usuário.
@@ -67,32 +51,32 @@ Esta documentação descreve os endpoints para autenticação de usuários.
   ```json
   {
     "access_token": "...",
-    "user": { ... } // Objeto User
+    "user": { ... } // Objeto User (Resposta de Autenticação)
   }
   ```
 
-### 5. Obter Perfil do Usuário Logado
+### 3. Obter Perfil do Usuário Logado
 
 - **Endpoint:** `GET /auth/me`
 - **Autenticação:** 🔒 Requer `access_token`.
-- **Descrição:** Retorna os dados completos do usuário autenticado.
-- **Resposta (200 OK):** Objeto `User`.
+- **Descrição:** Retorna os dados básicos do usuário autenticado (os mesmos dados retornados no momento do login).
+- **Resposta (200 OK):** Objeto `User` (Resposta de Autenticação).
 
-### 6. Logout
+### 4. Logout
 
 - **Endpoint:** `POST /auth/logout`
 - **Autenticação:** 🔒 Requer `access_token`.
 - **Descrição:** Invalida o token de acesso atual no servidor. O cliente também deve remover o token localmente.
 - **Resposta (200 OK):** Mensagem de sucesso.
 
-### 7. Esqueci Minha Senha
+### 5. Esqueci Minha Senha
 
 - **Endpoint:** `POST /auth/forgot-password`
 - **Descrição:** Inicia o fluxo de redefinição de senha. Envia um token por e-mail.
 - **Corpo da Requisição:** `{ "email": "user@email.com" }`
 - **Resposta (200 OK):** Mensagem de sucesso.
 
-### 8. Redefinir Senha
+### 6. Redefinir Senha
 
 - **Endpoint:** `POST /auth/reset-password`
 - **Descrição:** Define uma nova senha usando o token de redefinição.

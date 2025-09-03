@@ -6,7 +6,6 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-auth.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import { ActivateAccountDto } from './dto/activate-account.dto';
 import { AuthResponseDto, AuthUserDto } from './dto/auth-response.dto';
 import * as crypto from 'crypto';
 import { User, Role } from '@prisma/client';
@@ -87,10 +86,6 @@ export class AuthService {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
 
-    if (!user.active) {
-      throw new UnauthorizedException('Conta inativa. Verifique seu e-mail para ativar.');
-    }
-
     if (user.blocked) {
       if (user.blockedUntil && user.blockedUntil > new Date()) {
         throw new UnauthorizedException('Conta temporariamente bloqueada.');
@@ -107,7 +102,7 @@ export class AuthService {
 
   async register(
     createUserDto: CreateUserDto,
-  ): Promise<Omit<User, 'password' | 'activationToken'> & { message: string }> {
+  ): Promise<Omit<User, 'password'> & { message: string }> {
     if (createUserDto.cpf) {
       const normalizedCpf = ValidationUtils.normalizeCpf(createUserDto.cpf);
       if (!ValidationUtils.isValidCpf(normalizedCpf)) {
@@ -131,7 +126,6 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const activationToken = crypto.randomBytes(32).toString('hex');
 
     const userToCreate = {
       name: createUserDto.name,
@@ -142,28 +136,28 @@ export class AuthService {
       avatarUrl: createUserDto.avatarUrl || null,
       role: createUserDto.role || Role.USUARIO,
       password: hashedPassword,
-      activationToken,
-      activationTokenExpires: new Date(Date.now() + 24 * 3600 * 1000),
-      active: false,
+      active: true, // Usuário já é criado como ativo
       blocked: false,
       loginAttempts: 0,
       tokenVersion: 1,
       lastLogin: null,
       blockedUntil: null,
       lastFailedLogin: null,
-      refreshToken: null, // Adicionado para corrigir o erro de compilação
+      refreshToken: null,
       passwordResetToken: null,
       passwordResetExpires: null,
       deletedAt: null,
     };
 
     const newUser = await this.authRepository.createUser(userToCreate);
-    await this.mailService.sendActivationEmail(newUser, activationToken);
 
-    const { password, activationToken: token, ...user } = newUser;
+    // Opcional: Enviar um e-mail de boas-vindas simples
+    // await this.mailService.sendWelcomeEmail(newUser);
+
+    const { password, ...user } = newUser;
     return {
       ...user,
-      message: 'Usuário registrado. Verifique seu email para ativar a conta.',
+      message: 'Usuário registrado com sucesso.',
     };
   }
 
@@ -239,34 +233,6 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, 10);
     await this.authRepository.updateUserPassword(user.userId, hashedPassword);
     return { message: 'Senha redefinida com sucesso' };
-  }
-
-  async activateAccount(activateDto: ActivateAccountDto): Promise<{ message: string }> {
-    const user = await this.authRepository.findUserByActivationToken(activateDto.token);
-    if (!user) {
-      throw new BadRequestException('Token de ativação inválido ou expirado');
-    }
-    await this.authRepository.activateUser(user.userId);
-    return { message: 'Conta ativada com sucesso!' };
-  }
-
-  async resendActivationEmail(email: string): Promise<{ message: string }> {
-    const user = await this.authRepository.findUserByEmail(email);
-    if (!user) {
-      return { message: 'Se um usuário com este e-mail existir e não estiver ativo, um novo link de ativação será enviado.' };
-    }
-    if (user.active) {
-      throw new BadRequestException('Esta conta já está ativada');
-    }
-
-    const activationToken = crypto.randomBytes(32).toString('hex');
-    await this.authRepository.updateUserTokens(user.userId, {
-      activationToken,
-      activationTokenExpires: new Date(Date.now() + 24 * 3600 * 1000),
-    });
-
-    await this.mailService.sendActivationEmail({ ...user, activationToken }, activationToken);
-    return { message: 'Se um usuário com este e-mail existir e não estiver ativo, um novo link de ativação será enviado.' };
   }
 
   async logout(userId: string): Promise<void> {

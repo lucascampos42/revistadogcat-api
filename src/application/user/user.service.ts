@@ -6,12 +6,14 @@ import {
   ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common';
-import { User, Role } from '@prisma/client';
+import { User, Role, Endereco } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { IUserRepository } from './repositories/user.repository.interface';
 import { PublicUserDto } from './dto/public-user.dto';
 import { UpdateUserDto } from '../auth/dto/update-auth.dto';
+import { FullUserDto } from './dto/full-user.dto';
+import { AddressDto } from './dto/address.dto';
 
 interface RequestingUser {
   userId: string;
@@ -24,10 +26,74 @@ export class UserService {
     @Inject('IUserRepository') private readonly userRepository: IUserRepository,
   ) {}
 
-  private mapToPublicDto(user: User): PublicUserDto {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, cpf, refreshToken, tokenVersion, passwordResetToken, passwordResetExpires, activationToken, activationTokenExpires, ...publicData } = user;
-    return publicData;
+  private mapToPublicDto(
+    user: User & { enderecos?: Endereco[] },
+  ): PublicUserDto {
+    const principalEndereco = user.enderecos?.find((e) => e.principal);
+
+    return {
+      userId: user.userId,
+      userName: user.userName,
+      name: user.name,
+      email: user.email,
+      cpf: user.cpf,
+      avatarUrl: user.avatarUrl,
+      role: user.role,
+      active: user.active,
+      blocked: user.blocked,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastLogin: user.lastLogin,
+      endereco: {
+        logradouro: principalEndereco?.logradouro ?? '',
+        numero: principalEndereco?.numero ?? '',
+        complemento: principalEndereco?.complemento ?? '',
+        bairro: principalEndereco?.bairro ?? '',
+        cidade: principalEndereco?.cidade ?? '',
+        estado: principalEndereco?.estado ?? '',
+        cep: principalEndereco?.cep ?? '',
+      },
+    };
+  }
+
+  private mapToFullDto(user: User & { enderecos?: Endereco[] }): FullUserDto {
+    const principalEndereco = user.enderecos?.find((e) => e.principal);
+
+    return {
+      userId: user.userId,
+      userName: user.userName,
+      name: user.name,
+      email: user.email,
+      cpf: user.cpf,
+      telefone: user.telefone,
+      avatarUrl: user.avatarUrl,
+      role: user.role,
+      active: user.active,
+      blocked: user.blocked,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      lastLogin: user.lastLogin,
+      endereco: {
+        logradouro: principalEndereco?.logradouro ?? '',
+        numero: principalEndereco?.numero ?? '',
+        complemento: principalEndereco?.complemento ?? '',
+        bairro: principalEndereco?.bairro ?? '',
+        cidade: principalEndereco?.cidade ?? '',
+        estado: principalEndereco?.estado ?? '',
+        cep: principalEndereco?.cep ?? '',
+      },
+      enderecos: (user.enderecos ?? []).map(
+        (e): AddressDto => ({
+          logradouro: e.logradouro,
+          numero: e.numero,
+          complemento: e.complemento,
+          bairro: e.bairro,
+          cidade: e.cidade,
+          estado: e.estado,
+          cep: e.cep,
+        }),
+      ),
+    };
   }
 
   private async findUserOrFail(id: string): Promise<User> {
@@ -38,17 +104,29 @@ export class UserService {
     return user;
   }
 
+  async findMe(requestingUser: RequestingUser): Promise<FullUserDto> {
+    const user = await this.findUserOrFail(requestingUser.userId);
+    return this.mapToFullDto(user);
+  }
+
   private async generateUniqueUserName(email: string): Promise<string> {
     if (!email || !email.includes('@')) {
-      throw new InternalServerErrorException('Email inválido para gerar nome de usuário.');
+      throw new InternalServerErrorException(
+        'Email inválido para gerar nome de usuário.',
+      );
     }
-    const baseUserName = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const baseUserName = email
+      .split('@')[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9_]/g, '');
     let finalUserName = baseUserName;
     let isUnique = false;
     let attempts = 0;
 
     while (!isUnique && attempts < 10) {
-      const { userNameExists } = await this.userRepository.checkUserExists({ userName: finalUserName });
+      const { userNameExists } = await this.userRepository.checkUserExists({
+        userName: finalUserName,
+      });
       if (!userNameExists) {
         isUnique = true;
       } else {
@@ -58,7 +136,9 @@ export class UserService {
     }
 
     if (!isUnique) {
-      throw new InternalServerErrorException('Não foi possível gerar um nome de usuário único.');
+      throw new InternalServerErrorException(
+        'Não foi possível gerar um nome de usuário único.',
+      );
     }
 
     return finalUserName;
@@ -98,7 +178,10 @@ export class UserService {
     return { userId: newUser.userId };
   }
 
-  async findOneById(id: string, requestingUser: RequestingUser): Promise<PublicUserDto> {
+  async findOneById(
+    id: string,
+    requestingUser: RequestingUser,
+  ): Promise<PublicUserDto> {
     const user = await this.findUserOrFail(id);
     if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== id) {
       throw new ForbiddenException('Você só pode visualizar seu próprio perfil');
@@ -106,7 +189,12 @@ export class UserService {
     return this.mapToPublicDto(user);
   }
 
-  async findAllPaged(params: { page: number; limit: number; role?: Role; search?: string; }) {
+  async findAllPaged(params: {
+    page: number;
+    limit: number;
+    role?: Role;
+    search?: string;
+  }) {
     const result = await this.userRepository.findAllPaged(params);
     return {
       ...result,
@@ -114,13 +202,19 @@ export class UserService {
     };
   }
 
-  async update(id: string, data: Partial<UpdateUserDto>, requestingUser: RequestingUser): Promise<PublicUserDto> {
+  async update(
+    id: string,
+    data: Partial<UpdateUserDto>,
+    requestingUser: RequestingUser,
+  ): Promise<PublicUserDto> {
     await this.findUserOrFail(id);
     if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== id) {
       throw new ForbiddenException('Você só pode editar seus próprios dados');
     }
     if (data.role && requestingUser.role !== Role.ADMIN) {
-      throw new ForbiddenException('Você não tem permissão para alterar seu próprio role');
+      throw new ForbiddenException(
+        'Você não tem permissão para alterar seu próprio role',
+      );
     }
     const updatedUser = await this.userRepository.update(id, data);
     return this.mapToPublicDto(updatedUser);
@@ -172,7 +266,11 @@ export class UserService {
     return this.userRepository.findForAuthByIdentification(identification);
   }
 
-  async checkUserExists(data: { userName?: string; email?: string; cpf?: string; }) {
+  async checkUserExists(data: {
+    userName?: string;
+    email?: string;
+    cpf?: string;
+  }) {
     return this.userRepository.checkUserExists(data);
   }
 

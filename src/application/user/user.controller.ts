@@ -30,6 +30,7 @@ import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { UploadAvatarDto } from './dto/upload-avatar.dto';
 import { multerConfig } from '../../core/config/multer.config';
 import { AuthRequest } from '../auth/models/AuthRequest';
+import { FullUserDto } from './dto/full-user.dto';
 
 @ApiTags('Usuários')
 @ApiBearerAuth()
@@ -119,8 +120,9 @@ export class UserController {
 
   @Get('me')
   @ApiOperation({ summary: 'Obter perfil do usuário autenticado' })
+  @ApiResponse({ status: 200, description: 'Perfil completo do usuário', type: FullUserDto })
   getMyProfile(@Req() req: AuthRequest) {
-    return this.userService.findOneById(req.user.userId, req.user);
+    return this.userService.findMe(req.user);
   }
 
   @Patch('me')

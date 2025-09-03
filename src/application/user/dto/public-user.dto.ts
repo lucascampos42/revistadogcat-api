@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import { AddressDto } from './address.dto';
 
 export class PublicUserDto {
   @ApiProperty({ description: 'ID único do usuário' })
@@ -13,6 +14,9 @@ export class PublicUserDto {
 
   @ApiProperty({ description: 'Endereço de e-mail do usuário' })
   email: string;
+
+  @ApiProperty({ description: 'CPF do usuário', required: false, nullable: true })
+  cpf?: string | null;
 
   @ApiProperty({ description: 'URL do avatar do usuário', required: false, nullable: true })
   avatarUrl?: string | null;
@@ -34,4 +38,7 @@ export class PublicUserDto {
 
   @ApiProperty({ description: 'Data do último login', required: false, nullable: true })
   lastLogin?: Date | null;
+
+  @ApiProperty({ description: 'Endereço principal do usuário', required: false, type: AddressDto })
+  endereco?: AddressDto;
 }
