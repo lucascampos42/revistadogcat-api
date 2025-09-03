@@ -18,5 +18,6 @@ body:json {
 }
 
 script:post-response {
-  const token = res.getBody().token
+  const token = res.getBody().data.access_token
+  bru.setEnvVar('jwt',token)
 }
