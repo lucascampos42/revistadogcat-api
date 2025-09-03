@@ -8,3 +8,4 @@ export { LoginDto } from './login.dto';
 export { ResendActivationDto } from './resend-activation.dto';
 export { ResetPasswordDto } from './reset-password.dto';
 export { UpdateUserDto } from './update-auth.dto';
+export { RefreshTokenDto } from './refresh-token.dto';

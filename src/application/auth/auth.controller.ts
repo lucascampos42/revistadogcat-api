@@ -5,7 +5,6 @@ import {
   HttpCode,
   HttpStatus,
   Req,
-  UnauthorizedException,
   Get,
   UseGuards,
 } from '@nestjs/common';
@@ -14,7 +13,6 @@ import {
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
-  ApiProperty,
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -23,16 +21,13 @@ import {
   LoginDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  RefreshTokenDto,
+  AuthResponseDto,
+  AuthUserDto,
 } from './dto';
-import { AuthResponseDto } from './dto';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
-import { AuthRequest } from './models/AuthRequest';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
-
-class RefreshTokenDto {
-  @ApiProperty({ description: 'O Refresh Token para obter um novo Access Token' })
-  refreshToken: string;
-}
+import { User } from '../../core/decorators/get-user.decorator';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -66,13 +61,11 @@ export class AuthController {
   @ApiOperation({ summary: 'Renovar token de acesso usando o refresh token' })
   @ApiResponse({ status: 200, type: AuthResponseDto })
   @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
-  async refreshToken(
-    @Req() req: AuthRequest,
+  refreshToken(
+    @User('userId') userId: string,
     @Body() body: RefreshTokenDto,
   ): Promise<AuthResponseDto> {
-    const userId = req.user.userId;
-    const refreshToken = body.refreshToken;
-    return this.authService.refreshToken(userId, refreshToken);
+    return this.authService.refreshToken(userId, body.refreshToken);
   }
 
   @Post('register')
@@ -87,7 +80,7 @@ export class AuthController {
     status: 409,
     description: 'Usuário já existe (email, username ou CPF duplicado)',
   })
-  async signUp(@Body() createUserDto: CreateUserDto) {
+  signUp(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto);
   }
 
@@ -120,25 +113,25 @@ export class AuthController {
   }
 
   @Get('me')
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Obter perfil do usuário autenticado' })
   @ApiResponse({
     status: 200,
     description: 'Perfil do usuário retornado com sucesso',
+    type: AuthUserDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Token de acesso inválido ou expirado',
   })
-  getProfile(@Req() req: AuthRequest) {
-    if (!req.user) {
-      throw new UnauthorizedException('User not found');
-    }
-    return req.user;
+  getProfile(@User() user: AuthUserDto) {
+    return user;
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Fazer logout e invalidar tokens' })
   @ApiResponse({ status: 200, description: 'Logout realizado com sucesso' })
@@ -146,11 +139,8 @@ export class AuthController {
     status: 401,
     description: 'Token de acesso inválido ou expirado',
   })
-  async logout(@Req() req: AuthRequest): Promise<{ message: string }> {
-    if (!req.user?.userId) {
-      throw new UnauthorizedException('User not found in request');
-    }
-    await this.authService.logout(req.user.userId);
+  async logout(@User('userId') userId: string): Promise<{ message: string }> {
+    await this.authService.logout(userId);
     return { message: 'Logout realizado com sucesso.' };
   }
 
@@ -169,4 +159,3 @@ export class AuthController {
     return { ip, userAgent };
   }
 }
-

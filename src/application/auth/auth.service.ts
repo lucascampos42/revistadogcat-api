@@ -87,8 +87,8 @@ export class AuthService {
     const isRefreshTokenMatching = providedRefreshToken === user.refreshToken;
 
     if (!isRefreshTokenMatching) {
-      await this.authRepository.incrementTokenVersion(userId);
-      throw new UnauthorizedException('Acesso negado. Faça login novamente.');
+      // await this.authRepository.incrementTokenVersion(userId);
+      throw new UnauthorizedException('Refresh token inválido ou expirado.');
     }
 
     return this.issueTokens(user);
@@ -140,12 +140,11 @@ export class AuthService {
       createUserDto.cpf = normalizedCpf;
     }
 
-    const { userNameExists, emailExists, cpfExists } =
-      await this.userService.checkUserExists({
-        userName: createUserDto.userName,
-        email: createUserDto.email,
-        cpf: createUserDto.cpf,
-      });
+    const { userNameExists, emailExists, cpfExists } = await this.userService.checkUserExists({
+      userName: createUserDto.userName,
+      email: createUserDto.email,
+      cpf: createUserDto.cpf,
+    });
 
     if (userNameExists || emailExists || cpfExists) {
       const errors: string[] = [];
@@ -223,8 +222,7 @@ export class AuthService {
 
   private isSuspiciousLogin(user: User): boolean {
     if (!user.lastLogin) return false;
-    const daysSinceLastLogin =
-      (Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceLastLogin = (Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24);
     return daysSinceLastLogin > 30;
   }
 
@@ -233,9 +231,7 @@ export class AuthService {
   async forgotPassword(
     forgotPasswordDto: ForgotPasswordDto,
   ): Promise<{ message: string }> {
-    const user = await this.userService.findUserForAuth(
-      forgotPasswordDto.email,
-    );
+    const user = await this.userService.findUserForAuth(forgotPasswordDto.email);
     if (!user) {
       return {
         message:
@@ -275,10 +271,9 @@ export class AuthService {
       .update(token)
       .digest('hex');
 
-    const user =
-      await this.authRepository.findUserByPasswordResetToken(
-        passwordResetToken,
-      );
+    const user = await this.authRepository.findUserByPasswordResetToken(
+      passwordResetToken,
+    );
     if (!user) {
       throw new UnauthorizedException('Token inválido ou expirado.');
     }

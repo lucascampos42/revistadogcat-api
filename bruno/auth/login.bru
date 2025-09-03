@@ -18,7 +18,7 @@ body:json {
 }
 
 script:post-response {
-  const body = res.getBody().data;
-  bru.setEnvVar('jwt', body.access_token);
-  bru.setEnvVar('refreshToken', body.refresh_token);
+  const body = res.getBody();
+  bru.setEnvVar('jwt', body.data.access_token);
+  bru.setEnvVar('refreshToken', body.data.refresh_token);
 }

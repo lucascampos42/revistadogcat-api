@@ -20,6 +20,8 @@ body:json {
   }
 }
 
-vars:pre-request {
-  refreshToken: 
+script:post-response {
+  const body = res.getBody();
+  bru.setEnvVar('jwt', body.data.access_token);
+  bru.setEnvVar('refreshToken', body.data.refresh_token);
 }
