@@ -27,6 +27,7 @@ interface AccessTokenPayload {
   sub: string;
   email: string;
   role: Role;
+  tokenVersion: number;
 }
 
 @Injectable()
@@ -49,12 +50,18 @@ export class AuthService {
       sub: user.userId,
       email: user.email,
       role: user.role,
+      tokenVersion: user.tokenVersion,
     };
     return this.jwtService.signAsync(payload);
   }
 
   async issueTokens(user: User): Promise<AuthResponseDto> {
     const access_token = await this.signAccessToken(user);
+    const refresh_token = crypto.randomBytes(32).toString('hex');
+
+    await this.authRepository.updateUserTokens(user.userId, {
+      refreshToken: refresh_token,
+    });
 
     const responseUser: AuthUserDto = {
       userId: user.userId,
@@ -65,7 +72,26 @@ export class AuthService {
       avatarUrl: user.avatarUrl,
     };
 
-    return { access_token, user: responseUser };
+    return { access_token, refresh_token, user: responseUser };
+  }
+
+  async refreshToken(
+    userId: string,
+    providedRefreshToken: string,
+  ): Promise<AuthResponseDto> {
+    const user = await this.userService.findUserEntityById(userId);
+    if (!user || !user.refreshToken) {
+      throw new UnauthorizedException('Acesso negado.');
+    }
+
+    const isRefreshTokenMatching = providedRefreshToken === user.refreshToken;
+
+    if (!isRefreshTokenMatching) {
+      await this.authRepository.incrementTokenVersion(userId);
+      throw new UnauthorizedException('Acesso negado. Faça login novamente.');
+    }
+
+    return this.issueTokens(user);
   }
 
   // --- Lógica de Autenticação ---
@@ -93,7 +119,10 @@ export class AuthService {
     }
 
     if (loginDetails && this.isSuspiciousLogin(user)) {
-      await this.mailService.sendSuspiciousLoginAlert(user, { ...loginDetails, timestamp: new Date() });
+      await this.mailService.sendSuspiciousLoginAlert(user, {
+        ...loginDetails,
+        timestamp: new Date(),
+      });
     }
 
     await this.handleSuccessfulLogin(user);
@@ -111,11 +140,12 @@ export class AuthService {
       createUserDto.cpf = normalizedCpf;
     }
 
-    const { userNameExists, emailExists, cpfExists } = await this.userService.checkUserExists({
-      userName: createUserDto.userName,
-      email: createUserDto.email,
-      cpf: createUserDto.cpf,
-    });
+    const { userNameExists, emailExists, cpfExists } =
+      await this.userService.checkUserExists({
+        userName: createUserDto.userName,
+        email: createUserDto.email,
+        cpf: createUserDto.cpf,
+      });
 
     if (userNameExists || emailExists || cpfExists) {
       const errors: string[] = [];
@@ -136,7 +166,7 @@ export class AuthService {
       avatarUrl: createUserDto.avatarUrl || null,
       role: createUserDto.role || Role.USUARIO,
       password: hashedPassword,
-      active: true, // Usuário já é criado como ativo
+      active: true,
       blocked: false,
       loginAttempts: 0,
       tokenVersion: 1,
@@ -150,9 +180,6 @@ export class AuthService {
     };
 
     const newUser = await this.authRepository.createUser(userToCreate);
-
-    // Opcional: Enviar um e-mail de boas-vindas simples
-    // await this.mailService.sendWelcomeEmail(newUser);
 
     const { password, ...user } = newUser;
     return {
@@ -196,36 +223,62 @@ export class AuthService {
 
   private isSuspiciousLogin(user: User): boolean {
     if (!user.lastLogin) return false;
-    const daysSinceLastLogin = (Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceLastLogin =
+      (Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24);
     return daysSinceLastLogin > 30;
   }
 
   // --- Outros Métodos de Autenticação ---
 
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto): Promise<{ message: string }> {
-    const user = await this.userService.findUserForAuth(forgotPasswordDto.email);
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<{ message: string }> {
+    const user = await this.userService.findUserForAuth(
+      forgotPasswordDto.email,
+    );
     if (!user) {
-      return { message: 'Se um usuário com este e-mail existir, um link de redefinição de senha será enviado.' };
+      return {
+        message:
+          'Se um usuário com este e-mail existir, um link de redefinição de senha será enviado.',
+      };
     }
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const passwordResetToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const passwordResetToken = crypto
+      .createHash('sha256')
+      .update(resetToken)
+      .digest('hex');
 
     await this.userService.systemUpdate(user.userId, {
       passwordResetToken,
       passwordResetExpires: new Date(Date.now() + 3600000),
     });
 
-    await this.mailService.sendPasswordResetEmail(user.email, user.name, resetToken);
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      user.name,
+      resetToken,
+    );
 
-    return { message: 'Se um usuário com este e-mail existir, um link de redefinição de senha será enviado.' };
+    return {
+      message:
+        'Se um usuário com este e-mail existir, um link de redefinição de senha será enviado.',
+    };
   }
 
-  async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+  ): Promise<{ message: string }> {
     const { token, password } = resetPasswordDto;
-    const passwordResetToken = crypto.createHash('sha256').update(token).digest('hex');
+    const passwordResetToken = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
 
-    const user = await this.authRepository.findUserByPasswordResetToken(passwordResetToken);
+    const user =
+      await this.authRepository.findUserByPasswordResetToken(
+        passwordResetToken,
+      );
     if (!user) {
       throw new UnauthorizedException('Token inválido ou expirado.');
     }
@@ -236,13 +289,13 @@ export class AuthService {
   }
 
   async logout(userId: string): Promise<void> {
-    // Com a remoção dos refresh tokens, o logout do lado do servidor (invalidando o token)
-    // se torna mais complexo (ex: blacklist). Para um sistema simples, o logout é
-    // efetivamente gerenciado pelo cliente, que deve descartar o access_token.
     await this.authRepository.incrementTokenVersion(userId);
   }
 
-  async validateUser(identifier: string, pass: string): Promise<Omit<User, 'password'> | null> {
+  async validateUser(
+    identifier: string,
+    pass: string,
+  ): Promise<Omit<User, 'password'> | null> {
     const user = await this.userService.findUserForAuth(identifier);
     if (user && user.password && (await bcrypt.compare(pass, user.password))) {
       const { password, ...result } = user;

@@ -7,12 +7,14 @@ import {
   Req,
   UnauthorizedException,
   Get,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiProperty,
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
@@ -25,6 +27,12 @@ import {
 import { AuthResponseDto } from './dto';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
 import { AuthRequest } from './models/AuthRequest';
+import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
+
+class RefreshTokenDto {
+  @ApiProperty({ description: 'O Refresh Token para obter um novo Access Token' })
+  refreshToken: string;
+}
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -50,6 +58,21 @@ export class AuthController {
       loginDto.password,
       loginDetails,
     );
+  }
+
+  @Post('refresh')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Renovar token de acesso usando o refresh token' })
+  @ApiResponse({ status: 200, type: AuthResponseDto })
+  @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
+  async refreshToken(
+    @Req() req: AuthRequest,
+    @Body() body: RefreshTokenDto,
+  ): Promise<AuthResponseDto> {
+    const userId = req.user.userId;
+    const refreshToken = body.refreshToken;
+    return this.authService.refreshToken(userId, refreshToken);
   }
 
   @Post('register')
@@ -131,11 +154,6 @@ export class AuthController {
     return { message: 'Logout realizado com sucesso.' };
   }
 
-  /**
-   * Extrai os detalhes relevantes da requisição para fins de log e segurança.
-   * @param req O objeto de requisição do Express.
-   * @returns Um objeto com o IP e o User-Agent do cliente.
-   */
   private getLoginDetails(req: Request): { ip: string; userAgent: string } {
     const forwardedFor = req.headers['x-forwarded-for'];
     let ip: string;
@@ -151,3 +169,4 @@ export class AuthController {
     return { ip, userAgent };
   }
 }
+

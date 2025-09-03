@@ -25,6 +25,9 @@ export class AuthResponseDto {
   @ApiProperty({ description: 'Token de acesso JWT' })
   access_token: string;
 
+  @ApiProperty({ description: 'Token de atualização para obter um novo access_token' })
+  refresh_token: string;
+
   @ApiProperty({ description: 'Dados do usuário autenticado', type: AuthUserDto })
   user: AuthUserDto;
 }
