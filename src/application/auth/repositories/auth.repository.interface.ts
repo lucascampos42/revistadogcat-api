@@ -10,6 +10,7 @@ export interface IAuthRepository {
     userId: string,
     data: {
       refreshToken?: string | null;
+      refreshTokenExpiresAt?: Date | null;
       tokenVersion?: number;
       passwordResetToken?: string | null;
       passwordResetExpires?: Date | null;

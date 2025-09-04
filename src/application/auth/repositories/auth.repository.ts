@@ -35,8 +35,14 @@ export class AuthRepository implements IAuthRepository {
 
   async updateUserTokens(
     userId: string,
-    data: Partial<Pick<User, 'refreshToken' | 'tokenVersion' | 'passwordResetToken' | 'passwordResetExpires'>
-  >): Promise<User> {
+    data: {
+      refreshToken?: string | null;
+      refreshTokenExpiresAt?: Date | null;
+      tokenVersion?: number;
+      passwordResetToken?: string | null;
+      passwordResetExpires?: Date | null;
+    },
+  ): Promise<User> {
     return this.prisma.user.update({
       where: { userId },
       data,

@@ -65,7 +65,7 @@ export class AuthController {
     @User('userId') userId: string,
     @Body() body: RefreshTokenDto,
   ): Promise<AuthResponseDto> {
-    return this.authService.refreshToken(userId, body.refreshToken);
+    return this.authService.refreshToken(userId, body.refresh_token);
   }
 
   @Post('register')

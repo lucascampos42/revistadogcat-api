@@ -22,7 +22,7 @@ Esta documentação descreve os endpoints para autenticação, gerenciamento de 
 ### Enum: `Role`
 
 | Valor | Descrição |
-| --- | --- |
+| --- | --- | --- |
 | `USUARIO` | Usuário padrão com acesso a conteúdo público. |
 | `DONO_PET_APROVADO` | Dono de pet com cadastro verificado. |
 | `ASSINANTE` | Usuário com assinatura premium ativa. |
@@ -64,7 +64,7 @@ Esta documentação descreve os endpoints para autenticação, gerenciamento de 
 - **Corpo da Requisição:**
   ```json
   {
-    "refreshToken": "a1b2c3..."
+    "refresh_token": "a1b2c3..."
   }
   ```
 - **Resposta (200 OK):** Um novo par de tokens e os dados do usuário.
@@ -137,3 +137,15 @@ O sistema usa um par de tokens para gerenciar sessões de forma segura e eficien
         e. **Se o refresh falhar:** O `refresh_token` é inválido. Limpe todos os tokens armazenados e redirecione o usuário para a tela de login.
 
 4.  **Logout:** Ao fazer logout, chame o endpoint `POST /auth/logout`, limpe ambos os tokens do armazenamento local e redirecione o usuário para a tela de login.
+
+---
+
+## Configuração de Variáveis de Ambiente
+
+As durações dos tokens JWT são configuráveis através das seguintes variáveis de ambiente no arquivo `.env`:
+
+| Variável | Descrição | Formato | Padrão |
+| --- | --- | --- | --- |
+| `JWT_SECRET` | Segredo usado para assinar os tokens JWT. **Essencial para a segurança.** | String | `default-access-secret` |
+| `JWT_TTL` | Tempo de vida do `access_token`. | String (ex: `15m`, `1h`, `7d`) | `15m` |
+| `JWT_REFRESH_TTL` | Tempo de vida do `refresh_token`. | String (ex: `7d`, `30d`, `1y`) | `7d` |

@@ -22,6 +22,7 @@ model User {
   lastLogin            DateTime?
   tokenVersion         Int       @default(1)
   refreshToken         String?
+  refreshTokenExpiresAt DateTime?
   passwordResetToken   String?
   passwordResetExpires DateTime?
 

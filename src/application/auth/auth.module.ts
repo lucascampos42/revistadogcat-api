@@ -22,12 +22,14 @@ import { AUTH_REPOSITORY_TOKEN } from './repositories/auth.repository.interface'
     JwtModule.registerAsync({
       imports: [ConfigModule], // Importa o ConfigModule para o escopo do JwtModule
       inject: [ConfigService], // Injeta o ConfigService na factory
-      useFactory: async (configService: ConfigService) => ({
+      useFactory: (configService: ConfigService) => ({
         // Define o segredo padrão para o Access Token
-        secret: configService.get<string>('JWT_SECRET', 'default-access-secret'),
-        // Define o tempo de expiração padrão para o Access Token
+        secret: configService.get<string>(
+          'JWT_SECRET',
+          'default-access-secret',
+        ),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_TTL', '15m'),
+          expiresIn: configService.get<string>('JWT_TTL', '4h'),
         },
       }),
     }),

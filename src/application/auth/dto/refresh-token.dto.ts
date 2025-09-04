@@ -2,5 +2,5 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class RefreshTokenDto {
   @ApiProperty({ description: 'O Refresh Token para obter um novo Access Token' })
-  refreshToken: string;
+  refresh_token: string;
 }

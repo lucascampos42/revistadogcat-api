@@ -6,11 +6,13 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { GlobalExceptionFilter } from './core/filters/global-exception.filter';
+import { GlobalExceptionFilter } from './core/filters';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { logger: ['log', 'error', 'warn', 'debug', 'verbose'] });
-  const port = process.env.PORT ?? 3099;
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: ['log', 'error', 'warn', 'debug', 'verbose'],
+  });
+  const port = process.env.PORT ?? 3000;
 
   // Ativar o filtro de exceções global
   app.useGlobalFilters(new GlobalExceptionFilter());
