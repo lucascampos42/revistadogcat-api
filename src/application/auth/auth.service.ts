@@ -103,7 +103,7 @@ export class AuthService {
     userId: string,
     providedRefreshToken: string,
   ): Promise<AuthResponseDto> {
-    const user = await this.userService.findUserEntityById(userId);
+    const user: any = await this.userService.findUserEntityById(userId);
     if (!user || !user.refreshToken || !user.refreshTokenExpiresAt) {
       throw new UnauthorizedException('Acesso negado.');
     }
@@ -206,6 +206,7 @@ export class AuthService {
       blockedUntil: null,
       lastFailedLogin: null,
       refreshToken: null,
+      refreshTokenExpiresAt: null,
       passwordResetToken: null,
       passwordResetExpires: null,
       deletedAt: null,
