@@ -65,7 +65,9 @@ export class UserRepository implements IUserRepository {
     return null;
   }
 
-  async findForAuthByIdentification(identification: string): Promise<User | null> {
+  async findForAuthByIdentification(
+    identification: string,
+  ): Promise<User | null> {
     const isEmail = identification.includes('@');
     const isCpf = /^\d{11}$/.test(identification.replace(/\D/g, ''));
 
@@ -74,7 +76,9 @@ export class UserRepository implements IUserRepository {
     }
 
     if (isCpf) {
-      return this.prisma.user.findUnique({ where: { cpf: identification.replace(/\D/g, '') } });
+      return this.prisma.user.findUnique({
+        where: { cpf: identification.replace(/\D/g, '') },
+      });
     }
 
     return this.prisma.user.findFirst({ where: { userName: identification } });

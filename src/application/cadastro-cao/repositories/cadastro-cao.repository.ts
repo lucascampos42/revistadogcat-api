@@ -10,7 +10,10 @@ import { VideoOption, Prisma } from '@prisma/client';
 export class CadastroCaoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, data: CreateCadastroCaoDto): Promise<CadastroCaoEntity> {
+  async create(
+    userId: string,
+    data: CreateCadastroCaoDto,
+  ): Promise<CadastroCaoEntity> {
     const { proprietarioId, ...restOfData } = data;
 
     const cadastro = await this.prisma.cadastroCao.create({
@@ -25,7 +28,9 @@ export class CadastroCaoRepository {
     return new CadastroCaoEntity(cadastro);
   }
 
-  async findAll(params: ListCadastrosCaoDto): Promise<{ data: CadastroCaoEntity[]; total: number }> {
+  async findAll(
+    params: ListCadastrosCaoDto,
+  ): Promise<{ data: CadastroCaoEntity[]; total: number }> {
     const page = parseInt(params.page || '1');
     const limit = Math.min(parseInt(params.limit || '10'), 50);
     const skip = (page - 1) * limit;
@@ -95,7 +100,7 @@ export class CadastroCaoRepository {
     ]);
 
     return {
-      data: cadastros.map(cadastro => new CadastroCaoEntity(cadastro)),
+      data: cadastros.map((cadastro) => new CadastroCaoEntity(cadastro)),
       total,
     };
   }
@@ -141,12 +146,15 @@ export class CadastroCaoRepository {
       include: { raca: true },
     });
 
-    return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
 
-  async update(cadastroId: string, data: UpdateCadastroCaoDto): Promise<CadastroCaoEntity> {
+  async update(
+    cadastroId: string,
+    data: UpdateCadastroCaoDto,
+  ): Promise<CadastroCaoEntity> {
     const updateData: any = { ...data };
-    
+
     if (data.dataNascimento) {
       updateData.dataNascimento = new Date(data.dataNascimento);
     }
@@ -172,7 +180,10 @@ export class CadastroCaoRepository {
     });
   }
 
-  async findByRaca(raca: string, limit: number = 10): Promise<CadastroCaoEntity[]> {
+  async findByRaca(
+    raca: string,
+    limit: number = 10,
+  ): Promise<CadastroCaoEntity[]> {
     const cadastros = await this.prisma.cadastroCao.findMany({
       where: {
         deletedAt: null,
@@ -185,10 +196,13 @@ export class CadastroCaoRepository {
       include: { raca: true },
     });
 
-    return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
 
-  async findBySexo(sexo: string, limit: number = 10): Promise<CadastroCaoEntity[]> {
+  async findBySexo(
+    sexo: string,
+    limit: number = 10,
+  ): Promise<CadastroCaoEntity[]> {
     const cadastros = await this.prisma.cadastroCao.findMany({
       where: {
         deletedAt: null,
@@ -201,7 +215,7 @@ export class CadastroCaoRepository {
       include: { raca: true },
     });
 
-    return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
 
   async findComPedigree(): Promise<CadastroCaoEntity[]> {
@@ -216,7 +230,7 @@ export class CadastroCaoRepository {
       include: { raca: true },
     });
 
-    return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
 
   async findComMicrochip(): Promise<CadastroCaoEntity[]> {
@@ -231,7 +245,7 @@ export class CadastroCaoRepository {
       include: { raca: true },
     });
 
-    return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
 
   async findComVideo(): Promise<CadastroCaoEntity[]> {
@@ -248,7 +262,7 @@ export class CadastroCaoRepository {
       include: { raca: true },
     });
 
-    return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
 
   async countByUserId(userId: string): Promise<number> {
@@ -286,6 +300,6 @@ export class CadastroCaoRepository {
       },
     });
 
-    return cadastros.map(cadastro => new CadastroCaoEntity(cadastro));
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
 }

@@ -120,7 +120,11 @@ export class UserController {
 
   @Get('me')
   @ApiOperation({ summary: 'Obter perfil do usuário autenticado' })
-  @ApiResponse({ status: 200, description: 'Perfil completo do usuário', type: FullUserDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil completo do usuário',
+    type: FullUserDto,
+  })
   getMyProfile(@Req() req: AuthRequest) {
     return this.userService.findMe(req.user);
   }

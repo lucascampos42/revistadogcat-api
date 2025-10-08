@@ -13,7 +13,8 @@ import { SexoCao, VideoOption } from '@prisma/client';
 
 export class CreateCadastroCaoDto {
   @ApiPropertyOptional({
-    description: 'ID do usuário proprietário. Se omitido, o cão é associado ao usuário logado.',
+    description:
+      'ID do usuário proprietário. Se omitido, o cão é associado ao usuário logado.',
     example: 'cly123abcde',
   })
   @IsOptional()
@@ -26,7 +27,8 @@ export class CreateCadastroCaoDto {
   nome: string;
 
   @ApiProperty({
-    description: 'ID da raça do cão. Deve ser um ID válido obtido do endpoint /racas.',
+    description:
+      'ID da raça do cão. Deve ser um ID válido obtido do endpoint /racas.',
     example: 'clz987654321',
   })
   @IsString()
@@ -37,7 +39,10 @@ export class CreateCadastroCaoDto {
   @IsEnum(SexoCao)
   sexo: SexoCao;
 
-  @ApiProperty({ description: 'Data de nascimento do cão', example: '2020-05-15' })
+  @ApiProperty({
+    description: 'Data de nascimento do cão',
+    example: '2020-05-15',
+  })
   @IsDateString()
   dataNascimento: string;
 
@@ -86,7 +91,10 @@ export class CreateCadastroCaoDto {
   @IsUrl()
   pedigreeVerso?: string;
 
-  @ApiPropertyOptional({ description: 'Se o cão tem microchip', default: false })
+  @ApiPropertyOptional({
+    description: 'Se o cão tem microchip',
+    default: false,
+  })
   @IsOptional()
   @IsBoolean()
   temMicrochip?: boolean;
@@ -113,7 +121,10 @@ export class CreateCadastroCaoDto {
   videoOption?: VideoOption;
 
   @ApiPropertyOptional({ description: 'URL do vídeo' })
-  @ValidateIf((o) => o.videoOption === VideoOption.UPLOAD || o.videoOption === VideoOption.URL)
+  @ValidateIf(
+    (o) =>
+      o.videoOption === VideoOption.UPLOAD || o.videoOption === VideoOption.URL,
+  )
   @IsOptional()
   @IsUrl()
   videoUrl?: string;

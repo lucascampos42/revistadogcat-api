@@ -57,7 +57,10 @@ export class CadastroCaoController {
     @Request() req,
     @Body() createCadastroCaoDto: CreateCadastroCaoDto,
   ): Promise<CadastroCaoResponseDto> {
-    return this.cadastroCaoService.create(req.user.userId, createCadastroCaoDto);
+    return this.cadastroCaoService.create(
+      req.user.userId,
+      createCadastroCaoDto,
+    );
   }
 
   @Get()
@@ -67,16 +70,46 @@ export class CadastroCaoController {
     description: 'Lista de cadastros retornada com sucesso',
     type: CadastrosCaoListResponseDto,
   })
-  @ApiQuery({ name: 'page', required: false, description: 'Número da página (padrão: 1)' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Itens por página (padrão: 10, máx: 50)' })
-  @ApiQuery({ name: 'search', required: false, description: 'Buscar por nome do cão ou proprietário' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Número da página (padrão: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Itens por página (padrão: 10, máx: 50)',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Buscar por nome do cão ou proprietário',
+  })
   @ApiQuery({ name: 'raca', required: false, description: 'Filtrar por raça' })
   @ApiQuery({ name: 'sexo', required: false, description: 'Filtrar por sexo' })
-  @ApiQuery({ name: 'cidade', required: false, description: 'Filtrar por cidade' })
-  @ApiQuery({ name: 'estado', required: false, description: 'Filtrar por estado' })
-  @ApiQuery({ name: 'sortBy', required: false, description: 'Campo para ordenação' })
-  @ApiQuery({ name: 'sortOrder', required: false, description: 'Ordem: asc ou desc' })
-  async findAll(@Query() query: ListCadastrosCaoDto): Promise<CadastrosCaoListResponseDto> {
+  @ApiQuery({
+    name: 'cidade',
+    required: false,
+    description: 'Filtrar por cidade',
+  })
+  @ApiQuery({
+    name: 'estado',
+    required: false,
+    description: 'Filtrar por estado',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    description: 'Campo para ordenação',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    description: 'Ordem: asc ou desc',
+  })
+  async findAll(
+    @Query() query: ListCadastrosCaoDto,
+  ): Promise<CadastrosCaoListResponseDto> {
     return this.cadastroCaoService.findAll(query);
   }
 
@@ -84,7 +117,11 @@ export class CadastroCaoController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar cadastros do usuário autenticado' })
-  @ApiResponse({ status: 200, description: 'Lista de cadastros retornada com sucesso', type: [CadastroCaoResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de cadastros retornada com sucesso',
+    type: [CadastroCaoResponseDto],
+  })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   async findByUser(@Request() req: any): Promise<CadastroCaoResponseDto[]> {
     return this.cadastroCaoService.findByUser(req.user.userId);
@@ -97,7 +134,11 @@ export class CadastroCaoController {
     description: 'Lista de cães da raça especificada',
     type: [CadastroCaoResponseDto],
   })
-  @ApiQuery({ name: 'limit', required: false, description: 'Limite de resultados (padrão: 10)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Limite de resultados (padrão: 10)',
+  })
   async findByRaca(
     @Param('raca') raca: string,
     @Query('limit') limit?: string,
@@ -113,7 +154,11 @@ export class CadastroCaoController {
     description: 'Lista de cães do sexo especificado',
     type: [CadastroCaoResponseDto],
   })
-  @ApiQuery({ name: 'limit', required: false, description: 'Limite de resultados (padrão: 10)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Limite de resultados (padrão: 10)',
+  })
   async findBySexo(
     @Param('sexo') sexo: string,
     @Query('limit') limit?: string,
@@ -162,8 +207,14 @@ export class CadastroCaoController {
     description: 'Lista de cadastros recentes',
     type: [CadastroCaoResponseDto],
   })
-  @ApiQuery({ name: 'limit', required: false, description: 'Limite de resultados (padrão: 5)' })
-  async findRecentCadastros(@Query('limit') limit?: string): Promise<CadastroCaoResponseDto[]> {
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Limite de resultados (padrão: 5)',
+  })
+  async findRecentCadastros(
+    @Query('limit') limit?: string,
+  ): Promise<CadastroCaoResponseDto[]> {
     const limitNumber = limit ? parseInt(limit) : 5;
     return this.cadastroCaoService.findRecentCadastros(limitNumber);
   }
@@ -175,7 +226,9 @@ export class CadastroCaoController {
     description: 'Número de cadastros do usuário',
     schema: { type: 'object', properties: { count: { type: 'number' } } },
   })
-  async getUserCadastrosCount(@Param('userId') userId: string): Promise<{ count: number }> {
+  async getUserCadastrosCount(
+    @Param('userId') userId: string,
+  ): Promise<{ count: number }> {
     const count = await this.cadastroCaoService.getUserCadastrosCount(userId);
     return { count };
   }
@@ -203,14 +256,21 @@ export class CadastroCaoController {
   })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para editar este cadastro' })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para editar este cadastro',
+  })
   @ApiResponse({ status: 404, description: 'Cadastro não encontrado' })
   async update(
     @Param('id') id: string,
     @Request() req,
     @Body() updateCadastroCaoDto: UpdateCadastroCaoDto,
   ): Promise<CadastroCaoResponseDto> {
-    return this.cadastroCaoService.update(id, req.user.userId, updateCadastroCaoDto);
+    return this.cadastroCaoService.update(
+      id,
+      req.user.userId,
+      updateCadastroCaoDto,
+    );
   }
 
   @Delete(':id')
@@ -219,9 +279,15 @@ export class CadastroCaoController {
   @ApiOperation({ summary: 'Excluir cadastro de cão' })
   @ApiResponse({ status: 200, description: 'Cadastro excluído com sucesso' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para excluir este cadastro' })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para excluir este cadastro',
+  })
   @ApiResponse({ status: 404, description: 'Cadastro não encontrado' })
-  async remove(@Param('id') id: string, @Request() req): Promise<{ message: string }> {
+  async remove(
+    @Param('id') id: string,
+    @Request() req,
+  ): Promise<{ message: string }> {
     await this.cadastroCaoService.remove(id, req.user.userId);
     return { message: 'Cadastro excluído com sucesso' };
   }
@@ -262,7 +328,9 @@ export class CadastroCaoController {
   })
   @ApiResponse({ status: 400, description: 'Arquivos inválidos' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
-  async uploadFotos(@UploadedFiles() files: Express.Multer.File[]): Promise<{ urls: string[] }> {
+  async uploadFotos(
+    @UploadedFiles() files: Express.Multer.File[],
+  ): Promise<{ urls: string[] }> {
     if (!files || files.length === 0) {
       throw new BadRequestException('Nenhum arquivo foi enviado');
     }
@@ -272,9 +340,12 @@ export class CadastroCaoController {
     }
 
     const urls: string[] = [];
-    
+
     for (const file of files) {
-      const result = await this.fileUploadService.processUploadedFile(file, 'dogProfile');
+      const result = await this.fileUploadService.processUploadedFile(
+        file,
+        'dogProfile',
+      );
       urls.push(result.url);
     }
 
@@ -318,20 +389,27 @@ export class CadastroCaoController {
   })
   @ApiResponse({ status: 400, description: 'Arquivos inválidos' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
-  async uploadPedigree(@UploadedFiles() files: Express.Multer.File[]): Promise<{ urls: string[] }> {
+  async uploadPedigree(
+    @UploadedFiles() files: Express.Multer.File[],
+  ): Promise<{ urls: string[] }> {
     if (!files || files.length === 0) {
       throw new BadRequestException('Nenhum arquivo foi enviado');
     }
 
     if (files.length > 2) {
-      throw new BadRequestException('Máximo de 2 arquivos permitidos (frente e verso)');
+      throw new BadRequestException(
+        'Máximo de 2 arquivos permitidos (frente e verso)',
+      );
     }
 
     const urls: string[] = [];
-    
+
     for (const file of files) {
-      const result = await this.fileUploadService.processUploadedFile(file, 'dogPedigree');
-       urls.push(result.url);
+      const result = await this.fileUploadService.processUploadedFile(
+        file,
+        'dogPedigree',
+      );
+      urls.push(result.url);
     }
 
     return { urls };

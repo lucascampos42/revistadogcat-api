@@ -81,6 +81,19 @@ export class FileUploadService {
       maxFileSize: 50 * 1024 * 1024, // 50MB
       fileNamePrefix: 'dog-video',
     },
+    magazinePdf: {
+      destination: 'uploads/revista',
+      allowedMimeTypes: ['application/pdf'],
+      maxFileSize: 50 * 1024 * 1024, // 50MB
+      fileNamePrefix: 'revista',
+    },
+    magazineCover: {
+      destination: 'uploads/revista/capas',
+      allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+      maxFileSize: 5 * 1024 * 1024, // 5MB
+      fileNamePrefix: 'revista-capa',
+      imageResize: { width: 800, height: 600, fit: 'cover' as const },
+    },
   };
 
   /**
@@ -88,16 +101,21 @@ export class FileUploadService {
    */
   createMulterConfig(uploadType: keyof typeof this.uploadConfigs) {
     const config = this.uploadConfigs[uploadType];
-    
+
     return {
       storage: diskStorage({
-        destination: (req: Request, file: Express.Multer.File, cb: Function) => {
+        destination: (
+          req: Request,
+          file: Express.Multer.File,
+          cb: Function,
+        ) => {
           const uploadPath = join(process.cwd(), config.destination);
           this.ensureDirectoryExists(uploadPath);
           cb(null, uploadPath);
         },
         filename: (req: Request, file: Express.Multer.File, cb: Function) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const fileExtension = extname(file.originalname);
           const prefix = config.fileNamePrefix || 'file';
           cb(null, `${prefix}-${uniqueSuffix}${fileExtension}`);
@@ -130,15 +148,23 @@ export class FileUploadService {
     uploadType: keyof typeof this.uploadConfigs,
   ): Promise<UploadedFileResult> {
     const config = this.uploadConfigs[uploadType];
-    
+
     // Se é uma imagem e tem configuração de redimensionamento
-    if ('imageResize' in config && config.imageResize && file.mimetype.startsWith('image/')) {
+    if (
+      'imageResize' in config &&
+      config.imageResize &&
+      file.mimetype.startsWith('image/')
+    ) {
       await this.resizeImage(file.path, config.imageResize);
     }
 
     // Construir URL baseada no caminho do arquivo
-    const relativePath = file.path.replace(process.cwd(), '').replace(/\\/g, '/');
-    const url = relativePath.startsWith('/') ? relativePath : `/${relativePath}`;
+    const relativePath = file.path
+      .replace(process.cwd(), '')
+      .replace(/\\/g, '/');
+    const url = relativePath.startsWith('/')
+      ? relativePath
+      : `/${relativePath}`;
 
     return {
       url,
@@ -195,14 +221,14 @@ export class FileUploadService {
     uploadType: keyof typeof this.uploadConfigs,
   ): void {
     const config = this.uploadConfigs[uploadType];
-    
+
     for (const file of files) {
       if (!config.allowedMimeTypes.includes(file.mimetype)) {
         throw new BadRequestException(
           `Arquivo ${file.originalname} tem tipo não suportado: ${file.mimetype}`,
         );
       }
-      
+
       if (file.size > config.maxFileSize) {
         throw new BadRequestException(
           `Arquivo ${file.originalname} excede o tamanho máximo permitido`,
@@ -214,7 +240,9 @@ export class FileUploadService {
   /**
    * Obtém configuração para um tipo de upload
    */
-  getUploadConfig(uploadType: keyof typeof this.uploadConfigs): FileUploadConfig {
+  getUploadConfig(
+    uploadType: keyof typeof this.uploadConfigs,
+  ): FileUploadConfig {
     return this.uploadConfigs[uploadType];
   }
 

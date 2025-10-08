@@ -15,6 +15,7 @@ import { GlobalExceptionFilter } from './core/filters';
 import { ResponseFormatInterceptor } from './core/interceptors/response-format.interceptor';
 import { JwtModule } from '@nestjs/jwt';
 import { RacaModule } from './application/raca/raca.module';
+import { EdicaoModule } from './application/edicao/edicao.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { RacaModule } from './application/raca/raca.module';
     ArtigoModule,
     CadastroCaoModule,
     RacaModule,
+    EdicaoModule,
     MailModule,
   ],
   controllers: [],

@@ -72,7 +72,10 @@ export class CadastroCaoEntity {
     const mesAtual = hoje.getMonth();
     const mesNascimento = nascimento.getMonth();
 
-    if (mesAtual < mesNascimento || (mesAtual === mesNascimento && hoje.getDate() < nascimento.getDate())) {
+    if (
+      mesAtual < mesNascimento ||
+      (mesAtual === mesNascimento && hoje.getDate() < nascimento.getDate())
+    ) {
       idade--;
     }
 

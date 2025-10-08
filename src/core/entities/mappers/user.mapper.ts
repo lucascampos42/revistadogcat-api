@@ -22,6 +22,7 @@ export class UserMapper {
       lastLogin: prismaUser.lastLogin || undefined,
       tokenVersion: prismaUser.tokenVersion,
       refreshToken: prismaUser.refreshToken || undefined,
+      refreshTokenExpiresAt: prismaUser.refreshTokenExpiresAt || undefined,
       passwordResetToken: prismaUser.passwordResetToken || undefined,
       passwordResetExpires: prismaUser.passwordResetExpires || undefined,
       active: prismaUser.active,
@@ -53,6 +54,7 @@ export class UserMapper {
       lastLogin: userEntity.lastLogin || null,
       tokenVersion: userEntity.tokenVersion || 1,
       refreshToken: userEntity.refreshToken || null,
+      refreshTokenExpiresAt: userEntity.refreshTokenExpiresAt || null,
       passwordResetToken: userEntity.passwordResetToken || null,
       passwordResetExpires: userEntity.passwordResetExpires || null,
       active: userEntity.active ?? true, // Default to true
@@ -89,6 +91,9 @@ export class UserMapper {
       updateData.tokenVersion = userEntity.tokenVersion;
     if (userEntity.refreshToken !== undefined)
       updateData.refreshToken = userEntity.refreshToken || null;
+    if (userEntity.refreshTokenExpiresAt !== undefined)
+      updateData.refreshTokenExpiresAt =
+        userEntity.refreshTokenExpiresAt || null;
     if (userEntity.passwordResetToken !== undefined)
       updateData.passwordResetToken = userEntity.passwordResetToken || null;
     if (userEntity.passwordResetExpires !== undefined)

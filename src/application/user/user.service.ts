@@ -152,7 +152,10 @@ export class UserService {
   }): Promise<{ userId: string }> {
     const { nome, email, cpf, telefone } = data;
 
-    const existingUser = await this.userRepository.checkUserExists({ email, cpf });
+    const existingUser = await this.userRepository.checkUserExists({
+      email,
+      cpf,
+    });
     if (existingUser.emailExists) {
       throw new ConflictException(`O email '${email}' já está em uso.`);
     }
@@ -184,7 +187,9 @@ export class UserService {
   ): Promise<PublicUserDto> {
     const user = await this.findUserOrFail(id);
     if (requestingUser.role !== Role.ADMIN && requestingUser.userId !== id) {
-      throw new ForbiddenException('Você só pode visualizar seu próprio perfil');
+      throw new ForbiddenException(
+        'Você só pode visualizar seu próprio perfil',
+      );
     }
     return this.mapToPublicDto(user);
   }

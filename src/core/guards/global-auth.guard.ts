@@ -46,11 +46,18 @@ export class GlobalAuthGuard implements CanActivate {
       });
 
       if (!user) {
-        throw new UnauthorizedException('Usuário associado ao token não foi encontrado');
+        throw new UnauthorizedException(
+          'Usuário associado ao token não foi encontrado',
+        );
       }
 
-      if (typeof payload.tokenVersion === 'number' && payload.tokenVersion !== user.tokenVersion) {
-        throw new UnauthorizedException('Token de acesso revogado. Por favor, faça login novamente.');
+      if (
+        typeof payload.tokenVersion === 'number' &&
+        payload.tokenVersion !== user.tokenVersion
+      ) {
+        throw new UnauthorizedException(
+          'Token de acesso revogado. Por favor, faça login novamente.',
+        );
       }
 
       request.user = {

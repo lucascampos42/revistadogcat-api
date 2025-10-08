@@ -1,4 +1,10 @@
-import { IsOptional, IsString, IsEnum, IsBoolean, IsNumberString } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsEnum,
+  IsBoolean,
+  IsNumberString,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { StatusArtigo } from '@prisma/client';
 import { Transform } from 'class-transformer';
@@ -6,7 +12,7 @@ import { Transform } from 'class-transformer';
 export class ListArtigosDto {
   @ApiPropertyOptional({
     description: 'Página atual (padrão: 1)',
-    example: '1'
+    example: '1',
   })
   @IsOptional()
   @IsNumberString()
@@ -14,7 +20,7 @@ export class ListArtigosDto {
 
   @ApiPropertyOptional({
     description: 'Itens por página (padrão: 10, máximo: 50)',
-    example: '10'
+    example: '10',
   })
   @IsOptional()
   @IsNumberString()
@@ -22,7 +28,7 @@ export class ListArtigosDto {
 
   @ApiPropertyOptional({
     description: 'Buscar por título ou conteúdo',
-    example: 'cuidados com cão'
+    example: 'cuidados com cão',
   })
   @IsOptional()
   @IsString()
@@ -30,7 +36,7 @@ export class ListArtigosDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por categoria',
-    example: 'Saúde'
+    example: 'Saúde',
   })
   @IsOptional()
   @IsString()
@@ -38,7 +44,7 @@ export class ListArtigosDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por status',
-    enum: StatusArtigo
+    enum: StatusArtigo,
   })
   @IsOptional()
   @IsEnum(StatusArtigo)
@@ -46,7 +52,7 @@ export class ListArtigosDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar apenas artigos em destaque',
-    example: 'true'
+    example: 'true',
   })
   @IsOptional()
   @Transform(({ value }) => value === 'true')
@@ -55,7 +61,7 @@ export class ListArtigosDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por tag',
-    example: 'saúde'
+    example: 'saúde',
   })
   @IsOptional()
   @IsString()
@@ -64,7 +70,13 @@ export class ListArtigosDto {
   @ApiPropertyOptional({
     description: 'Ordenar por campo (padrão: dataPublicacao)',
     example: 'dataPublicacao',
-    enum: ['dataPublicacao', 'visualizacoes', 'curtidas', 'createdAt', 'titulo']
+    enum: [
+      'dataPublicacao',
+      'visualizacoes',
+      'curtidas',
+      'createdAt',
+      'titulo',
+    ],
   })
   @IsOptional()
   @IsString()
@@ -73,7 +85,7 @@ export class ListArtigosDto {
   @ApiPropertyOptional({
     description: 'Direção da ordenação (padrão: desc)',
     example: 'desc',
-    enum: ['asc', 'desc']
+    enum: ['asc', 'desc'],
   })
   @IsOptional()
   @IsString()
@@ -83,12 +95,12 @@ export class ListArtigosDto {
 export class ArtigosListResponseDto {
   @ApiPropertyOptional({
     description: 'Lista de artigos',
-    type: 'array'
+    type: 'array',
   })
   data: any[];
 
   @ApiPropertyOptional({
-    description: 'Informações de paginação'
+    description: 'Informações de paginação',
   })
   pagination: {
     page: number;

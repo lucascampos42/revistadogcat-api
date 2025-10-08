@@ -48,7 +48,9 @@ export class ArtigoRepository {
     return new ArtigoEntity(artigo);
   }
 
-  async findAll(params: ListArtigosDto): Promise<{ data: ArtigoEntity[]; total: number }> {
+  async findAll(
+    params: ListArtigosDto,
+  ): Promise<{ data: ArtigoEntity[]; total: number }> {
     const page = parseInt(params.page || '1');
     const limit = Math.min(parseInt(params.limit || '10'), 50);
     const skip = (page - 1) * limit;
@@ -97,7 +99,7 @@ export class ArtigoRepository {
     ]);
 
     return {
-      data: artigos.map(artigo => new ArtigoEntity(artigo)),
+      data: artigos.map((artigo) => new ArtigoEntity(artigo)),
       total,
     };
   }
@@ -116,7 +118,7 @@ export class ArtigoRepository {
 
   async update(artigoId: string, data: UpdateArtigoDto): Promise<ArtigoEntity> {
     const updateData: any = { ...data };
-    
+
     if (data.dataPublicacao) {
       updateData.dataPublicacao = new Date(data.dataPublicacao);
     }
@@ -158,7 +160,9 @@ export class ArtigoRepository {
     });
   }
 
-  async findPublicados(params: ListArtigosDto): Promise<{ data: ArtigoEntity[]; total: number }> {
+  async findPublicados(
+    params: ListArtigosDto,
+  ): Promise<{ data: ArtigoEntity[]; total: number }> {
     return this.findAll({
       ...params,
       status: StatusArtigo.PUBLICADO,
@@ -177,6 +181,6 @@ export class ArtigoRepository {
       include: this.includeAutorAndComentarios,
     });
 
-    return artigos.map(artigo => new ArtigoEntity(artigo));
+    return artigos.map((artigo) => new ArtigoEntity(artigo));
   }
 }

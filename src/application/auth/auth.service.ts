@@ -17,7 +17,6 @@ import {
 } from './repositories/auth.repository.interface';
 import {
   UnauthorizedException,
-  NotFoundException,
   BadRequestException,
   ConflictException,
 } from '../../core/exceptions/custom-exceptions';
@@ -58,7 +57,9 @@ export class AuthService {
       case 'd':
         return value * 24 * 60 * 60 * 1000; // dias
       default:
-        this.logger.warn(`Unidade de tempo desconhecida para TTL: ${ttl}. Usando 7 dias como padrão.`);
+        this.logger.warn(
+          `Unidade de tempo desconhecida para TTL: ${ttl}. Usando 7 dias como padrão.`,
+        );
         return 7 * 24 * 60 * 60 * 1000; // Padrão de 7 dias
     }
   }
@@ -79,8 +80,13 @@ export class AuthService {
     const access_token = await this.signAccessToken(user);
     const refresh_token = crypto.randomBytes(32).toString('hex');
 
-    const refreshTokenTTL = this.configService.get<string>('JWT_REFRESH_TTL', '7d');
-    const refreshTokenExpiresAt = new Date(Date.now() + this.parseTTL(refreshTokenTTL));
+    const refreshTokenTTL = this.configService.get<string>(
+      'JWT_REFRESH_TTL',
+      '7d',
+    );
+    const refreshTokenExpiresAt = new Date(
+      Date.now() + this.parseTTL(refreshTokenTTL),
+    );
 
     await this.authRepository.updateUserTokens(user.userId, {
       refreshToken: refresh_token,
@@ -103,7 +109,7 @@ export class AuthService {
     userId: string,
     providedRefreshToken: string,
   ): Promise<AuthResponseDto> {
-    const user: any = await this.userService.findUserEntityById(userId);
+    const user = await this.userService.findUserEntityById(userId);
     if (!user || !user.refreshToken || !user.refreshTokenExpiresAt) {
       throw new UnauthorizedException('Acesso negado.');
     }
@@ -111,8 +117,13 @@ export class AuthService {
     // Verifica se o refresh token expirou por tempo
     if (user.refreshTokenExpiresAt < new Date()) {
       // Opcional: Limpar o refresh token expirado do banco de dados aqui
-      await this.authRepository.updateUserTokens(userId, { refreshToken: null, refreshTokenExpiresAt: null });
-      throw new UnauthorizedException('Refresh token expirado. Faça login novamente.');
+      await this.authRepository.updateUserTokens(userId, {
+        refreshToken: null,
+        refreshTokenExpiresAt: null,
+      });
+      throw new UnauthorizedException(
+        'Refresh token expirado. Faça login novamente.',
+      );
     }
 
     const isRefreshTokenMatching = providedRefreshToken === user.refreshToken;
@@ -121,7 +132,9 @@ export class AuthService {
       // Se o token não corresponder, pode ser uma tentativa de uso indevido
       // Invalida a sessão atual para forçar novo login
       await this.authRepository.incrementTokenVersion(userId);
-      throw new UnauthorizedException('Refresh token inválido. Faça login novamente.');
+      throw new UnauthorizedException(
+        'Refresh token inválido. Faça login novamente.',
+      );
     }
 
     return this.issueTokens(user);
@@ -173,11 +186,12 @@ export class AuthService {
       createUserDto.cpf = normalizedCpf;
     }
 
-    const { userNameExists, emailExists, cpfExists } = await this.userService.checkUserExists({
-      userName: createUserDto.userName,
-      email: createUserDto.email,
-      cpf: createUserDto.cpf,
-    });
+    const { userNameExists, emailExists, cpfExists } =
+      await this.userService.checkUserExists({
+        userName: createUserDto.userName,
+        email: createUserDto.email,
+        cpf: createUserDto.cpf,
+      });
 
     if (userNameExists || emailExists || cpfExists) {
       const errors: string[] = [];
@@ -214,6 +228,7 @@ export class AuthService {
 
     const newUser = await this.authRepository.createUser(userToCreate);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...user } = newUser;
     return {
       ...user,
@@ -256,7 +271,8 @@ export class AuthService {
 
   private isSuspiciousLogin(user: User): boolean {
     if (!user.lastLogin) return false;
-    const daysSinceLastLogin = (Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24);
+    const daysSinceLastLogin =
+      (Date.now() - user.lastLogin.getTime()) / (1000 * 60 * 60 * 24);
     return daysSinceLastLogin > 30;
   }
 
@@ -265,7 +281,9 @@ export class AuthService {
   async forgotPassword(
     forgotPasswordDto: ForgotPasswordDto,
   ): Promise<{ message: string }> {
-    const user = await this.userService.findUserForAuth(forgotPasswordDto.email);
+    const user = await this.userService.findUserForAuth(
+      forgotPasswordDto.email,
+    );
     if (!user) {
       return {
         message:
@@ -293,7 +311,7 @@ export class AuthService {
     return {
       message:
         'Se um usuário com este e-mail existir, um link de redefinição de senha será enviado.',
-      };
+    };
   }
 
   async resetPassword(
@@ -305,13 +323,12 @@ export class AuthService {
       .update(token)
       .digest('hex');
 
-    const user = await this.authRepository.findUserByPasswordResetToken(
-      passwordResetToken,
-    );
-    if (!user) {
-      throw new UnauthorizedException('Token inválido ou expirado.');
-    }
-
+        const user = await this.authRepository.findUserByPasswordResetToken(
+          passwordResetToken,
+        );
+        if (!user) {
+          throw new UnauthorizedException('Token inválido ou expirado.');
+        }
     const hashedPassword = await bcrypt.hash(password, 10);
     await this.authRepository.updateUserPassword(user.userId, hashedPassword);
     return { message: 'Senha redefinida com sucesso' };
@@ -319,7 +336,10 @@ export class AuthService {
 
   async logout(userId: string): Promise<void> {
     // Ao fazer logout, também invalidamos o refresh token e sua expiração
-    await this.authRepository.updateUserTokens(userId, { refreshToken: null, refreshTokenExpiresAt: null });
+    await this.authRepository.updateUserTokens(userId, {
+      refreshToken: null,
+      refreshTokenExpiresAt: null,
+    });
     await this.authRepository.incrementTokenVersion(userId);
   }
 
@@ -329,6 +349,7 @@ export class AuthService {
   ): Promise<Omit<User, 'password'> | null> {
     const user = await this.userService.findUserForAuth(identifier);
     if (user && user.password && (await bcrypt.compare(pass, user.password))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
       return result;
     }

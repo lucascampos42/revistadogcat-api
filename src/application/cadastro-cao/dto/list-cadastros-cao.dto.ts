@@ -5,7 +5,7 @@ import { SexoCao } from '@prisma/client';
 export class ListCadastrosCaoDto {
   @ApiPropertyOptional({
     description: 'Página atual (padrão: 1)',
-    example: '1'
+    example: '1',
   })
   @IsOptional()
   @IsNumberString()
@@ -13,7 +13,7 @@ export class ListCadastrosCaoDto {
 
   @ApiPropertyOptional({
     description: 'Itens por página (padrão: 10, máximo: 50)',
-    example: '10'
+    example: '10',
   })
   @IsOptional()
   @IsNumberString()
@@ -21,7 +21,7 @@ export class ListCadastrosCaoDto {
 
   @ApiPropertyOptional({
     description: 'Buscar por nome do cão',
-    example: 'Rex'
+    example: 'Rex',
   })
   @IsOptional()
   @IsString()
@@ -29,7 +29,7 @@ export class ListCadastrosCaoDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por raça',
-    example: 'Golden Retriever'
+    example: 'Golden Retriever',
   })
   @IsOptional()
   @IsString()
@@ -37,7 +37,7 @@ export class ListCadastrosCaoDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por sexo',
-    enum: SexoCao
+    enum: SexoCao,
   })
   @IsOptional()
   @IsEnum(SexoCao)
@@ -45,7 +45,7 @@ export class ListCadastrosCaoDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por cidade',
-    example: 'São Paulo'
+    example: 'São Paulo',
   })
   @IsOptional()
   @IsString()
@@ -53,7 +53,7 @@ export class ListCadastrosCaoDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por estado',
-    example: 'SP'
+    example: 'SP',
   })
   @IsOptional()
   @IsString()
@@ -62,7 +62,7 @@ export class ListCadastrosCaoDto {
   @ApiPropertyOptional({
     description: 'Ordenar por campo (padrão: createdAt)',
     example: 'createdAt',
-    enum: ['createdAt', 'nome', 'raca', 'dataNascimento']
+    enum: ['createdAt', 'nome', 'raca', 'dataNascimento'],
   })
   @IsOptional()
   @IsString()
@@ -71,7 +71,7 @@ export class ListCadastrosCaoDto {
   @ApiPropertyOptional({
     description: 'Direção da ordenação (padrão: desc)',
     example: 'desc',
-    enum: ['asc', 'desc']
+    enum: ['asc', 'desc'],
   })
   @IsOptional()
   @IsString()
@@ -81,12 +81,12 @@ export class ListCadastrosCaoDto {
 export class CadastrosCaoListResponseDto {
   @ApiPropertyOptional({
     description: 'Lista de cadastros de cães',
-    type: 'array'
+    type: 'array',
   })
   data: any[];
 
   @ApiPropertyOptional({
-    description: 'Informações de paginação'
+    description: 'Informações de paginação',
   })
   pagination: {
     page: number;

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ArtigoRepository } from './repositories/artigo.repository';
 import { ComentarioRepository } from './repositories/comentario.repository';
 import { CreateArtigoDto } from './dto/create-artigo.dto';
@@ -25,22 +30,29 @@ export class ArtigoService {
       throw new BadRequestException('Data de publicação inválida');
     }
 
-    if (createArtigoDto.status === StatusArtigo.PUBLICADO && dataPublicacao < new Date()) {
-      throw new BadRequestException('Data de publicação não pode ser no passado para artigos publicados');
+    if (
+      createArtigoDto.status === StatusArtigo.PUBLICADO &&
+      dataPublicacao < new Date()
+    ) {
+      throw new BadRequestException(
+        'Data de publicação não pode ser no passado para artigos publicados',
+      );
     }
 
     const artigo = await this.artigoRepository.create(createArtigoDto);
     return this.mapToResponseDto(artigo);
   }
 
-  async findAll(listArtigosDto: ListArtigosDto): Promise<ArtigosListResponseDto> {
+  async findAll(
+    listArtigosDto: ListArtigosDto,
+  ): Promise<ArtigosListResponseDto> {
     const { data, total } = await this.artigoRepository.findAll(listArtigosDto);
     const page = parseInt(listArtigosDto.page || '1');
     const limit = Math.min(parseInt(listArtigosDto.limit || '10'), 50);
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: data.map(artigo => this.mapToResponseDto(artigo)),
+      data: data.map((artigo) => this.mapToResponseDto(artigo)),
       pagination: {
         page,
         limit,
@@ -52,14 +64,17 @@ export class ArtigoService {
     };
   }
 
-  async findPublicados(listArtigosDto: ListArtigosDto): Promise<ArtigosListResponseDto> {
-    const { data, total } = await this.artigoRepository.findPublicados(listArtigosDto);
+  async findPublicados(
+    listArtigosDto: ListArtigosDto,
+  ): Promise<ArtigosListResponseDto> {
+    const { data, total } =
+      await this.artigoRepository.findPublicados(listArtigosDto);
     const page = parseInt(listArtigosDto.page || '1');
     const limit = Math.min(parseInt(listArtigosDto.limit || '10'), 50);
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data: data.map(artigo => this.mapToResponseDto(artigo)),
+      data: data.map((artigo) => this.mapToResponseDto(artigo)),
       pagination: {
         page,
         limit,
@@ -71,7 +86,10 @@ export class ArtigoService {
     };
   }
 
-  async findOne(artigoId: string, incrementView: boolean = false): Promise<ArtigoResponseDto> {
+  async findOne(
+    artigoId: string,
+    incrementView: boolean = false,
+  ): Promise<ArtigoResponseDto> {
     const artigo = await this.artigoRepository.findById(artigoId);
     if (!artigo) {
       throw new NotFoundException('Artigo não encontrado');
@@ -85,13 +103,19 @@ export class ArtigoService {
     return this.mapToResponseDto(artigo);
   }
 
-  async update(artigoId: string, updateArtigoDto: UpdateArtigoDto): Promise<ArtigoResponseDto> {
+  async update(
+    artigoId: string,
+    updateArtigoDto: UpdateArtigoDto,
+  ): Promise<ArtigoResponseDto> {
     const existingArtigo = await this.artigoRepository.findById(artigoId);
     if (!existingArtigo) {
       throw new NotFoundException('Artigo não encontrado');
     }
 
-    const artigo = await this.artigoRepository.update(artigoId, updateArtigoDto);
+    const artigo = await this.artigoRepository.update(
+      artigoId,
+      updateArtigoDto,
+    );
     return this.mapToResponseDto(artigo);
   }
 
@@ -130,38 +154,62 @@ export class ArtigoService {
 
   async findDestaques(limit: number = 5): Promise<ArtigoResponseDto[]> {
     const artigos = await this.artigoRepository.findDestaques(limit);
-    return artigos.map(artigo => this.mapToResponseDto(artigo));
+    return artigos.map((artigo) => this.mapToResponseDto(artigo));
   }
 
   // --- Comentários ---
 
-  async findComentariosByArtigoId(artigoId: string): Promise<ComentarioResponseDto[]> {
-    const comentarios = await this.comentarioRepository.findByArtigoId(artigoId);
-    return comentarios.map(c => this.mapComentarioToResponseDto(new ComentarioEntity(c)));
+  async findComentariosByArtigoId(
+    artigoId: string,
+  ): Promise<ComentarioResponseDto[]> {
+    const comentarios =
+      await this.comentarioRepository.findByArtigoId(artigoId);
+    return comentarios.map((c) =>
+      this.mapComentarioToResponseDto(new ComentarioEntity(c)),
+    );
   }
 
-  async addComentario(artigoId: string, dto: CreateComentarioDto & { autorId: string }): Promise<ComentarioResponseDto> {
+  async addComentario(
+    artigoId: string,
+    dto: CreateComentarioDto & { autorId: string },
+  ): Promise<ComentarioResponseDto> {
     const artigo = await this.artigoRepository.findById(artigoId);
     if (!artigo || !artigo.isPublicado()) {
-      throw new NotFoundException('Artigo publicado não encontrado para comentar.');
+      throw new NotFoundException(
+        'Artigo publicado não encontrado para comentar.',
+      );
     }
 
-    const comentario = await this.comentarioRepository.create({ ...dto, artigoId });
+    const comentario = await this.comentarioRepository.create({
+      ...dto,
+      artigoId,
+    });
     return this.mapComentarioToResponseDto(new ComentarioEntity(comentario));
   }
 
-  async updateComentario(comentarioId: string, autorId: string, dto: UpdateComentarioDto): Promise<ComentarioResponseDto> {
+  async updateComentario(
+    comentarioId: string,
+    autorId: string,
+    dto: UpdateComentarioDto,
+  ): Promise<ComentarioResponseDto> {
     const comentario = await this.comentarioRepository.findById(comentarioId);
     if (!comentario) {
       throw new NotFoundException('Comentário não encontrado');
     }
 
     if (comentario.autorId !== autorId) {
-      throw new ForbiddenException('Você não tem permissão para editar este comentário');
+      throw new ForbiddenException(
+        'Você não tem permissão para editar este comentário',
+      );
     }
 
-    const updatedComentario = await this.comentarioRepository.update(comentarioId, dto);
-    return this.mapComentarioToResponseDto(new ComentarioEntity(updatedComentario));
+    const updatedComentario = await this.comentarioRepository.update(
+      comentarioId,
+      dto,
+    );
+    return this.mapComentarioToResponseDto(
+      new ComentarioEntity(updatedComentario),
+    );
   }
 
   async deleteComentario(comentarioId: string, autorId: string): Promise<void> {
@@ -171,7 +219,9 @@ export class ArtigoService {
     }
 
     if (comentario.autorId !== autorId) {
-      throw new ForbiddenException('Você não tem permissão para excluir este comentário');
+      throw new ForbiddenException(
+        'Você não tem permissão para excluir este comentário',
+      );
     }
 
     await this.comentarioRepository.delete(comentarioId);
@@ -196,7 +246,9 @@ export class ArtigoService {
       imagemCapa: artigo.imagemCapa,
       visualizacoes: artigo.visualizacoes,
       curtidas: artigo.curtidas,
-      comentarios: artigo.comentarios.map(c => this.mapComentarioToResponseDto(c)),
+      comentarios: artigo.comentarios.map((c) =>
+        this.mapComentarioToResponseDto(c),
+      ),
       destaque: artigo.destaque,
       tags: artigo.tags,
       createdAt: artigo.createdAt,
@@ -204,7 +256,9 @@ export class ArtigoService {
     };
   }
 
-  private mapComentarioToResponseDto(comentario: ComentarioEntity): ComentarioResponseDto {
+  private mapComentarioToResponseDto(
+    comentario: ComentarioEntity,
+  ): ComentarioResponseDto {
     return {
       comentarioId: comentario.comentarioId,
       conteudo: comentario.conteudo,

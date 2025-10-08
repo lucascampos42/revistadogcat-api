@@ -73,7 +73,10 @@ export class RacaController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar uma raça' })
-  @ApiResponse({ status: 200, description: 'A raça foi atualizada com sucesso.' })
+  @ApiResponse({
+    status: 200,
+    description: 'A raça foi atualizada com sucesso.',
+  })
   @ApiResponse({ status: 404, description: 'Raça não encontrada.' })
   update(@Param('id') id: string, @Body() updateRacaDto: UpdateRacaDto) {
     return this.racaService.update(id, updateRacaDto);
@@ -84,7 +87,10 @@ export class RacaController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Inativar uma raça (soft delete)' })
-  @ApiResponse({ status: 200, description: 'A raça foi inativada com sucesso.' })
+  @ApiResponse({
+    status: 200,
+    description: 'A raça foi inativada com sucesso.',
+  })
   @ApiResponse({ status: 404, description: 'Raça não encontrada.' })
   remove(@Param('id') id: string) {
     return this.racaService.remove(id);

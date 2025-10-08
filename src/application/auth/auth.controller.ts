@@ -60,7 +60,10 @@ export class AuthController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Renovar token de acesso usando o refresh token' })
   @ApiResponse({ status: 200, type: AuthResponseDto })
-  @ApiResponse({ status: 401, description: 'Refresh token inválido ou expirado' })
+  @ApiResponse({
+    status: 401,
+    description: 'Refresh token inválido ou expirado',
+  })
   refreshToken(
     @User('userId') userId: string,
     @Body() body: RefreshTokenDto,

@@ -49,7 +49,9 @@ export class CadastroCaoService {
       throw new BadRequestException('Data de nascimento inválida');
     }
     if (dataNascimento > new Date()) {
-      throw new BadRequestException('Data de nascimento não pode ser no futuro');
+      throw new BadRequestException(
+        'Data de nascimento não pode ser no futuro',
+      );
     }
 
     this.validateConditionalData(createCadastroCaoDto);
@@ -64,9 +66,8 @@ export class CadastroCaoService {
   async findAll(
     listCadastrosCaoDto: ListCadastrosCaoDto,
   ): Promise<CadastrosCaoListResponseDto> {
-    const { data, total } = await this.cadastroCaoRepository.findAll(
-      listCadastrosCaoDto,
-    );
+    const { data, total } =
+      await this.cadastroCaoRepository.findAll(listCadastrosCaoDto);
 
     const page = parseInt(listCadastrosCaoDto.page || '1');
     const limit = Math.min(parseInt(listCadastrosCaoDto.limit || '10'), 50);
@@ -105,7 +106,8 @@ export class CadastroCaoService {
     userId: string,
     updateCadastroCaoDto: UpdateCadastroCaoDto,
   ): Promise<CadastroCaoResponseDto> {
-    const existingCadastro = await this.cadastroCaoRepository.findById(cadastroId);
+    const existingCadastro =
+      await this.cadastroCaoRepository.findById(cadastroId);
 
     if (!existingCadastro) {
       throw new NotFoundException('Cadastro de cão não encontrado');
@@ -142,12 +144,18 @@ export class CadastroCaoService {
     await this.cadastroCaoRepository.delete(cadastroId);
   }
 
-  async findByRaca(raca: string, limit: number): Promise<CadastroCaoResponseDto[]> {
+  async findByRaca(
+    raca: string,
+    limit: number,
+  ): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findByRaca(raca, limit);
     return cadastros.map(this.mapToResponseDto);
   }
 
-  async findBySexo(sexo: string, limit: number): Promise<CadastroCaoResponseDto[]> {
+  async findBySexo(
+    sexo: string,
+    limit: number,
+  ): Promise<CadastroCaoResponseDto[]> {
     const cadastros = await this.cadastroCaoRepository.findBySexo(sexo, limit);
     return cadastros.map(this.mapToResponseDto);
   }
@@ -168,7 +176,8 @@ export class CadastroCaoService {
   }
 
   async findRecentCadastros(limit: number): Promise<CadastroCaoResponseDto[]> {
-    const cadastros = await this.cadastroCaoRepository.findRecentCadastros(limit);
+    const cadastros =
+      await this.cadastroCaoRepository.findRecentCadastros(limit);
     return cadastros.map(this.mapToResponseDto);
   }
 
@@ -227,7 +236,9 @@ export class CadastroCaoService {
     }
   }
 
-  private mapToResponseDto(cadastro: CadastroCaoEntity): CadastroCaoResponseDto {
+  private mapToResponseDto(
+    cadastro: CadastroCaoEntity,
+  ): CadastroCaoResponseDto {
     return {
       cadastroId: cadastro.cadastroId,
       userId: cadastro.userId,

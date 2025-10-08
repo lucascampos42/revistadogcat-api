@@ -28,7 +28,7 @@ export class ArtigoEntity {
       this.autor = new UserEntity(data.autor);
     }
     if (data.comentarios) {
-      this.comentarios = data.comentarios.map(c => new ComentarioEntity(c));
+      this.comentarios = data.comentarios.map((c) => new ComentarioEntity(c));
     }
   }
 

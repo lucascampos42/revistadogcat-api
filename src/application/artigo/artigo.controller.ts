@@ -51,36 +51,65 @@ export class ArtigoController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar novo artigo' })
-  @ApiResponse({ status: 201, description: 'Artigo criado com sucesso', type: ArtigoResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Artigo criado com sucesso',
+    type: ArtigoResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({ status: 403, description: 'Acesso negado' })
-  async create(@Body() createArtigoDto: CreateArtigoDto): Promise<ArtigoResponseDto> {
+  async create(
+    @Body() createArtigoDto: CreateArtigoDto,
+  ): Promise<ArtigoResponseDto> {
     return this.artigoService.create(createArtigoDto);
   }
 
   @Get()
   @ApiOperation({ summary: 'Listar todos os artigos (admin/editor)' })
-  @ApiResponse({ status: 200, description: 'Lista de artigos retornada com sucesso', type: ArtigosListResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de artigos retornada com sucesso',
+    type: ArtigosListResponseDto,
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth()
-  async findAll(@Query() listArtigosDto: ListArtigosDto): Promise<ArtigosListResponseDto> {
+  async findAll(
+    @Query() listArtigosDto: ListArtigosDto,
+  ): Promise<ArtigosListResponseDto> {
     return this.artigoService.findAll(listArtigosDto);
   }
 
   @Get('publicados')
   @ApiOperation({ summary: 'Listar artigos publicados (público)' })
-  @ApiResponse({ status: 200, description: 'Lista de artigos publicados retornada com sucesso', type: ArtigosListResponseDto })
-  async findPublicados(@Query() listArtigosDto: ListArtigosDto): Promise<ArtigosListResponseDto> {
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de artigos publicados retornada com sucesso',
+    type: ArtigosListResponseDto,
+  })
+  async findPublicados(
+    @Query() listArtigosDto: ListArtigosDto,
+  ): Promise<ArtigosListResponseDto> {
     return this.artigoService.findPublicados(listArtigosDto);
   }
 
   @Get('destaques')
   @ApiOperation({ summary: 'Listar artigos em destaque (público)' })
-  @ApiQuery({ name: 'limit', required: false, description: 'Número máximo de artigos (padrão: 5)', example: 5 })
-  @ApiResponse({ status: 200, description: 'Lista de artigos em destaque retornada com sucesso', type: [ArtigoResponseDto] })
-  async findDestaques(@Query('limit') limit?: string): Promise<ArtigoResponseDto[]> {
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Número máximo de artigos (padrão: 5)',
+    example: 5,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de artigos em destaque retornada com sucesso',
+    type: [ArtigoResponseDto],
+  })
+  async findDestaques(
+    @Query('limit') limit?: string,
+  ): Promise<ArtigoResponseDto[]> {
     const limitNumber = limit ? parseInt(limit) : 5;
     return this.artigoService.findDestaques(limitNumber);
   }
@@ -88,10 +117,22 @@ export class ArtigoController {
   @Get(':id')
   @ApiOperation({ summary: 'Obter artigo por ID' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
-  @ApiQuery({ name: 'incrementView', required: false, description: 'Incrementar visualizações (padrão: false)', example: false })
-  @ApiResponse({ status: 200, description: 'Artigo retornado com sucesso', type: ArtigoResponseDto })
+  @ApiQuery({
+    name: 'incrementView',
+    required: false,
+    description: 'Incrementar visualizações (padrão: false)',
+    example: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Artigo retornado com sucesso',
+    type: ArtigoResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Artigo não encontrado' })
-  async findOne(@Param('id') id: string, @Query('incrementView') incrementView?: string): Promise<ArtigoResponseDto> {
+  async findOne(
+    @Param('id') id: string,
+    @Query('incrementView') incrementView?: string,
+  ): Promise<ArtigoResponseDto> {
     const shouldIncrementView = incrementView === 'true';
     return this.artigoService.findOne(id, shouldIncrementView);
   }
@@ -102,12 +143,19 @@ export class ArtigoController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar artigo' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
-  @ApiResponse({ status: 200, description: 'Artigo atualizado com sucesso', type: ArtigoResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Artigo atualizado com sucesso',
+    type: ArtigoResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Dados inválidos' })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Artigo não encontrado' })
-  async update(@Param('id') id: string, @Body() updateArtigoDto: UpdateArtigoDto): Promise<ArtigoResponseDto> {
+  async update(
+    @Param('id') id: string,
+    @Body() updateArtigoDto: UpdateArtigoDto,
+  ): Promise<ArtigoResponseDto> {
     return this.artigoService.update(id, updateArtigoDto);
   }
 
@@ -129,7 +177,11 @@ export class ArtigoController {
   @Post(':id/curtir')
   @ApiOperation({ summary: 'Curtir artigo' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
-  @ApiResponse({ status: 200, description: 'Artigo curtido com sucesso', type: ArtigoResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Artigo curtido com sucesso',
+    type: ArtigoResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Artigo não encontrado' })
   async curtir(@Param('id') id: string): Promise<ArtigoResponseDto> {
     return this.artigoService.curtir(id);
@@ -138,7 +190,11 @@ export class ArtigoController {
   @Post(':id/descurtir')
   @ApiOperation({ summary: 'Descurtir artigo' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
-  @ApiResponse({ status: 200, description: 'Artigo descurtido com sucesso', type: ArtigoResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Artigo descurtido com sucesso',
+    type: ArtigoResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Artigo não encontrado' })
   async descurtir(@Param('id') id: string): Promise<ArtigoResponseDto> {
     return this.artigoService.descurtir(id);
@@ -151,14 +207,29 @@ export class ArtigoController {
   @UseInterceptors(FileInterceptor('image'))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload de imagem para artigo' })
-  @ApiBody({ description: 'Arquivo de imagem', schema: { type: 'object', properties: { image: { type: 'string', format: 'binary' } } } })
-  @ApiResponse({ status: 200, description: 'Imagem enviada com sucesso', schema: { type: 'object', properties: { url: { type: 'string' } } } })
+  @ApiBody({
+    description: 'Arquivo de imagem',
+    schema: {
+      type: 'object',
+      properties: { image: { type: 'string', format: 'binary' } },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Imagem enviada com sucesso',
+    schema: { type: 'object', properties: { url: { type: 'string' } } },
+  })
   @ApiResponse({ status: 400, description: 'Arquivo inválido' })
-  async uploadImagem(@UploadedFile() file: Express.Multer.File): Promise<{ url: string }> {
+  async uploadImagem(
+    @UploadedFile() file: Express.Multer.File,
+  ): Promise<{ url: string }> {
     if (!file) {
       throw new BadRequestException('Nenhum arquivo foi enviado');
     }
-    const processedFile = await this.fileUploadService.processUploadedFile(file, 'articleImage');
+    const processedFile = await this.fileUploadService.processUploadedFile(
+      file,
+      'articleImage',
+    );
     return { url: processedFile.url };
   }
 
@@ -167,8 +238,14 @@ export class ArtigoController {
   @Get(':id/comentarios')
   @ApiOperation({ summary: 'Listar comentários de um artigo' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
-  @ApiResponse({ status: 200, description: 'Lista de comentários', type: [ComentarioResponseDto] })
-  async findComentarios(@Param('id') id: string): Promise<ComentarioResponseDto[]> {
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de comentários',
+    type: [ComentarioResponseDto],
+  })
+  async findComentarios(
+    @Param('id') id: string,
+  ): Promise<ComentarioResponseDto[]> {
     return this.artigoService.findComentariosByArtigoId(id);
   }
 
@@ -177,7 +254,11 @@ export class ArtigoController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Adicionar um novo comentário' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
-  @ApiResponse({ status: 201, description: 'Comentário criado com sucesso', type: ComentarioResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Comentário criado com sucesso',
+    type: ComentarioResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   async addComentario(
     @Param('id') artigoId: string,
@@ -185,7 +266,10 @@ export class ArtigoController {
     @Req() req: any,
   ): Promise<ComentarioResponseDto> {
     const autorId = req.user.userId; // Extraído do token JWT
-    return this.artigoService.addComentario(artigoId, { ...createComentarioDto, autorId });
+    return this.artigoService.addComentario(artigoId, {
+      ...createComentarioDto,
+      autorId,
+    });
   }
 
   @Patch('comentarios/:comentarioId')
@@ -193,7 +277,11 @@ export class ArtigoController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar um comentário' })
   @ApiParam({ name: 'comentarioId', description: 'ID do comentário' })
-  @ApiResponse({ status: 200, description: 'Comentário atualizado com sucesso', type: ComentarioResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Comentário atualizado com sucesso',
+    type: ComentarioResponseDto,
+  })
   @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Comentário não encontrado' })
   async updateComentario(
@@ -202,7 +290,11 @@ export class ArtigoController {
     @Req() req: any,
   ): Promise<ComentarioResponseDto> {
     const autorId = req.user.userId;
-    return this.artigoService.updateComentario(comentarioId, autorId, updateComentarioDto);
+    return this.artigoService.updateComentario(
+      comentarioId,
+      autorId,
+      updateComentarioDto,
+    );
   }
 
   @Delete('comentarios/:comentarioId')
@@ -213,7 +305,10 @@ export class ArtigoController {
   @ApiResponse({ status: 204, description: 'Comentário excluído com sucesso' })
   @ApiResponse({ status: 403, description: 'Acesso negado' })
   @ApiResponse({ status: 404, description: 'Comentário não encontrado' })
-  async deleteComentario(@Param('comentarioId') comentarioId: string, @Req() req: any): Promise<void> {
+  async deleteComentario(
+    @Param('comentarioId') comentarioId: string,
+    @Req() req: any,
+  ): Promise<void> {
     const autorId = req.user.userId;
     return this.artigoService.deleteComentario(comentarioId, autorId);
   }

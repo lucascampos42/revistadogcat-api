@@ -17,7 +17,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string; username: string; tokenVersion: number }) {
+  async validate(payload: {
+    sub: string;
+    username: string;
+    tokenVersion: number;
+  }) {
     // Usar o método interno que não requer verificação de permissão
     const user = await this.userService.findUserEntityById(payload.sub);
 

@@ -47,7 +47,10 @@ export class ArtigoResponseDto {
   @ApiProperty({ description: 'Número de curtidas' })
   curtidas: number;
 
-  @ApiProperty({ description: 'Comentários do artigo', type: [ComentarioResponseDto] })
+  @ApiProperty({
+    description: 'Comentários do artigo',
+    type: [ComentarioResponseDto],
+  })
   comentarios: ComentarioResponseDto[];
 
   @ApiProperty({ description: 'Se o artigo é destaque' })

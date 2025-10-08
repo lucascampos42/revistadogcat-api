@@ -20,12 +20,22 @@ export const multerConfig = {
   }),
   fileFilter: (req: Request, file: Express.Multer.File, cb: Function) => {
     // Aceitar apenas imagens
-    const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    
+    const allowedMimeTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp',
+    ];
+
     if (allowedMimeTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new BadRequestException('Apenas arquivos de imagem são permitidos (JPEG, PNG, WebP)'), false);
+      cb(
+        new BadRequestException(
+          'Apenas arquivos de imagem são permitidos (JPEG, PNG, WebP)',
+        ),
+        false,
+      );
     }
   },
   limits: {

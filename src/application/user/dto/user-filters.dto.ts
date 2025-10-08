@@ -6,7 +6,8 @@ import { PaginationDto } from '../../../core/dto';
 export class UserFiltersDto extends PaginationDto {
   @IsOptional()
   @IsEnum(Role, {
-    message: 'Role deve ser um valor válido (USUARIO, DONO_PET_APROVADO, ASSINANTE, DONO_PET_APROVADO_ASSINANTE, ADMIN, EDITOR, FUNCIONARIO)',
+    message:
+      'Role deve ser um valor válido (USUARIO, DONO_PET_APROVADO, ASSINANTE, DONO_PET_APROVADO_ASSINANTE, ADMIN, EDITOR, FUNCIONARIO)',
   })
   role?: Role;
 

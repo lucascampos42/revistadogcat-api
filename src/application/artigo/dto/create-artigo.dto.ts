@@ -1,11 +1,20 @@
-import { IsString, IsNotEmpty, IsOptional, IsEnum, IsBoolean, IsArray, IsDateString, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+  IsBoolean,
+  IsArray,
+  IsDateString,
+  IsUUID,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { StatusArtigo, CategoriaArtigo } from '@prisma/client';
 
 export class CreateArtigoDto {
   @ApiProperty({
     description: 'Título do artigo',
-    example: 'Como cuidar do seu cão no verão'
+    example: 'Como cuidar do seu cão no verão',
   })
   @IsString()
   @IsNotEmpty()
@@ -21,19 +30,19 @@ export class CreateArtigoDto {
           content: [
             {
               type: 'text',
-              text: 'Este é o conteúdo do artigo...'
-            }
-          ]
-        }
-      ]
-    }
+              text: 'Este é o conteúdo do artigo...',
+            },
+          ],
+        },
+      ],
+    },
   })
   @IsNotEmpty()
   conteudo: any;
 
   @ApiPropertyOptional({
     description: 'Resumo do artigo',
-    example: 'Dicas importantes para manter seu cão saudável durante o verão'
+    example: 'Dicas importantes para manter seu cão saudável durante o verão',
   })
   @IsOptional()
   @IsString()
@@ -41,7 +50,7 @@ export class CreateArtigoDto {
 
   @ApiProperty({
     description: 'ID do autor do artigo',
-    example: 'user-uuid-goes-here'
+    example: 'user-uuid-goes-here',
   })
   @IsUUID()
   @IsNotEmpty()
@@ -50,7 +59,7 @@ export class CreateArtigoDto {
   @ApiProperty({
     description: 'Categoria do artigo',
     enum: CategoriaArtigo,
-    example: CategoriaArtigo.SAUDE
+    example: CategoriaArtigo.SAUDE,
   })
   @IsEnum(CategoriaArtigo)
   @IsNotEmpty()
@@ -59,7 +68,7 @@ export class CreateArtigoDto {
   @ApiPropertyOptional({
     description: 'Status do artigo',
     enum: StatusArtigo,
-    default: StatusArtigo.RASCUNHO
+    default: StatusArtigo.RASCUNHO,
   })
   @IsOptional()
   @IsEnum(StatusArtigo)
@@ -67,14 +76,14 @@ export class CreateArtigoDto {
 
   @ApiProperty({
     description: 'Data de publicação do artigo',
-    example: '2024-01-15T10:00:00Z'
+    example: '2024-01-15T10:00:00Z',
   })
   @IsDateString()
   dataPublicacao: string;
 
   @ApiProperty({
     description: 'URL da imagem de capa',
-    example: 'https://example.com/images/capa-artigo.jpg'
+    example: 'https://example.com/images/capa-artigo.jpg',
   })
   @IsString()
   @IsNotEmpty()
@@ -82,7 +91,7 @@ export class CreateArtigoDto {
 
   @ApiPropertyOptional({
     description: 'Se o artigo é destaque',
-    default: false
+    default: false,
   })
   @IsOptional()
   @IsBoolean()
@@ -90,7 +99,7 @@ export class CreateArtigoDto {
 
   @ApiPropertyOptional({
     description: 'Tags do artigo',
-    example: ['saúde', 'verão', 'cuidados']
+    example: ['saúde', 'verão', 'cuidados'],
   })
   @IsOptional()
   @IsArray()

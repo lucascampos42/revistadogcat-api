@@ -6,7 +6,11 @@ export class PublicUserDto {
   @ApiProperty({ description: 'ID único do usuário' })
   userId: string;
 
-  @ApiProperty({ description: 'Nome de usuário', required: false, nullable: true })
+  @ApiProperty({
+    description: 'Nome de usuário',
+    required: false,
+    nullable: true,
+  })
   userName?: string | null;
 
   @ApiProperty({ description: 'Nome completo do usuário' })
@@ -15,10 +19,18 @@ export class PublicUserDto {
   @ApiProperty({ description: 'Endereço de e-mail do usuário' })
   email: string;
 
-  @ApiProperty({ description: 'CPF do usuário', required: false, nullable: true })
+  @ApiProperty({
+    description: 'CPF do usuário',
+    required: false,
+    nullable: true,
+  })
   cpf?: string | null;
 
-  @ApiProperty({ description: 'URL do avatar do usuário', required: false, nullable: true })
+  @ApiProperty({
+    description: 'URL do avatar do usuário',
+    required: false,
+    nullable: true,
+  })
   avatarUrl?: string | null;
 
   @ApiProperty({ description: 'Nível de acesso do usuário', enum: Role })
@@ -36,9 +48,17 @@ export class PublicUserDto {
   @ApiProperty({ description: 'Data da última atualização' })
   updatedAt: Date;
 
-  @ApiProperty({ description: 'Data do último login', required: false, nullable: true })
+  @ApiProperty({
+    description: 'Data do último login',
+    required: false,
+    nullable: true,
+  })
   lastLogin?: Date | null;
 
-  @ApiProperty({ description: 'Endereço principal do usuário', required: false, type: AddressDto })
+  @ApiProperty({
+    description: 'Endereço principal do usuário',
+    required: false,
+    type: AddressDto,
+  })
   endereco?: AddressDto;
 }

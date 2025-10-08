@@ -10,9 +10,7 @@ export class AuthRepository implements IAuthRepository {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async createUser(
-    userData: Prisma.UserCreateInput,
-  ): Promise<User> {
+  async createUser(userData: Prisma.UserCreateInput): Promise<User> {
     return this.prisma.user.create({
       data: userData,
     });
@@ -77,8 +75,13 @@ export class AuthRepository implements IAuthRepository {
     } catch (error) {
       // Se o erro for "Record to update not found", o usuário já foi deletado.
       // Isso não é um erro no contexto do logout, então retornamos null.
-      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-        this.logger.warn(`Tentativa de logout para usuário não existente: ${userId}`);
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        this.logger.warn(
+          `Tentativa de logout para usuário não existente: ${userId}`,
+        );
         return null;
       }
       // Para todos os outros erros, nós os lançamos para serem tratados pelo filtro global.

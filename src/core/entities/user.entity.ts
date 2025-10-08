@@ -17,6 +17,7 @@ export class UserEntity {
   lastLogin?: Date;
   tokenVersion: number;
   refreshToken?: string;
+  refreshTokenExpiresAt?: Date;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
 
@@ -68,6 +69,7 @@ export class UserEntity {
     const {
       password,
       refreshToken,
+      refreshTokenExpiresAt,
       passwordResetToken,
       isActive,
       isBlocked,
