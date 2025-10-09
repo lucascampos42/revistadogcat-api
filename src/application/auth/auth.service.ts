@@ -323,12 +323,13 @@ export class AuthService {
       .update(token)
       .digest('hex');
 
-        const user = await this.authRepository.findUserByPasswordResetToken(
-          passwordResetToken,
-        );
-        if (!user) {
-          throw new UnauthorizedException('Token inválido ou expirado.');
-        }
+    const user =
+      await this.authRepository.findUserByPasswordResetToken(
+        passwordResetToken,
+      );
+    if (!user) {
+      throw new UnauthorizedException('Token inválido ou expirado.');
+    }
     const hashedPassword = await bcrypt.hash(password, 10);
     await this.authRepository.updateUserPassword(user.userId, hashedPassword);
     return { message: 'Senha redefinida com sucesso' };

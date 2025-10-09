@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { Response } from 'express';
+import { Response, Request } from 'express';
 
 interface StandardResponse<T> {
   statusCode: number;
@@ -35,13 +35,13 @@ export class ResponseFormatInterceptor<T>
     context: ExecutionContext,
     next: CallHandler,
   ): Observable<StandardResponse<T>> {
-    const response = context.switchToHttp().getResponse<Response>();
+    const http = context.switchToHttp();
+    const response = http.getResponse<Response>();
+    const request = http.getRequest<Request>();
 
     return next.handle().pipe(
       map((data) => {
         const statusCode = response.statusCode;
-
-        // Se já é uma resposta formatada, não reformatar
         if (data && typeof data === 'object' && 'statusCode' in data) {
           return data;
         }
@@ -55,9 +55,34 @@ export class ResponseFormatInterceptor<T>
           };
         }
 
+        // Mensagens customizadas para listas vazias de artigos
+        let message = this.getStandardMessage(statusCode);
+        try {
+          const path = request?.path || '';
+          const isArtigosRoute = path.startsWith('/artigos');
+
+          // Caso 1: endpoints que retornam objeto com { data: [] }
+          if (
+            isArtigosRoute &&
+            data &&
+            typeof data === 'object' &&
+            Array.isArray(data.data) &&
+            (data.data as any[]).length === 0
+          ) {
+            message = 'Nenhum artigo cadastrado';
+          }
+
+          // Caso 2: endpoints que retornam diretamente um array [] (ex.: destaques)
+          if (isArtigosRoute && Array.isArray(data) && data.length === 0) {
+            message = 'Nenhum artigo encontrado';
+          }
+        } catch {
+          // Em caso de qualquer erro, mantém mensagem padrão
+        }
+
         return {
           statusCode,
-          message: this.getStandardMessage(statusCode),
+          message,
           data,
           timestamp: new Date().toISOString(),
         };

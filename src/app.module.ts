@@ -57,7 +57,7 @@ import { EdicaoModule } from './application/edicao/edicao.module';
   exports: [PrismaService],
 })
 export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
+  configure(_consumer: MiddlewareConsumer) {
     // A linha abaixo foi comentada para desativar o middleware de log customizado
     // e restaurar os logs de requisição padrão do NestJS.
     // consumer.apply(LoggerMiddleware).forRoutes('*');

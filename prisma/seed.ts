@@ -51,7 +51,9 @@ async function main() {
       },
     },
   });
-  console.log(`Created regular user: ${regularUser.email} with a main address.`);
+  console.log(
+    `Created regular user: ${regularUser.email} with a main address.`,
+  );
 
   // 4. Cria algumas raças de exemplo
   console.log('Creating seed races...');

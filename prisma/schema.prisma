@@ -101,6 +101,7 @@ enum Role {
   ADMIN
   EDITOR
   FUNCIONARIO
+  JURADO
 }
 
 model Log {

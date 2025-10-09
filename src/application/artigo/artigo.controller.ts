@@ -37,6 +37,7 @@ import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { FileUploadService } from '../../core/services/file-upload.service';
+import { Request } from 'express';
 
 @ApiTags('Artigos')
 @Controller('artigos')
@@ -263,7 +264,7 @@ export class ArtigoController {
   async addComentario(
     @Param('id') artigoId: string,
     @Body() createComentarioDto: CreateComentarioDto,
-    @Req() req: any,
+    @Req() req: Request & { user: { userId: string } },
   ): Promise<ComentarioResponseDto> {
     const autorId = req.user.userId; // Extraído do token JWT
     return this.artigoService.addComentario(artigoId, {
@@ -287,7 +288,7 @@ export class ArtigoController {
   async updateComentario(
     @Param('comentarioId') comentarioId: string,
     @Body() updateComentarioDto: UpdateComentarioDto,
-    @Req() req: any,
+    @Req() req: Request & { user: { userId: string } },
   ): Promise<ComentarioResponseDto> {
     const autorId = req.user.userId;
     return this.artigoService.updateComentario(
@@ -307,7 +308,7 @@ export class ArtigoController {
   @ApiResponse({ status: 404, description: 'Comentário não encontrado' })
   async deleteComentario(
     @Param('comentarioId') comentarioId: string,
-    @Req() req: any,
+    @Req() req: Request & { user: { userId: string } },
   ): Promise<void> {
     const autorId = req.user.userId;
     return this.artigoService.deleteComentario(comentarioId, autorId);
