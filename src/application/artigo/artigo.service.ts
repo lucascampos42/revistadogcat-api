@@ -243,7 +243,7 @@ export class ArtigoService {
       categoria: artigo.categoria,
       status: artigo.status,
       dataPublicacao: artigo.dataPublicacao,
-      imagemCapa: artigo.imagemCapa,
+      imagemCapa: artigo.imagemCapa ?? undefined,
       visualizacoes: artigo.visualizacoes,
       curtidas: artigo.curtidas,
       comentarios: artigo.comentarios.map((c) =>

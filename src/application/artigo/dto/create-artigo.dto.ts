@@ -81,13 +81,13 @@ export class CreateArtigoDto {
   @IsDateString()
   dataPublicacao: string;
 
-  @ApiProperty({
-    description: 'URL da imagem de capa',
+  @ApiPropertyOptional({
+    description: 'URL da imagem de capa (opcional)',
     example: 'https://example.com/images/capa-artigo.jpg',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  imagemCapa: string;
+  imagemCapa?: string;
 
   @ApiPropertyOptional({
     description: 'Se o artigo é destaque',

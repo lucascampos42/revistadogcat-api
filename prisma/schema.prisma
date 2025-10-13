@@ -69,7 +69,7 @@ model Artigo {
   categoria      CategoriaArtigo
   status         StatusArtigo    @default(RASCUNHO)
   dataPublicacao DateTime
-  imagemCapa     String
+  imagemCapa     String?
   visualizacoes  Int             @default(0)
   curtidas       Int             @default(0)
   destaque       Boolean         @default(false)

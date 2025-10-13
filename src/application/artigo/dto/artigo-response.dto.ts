@@ -38,8 +38,10 @@ export class ArtigoResponseDto {
   @ApiProperty({ description: 'Data de publicação do artigo' })
   dataPublicacao: Date;
 
-  @ApiProperty({ description: 'URL da imagem de capa' })
-  imagemCapa: string;
+  @ApiPropertyOptional({
+    description: 'URL da imagem de capa (quando disponível)',
+  })
+  imagemCapa?: string;
 
   @ApiProperty({ description: 'Número de visualizações' })
   visualizacoes: number;

@@ -19,7 +19,7 @@ ArtigoResponseDto
 - categoria: CategoriaArtigo
 - status: StatusArtigo
 - dataPublicacao: Date (ISO)
-- imagemCapa: string (URL)
+- imagemCapa?: string (URL)
 - visualizacoes: number
 - curtidas: number
 - comentarios: ComentarioResponseDto[]
@@ -62,7 +62,7 @@ Body (CreateArtigoDto):
 - categoria: CategoriaArtigo
 - status?: StatusArtigo (default: RASCUNHO)
 - dataPublicacao: string (ISO)
-- imagemCapa: string (URL)
+- imagemCapa?: string (URL)
 - destaque?: boolean
 - tags?: string[]
 
@@ -139,4 +139,5 @@ Respostas: 200 { url: string }, 400, 401, 403
 - Em páginas públicas, utilize GET /artigos/publicados com sortBy e sortOrder; leia response.data e response.pagination.
 - Em páginas de administração, utilize GET /artigos com Authorization: Bearer <token>.
 - CORS está habilitado para http://localhost:4200 e origens relacionadas no backend.
+- Se a imagem de capa não estiver definida, o frontend deve exibir um placeholder padrão.
  - Quando a lista estiver vazia (após aplicar filtros/paginação), a resposta terá `data: []` e a mensagem: "Nenhum artigo cadastrado".

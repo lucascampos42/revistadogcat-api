@@ -12,7 +12,7 @@ export class ArtigoEntity {
   categoria: CategoriaArtigo;
   status: StatusArtigo;
   dataPublicacao: Date;
-  imagemCapa: string;
+  imagemCapa?: string | null;
   visualizacoes: number;
   curtidas: number;
   comentarios: ComentarioEntity[];
