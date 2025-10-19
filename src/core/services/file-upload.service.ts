@@ -149,6 +149,13 @@ export class FileUploadService {
   ): Promise<UploadedFileResult> {
     const config = this.uploadConfigs[uploadType];
 
+    // Validar se o arquivo foi salvo corretamente
+    if (!file.path) {
+      throw new BadRequestException(
+        'Erro no upload: caminho do arquivo não encontrado',
+      );
+    }
+
     // Se é uma imagem e tem configuração de redimensionamento
     if (
       'imageResize' in config &&

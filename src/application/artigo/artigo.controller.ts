@@ -14,6 +14,10 @@ import {
   Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname, join } from 'path';
+import * as sharp from 'sharp';
+import { promises as fs } from 'fs';
 import {
   ApiTags,
   ApiOperation,
@@ -36,16 +40,12 @@ import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { FileUploadService } from '../../core/services/file-upload.service';
 import { Request } from 'express';
 
 @ApiTags('Artigos')
 @Controller('artigos')
 export class ArtigoController {
-  constructor(
-    private readonly artigoService: ArtigoService,
-    private readonly fileUploadService: FileUploadService,
-  ) {}
+  constructor(private readonly artigoService: ArtigoService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -205,7 +205,30 @@ export class ArtigoController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth()
-  @UseInterceptors(FileInterceptor('image'))
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: diskStorage({
+        destination: './uploads/artigos',
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `artigo-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(
+            new BadRequestException('Apenas imagens são permitidas'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+      },
+    }),
+  )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Upload de imagem para artigo' })
   @ApiBody({
@@ -227,11 +250,30 @@ export class ArtigoController {
     if (!file) {
       throw new BadRequestException('Nenhum arquivo foi enviado');
     }
-    const processedFile = await this.fileUploadService.processUploadedFile(
-      file,
-      'articleImage',
-    );
-    return { url: processedFile.url };
+
+    try {
+      // Gerar nome único para o arquivo AVIF
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const avifFilename = `artigo-${uniqueSuffix}.avif`;
+      const avifPath = join(process.cwd(), 'uploads', 'artigos', avifFilename);
+
+      // Converter imagem para AVIF usando Sharp
+      await sharp(file.path)
+        .avif({
+          quality: 80,
+          effort: 7,
+        })
+        .toFile(avifPath);
+
+      // Remover arquivo original após conversão
+      await fs.unlink(file.path);
+
+      const url = `/uploads/artigos/${avifFilename}`;
+      return { url };
+    } catch (error) {
+      console.error('Erro ao converter imagem para AVIF:', error);
+      throw new BadRequestException('Erro ao processar a imagem');
+    }
   }
 
   // --- Comentários ---

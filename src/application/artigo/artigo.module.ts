@@ -4,10 +4,9 @@ import { ArtigoController } from './artigo.controller';
 import { ArtigoRepository } from './repositories/artigo.repository';
 import { ComentarioRepository } from './repositories/comentario.repository'; // Import the new repository
 import { PrismaModule } from '../../core/config/prisma.module';
-import { FileUploadModule } from '../../core/services/file-upload.module';
 
 @Module({
-  imports: [PrismaModule, FileUploadModule],
+  imports: [PrismaModule],
   controllers: [ArtigoController],
   providers: [ArtigoService, ArtigoRepository, ComentarioRepository], // Add it to the providers array
   exports: [ArtigoService, ArtigoRepository, ComentarioRepository], // Also export it
