@@ -25,6 +25,9 @@ export class ArtigoService {
   ) {}
 
   async create(createArtigoDto: CreateArtigoDto): Promise<ArtigoResponseDto> {
+    console.log('Criando artigo com dados:', createArtigoDto);
+    console.log('imagemCapa recebida:', createArtigoDto.imagemCapa);
+    
     const dataPublicacao = new Date(createArtigoDto.dataPublicacao);
     if (isNaN(dataPublicacao.getTime())) {
       throw new BadRequestException('Data de publicação inválida');
@@ -107,15 +110,25 @@ export class ArtigoService {
     artigoId: string,
     updateArtigoDto: UpdateArtigoDto,
   ): Promise<ArtigoResponseDto> {
+    console.log('=== SERVICE: ATUALIZANDO ARTIGO ===');
+    console.log('ID do artigo:', artigoId);
+    console.log('DTO recebido:', updateArtigoDto);
+    
     const existingArtigo = await this.artigoRepository.findById(artigoId);
     if (!existingArtigo) {
       throw new NotFoundException('Artigo não encontrado');
     }
 
+    console.log('Artigo existente - imagemCapa atual:', existingArtigo.imagemCapa);
+
     const artigo = await this.artigoRepository.update(
       artigoId,
       updateArtigoDto,
     );
+    
+    console.log('=== SERVICE: ARTIGO ATUALIZADO ===');
+    console.log('Nova imagemCapa:', artigo.imagemCapa);
+    
     return this.mapToResponseDto(artigo);
   }
 

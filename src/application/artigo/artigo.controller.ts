@@ -182,7 +182,17 @@ export class ArtigoController {
     @Param('id') id: string,
     @Body() updateArtigoDto: UpdateArtigoDto,
   ): Promise<ArtigoResponseDto> {
-    return this.artigoService.update(id, updateArtigoDto);
+    console.log('=== CONTROLLER: ATUALIZANDO ARTIGO ===');
+    console.log('ID do artigo:', id);
+    console.log('Dados recebidos:', updateArtigoDto);
+    console.log('imagemCapa no DTO:', updateArtigoDto.imagemCapa);
+    
+    const result = await this.artigoService.update(id, updateArtigoDto);
+    
+    console.log('=== CONTROLLER: RESULTADO DA ATUALIZAÇÃO ===');
+    console.log('imagemCapa no resultado:', result.imagemCapa);
+    
+    return result;
   }
 
   @Delete(':id')
@@ -294,6 +304,7 @@ export class ArtigoController {
       await fs.unlink(file.path);
 
       const url = `/uploads/artigos/${avifFilename}`;
+      console.log('Upload realizado com sucesso. URL:', url);
       return { url };
     } catch (error) {
       console.error('Erro ao converter imagem para AVIF:', error);

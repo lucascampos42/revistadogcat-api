@@ -35,16 +35,19 @@ export class ArtigoRepository {
   };
 
   async create(data: CreateArtigoDto): Promise<ArtigoEntity> {
+    const createData = {
+      ...data,
+      dataPublicacao: new Date(data.dataPublicacao),
+      status: data.status || StatusArtigo.RASCUNHO,
+      destaque: data.destaque || false,
+      tags: data.tags || [],
+    };
+    
     const artigo = await this.prisma.artigo.create({
-      data: {
-        ...data,
-        dataPublicacao: new Date(data.dataPublicacao),
-        status: data.status || StatusArtigo.RASCUNHO,
-        destaque: data.destaque || false,
-        tags: data.tags || [],
-      },
+      data: createData,
       include: this.includeAutorAndComentarios,
     });
+    
     return new ArtigoEntity(artigo);
   }
 
