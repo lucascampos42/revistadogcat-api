@@ -23,6 +23,7 @@ import { Role } from '@prisma/client';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
+import { IsPublic } from '../../core/decorators/is-public.decorator';
 
 @ApiTags('Raças')
 @Controller('racas')
@@ -41,6 +42,7 @@ export class RacaController {
   }
 
   @Get()
+  @IsPublic()
   @ApiOperation({ summary: 'Listar todas as raças' })
   @ApiQuery({
     name: 'ativo',
