@@ -55,4 +55,10 @@ export class EdicaoRepository {
       orderBy: [{ data: 'desc' }, { createdAt: 'desc' }],
     });
   }
+
+  async delete(id: string) {
+    return this.prisma.edicao.delete({
+      where: { edicaoId: id },
+    });
+  }
 }

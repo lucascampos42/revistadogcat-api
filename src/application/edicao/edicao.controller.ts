@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Delete,
   Param,
   Query,
   Body,
@@ -9,6 +10,8 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -129,24 +132,58 @@ export class EdicaoController {
           },
         }),
         fileFilter: (req, file, cb) => {
-          // Validação de tipos permitidos sem depender do FileUploadService
-          const allowed =
-            file.fieldname === 'pdf'
-              ? ['application/pdf']
-              : ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-          if (allowed.includes(file.mimetype)) {
-            cb(null, true);
-          } else {
+          // Validação rigorosa de tipos MIME e extensões
+          const pdfTypes = ['application/pdf'];
+          const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+          
+          // Validação por campo
+          const allowed = file.fieldname === 'pdf' ? pdfTypes : imageTypes;
+          
+          // Verifica MIME type
+          if (!allowed.includes(file.mimetype)) {
             cb(
               new BadRequestException(
-                `Arquivo inválido para campo ${file.fieldname}`,
+                `Tipo de arquivo não permitido para ${file.fieldname}: ${file.mimetype}`,
               ),
               false,
             );
+            return;
           }
+
+          // Validação adicional de extensão para segurança
+          const ext = file.originalname.toLowerCase().split('.').pop();
+          const allowedExtensions = file.fieldname === 'pdf' 
+            ? ['pdf'] 
+            : ['jpg', 'jpeg', 'png', 'webp'];
+            
+          if (!ext || !allowedExtensions.includes(ext)) {
+            cb(
+              new BadRequestException(
+                `Extensão de arquivo não permitida para ${file.fieldname}: .${ext}`,
+              ),
+              false,
+            );
+            return;
+          }
+
+          // Validação de nome do arquivo (sem caracteres perigosos)
+          if (!/^[a-zA-Z0-9._-]+$/.test(file.originalname)) {
+            cb(
+              new BadRequestException(
+                'Nome do arquivo contém caracteres não permitidos',
+              ),
+              false,
+            );
+            return;
+          }
+
+          cb(null, true);
         },
         limits: {
-          fileSize: 50 * 1024 * 1024, // máximo entre os tipos, validaremos capa adicionalmente
+          fileSize: 50 * 1024 * 1024, // 50MB máximo
+          files: 2, // Máximo 2 arquivos (PDF + capa)
+          fieldNameSize: 50, // Limite do nome do campo
+          fieldSize: 1024 * 1024, // 1MB para campos de texto
         },
       },
     ),
@@ -178,23 +215,81 @@ export class EdicaoController {
     files: { pdf?: Express.Multer.File[]; capa?: Express.Multer.File[] },
     @Body() dto: CreateEdicaoDto,
   ): Promise<EdicaoResponseDto> {
+    // Validação rigorosa do PDF
     const pdf = files?.pdf?.[0];
-    if (!pdf || pdf.mimetype !== 'application/pdf') {
-      throw new BadRequestException('Arquivo PDF inválido');
+    if (!pdf) {
+      throw new BadRequestException('Arquivo PDF é obrigatório');
     }
+    
+    if (pdf.mimetype !== 'application/pdf') {
+      throw new BadRequestException('Arquivo deve ser um PDF válido');
+    }
+    
+    if (pdf.size < 1024) { // Menor que 1KB é suspeito
+      throw new BadRequestException('Arquivo PDF muito pequeno, pode estar corrompido');
+    }
+    
+    if (pdf.size > 50 * 1024 * 1024) { // 50MB
+      throw new BadRequestException('Arquivo PDF excede o limite de 50MB');
+    }
+
+    // Validação rigorosa da capa (se fornecida)
     const capa = files.capa?.[0];
-    if (
-      capa &&
-      !['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(
-        capa.mimetype,
-      )
-    ) {
-      throw new BadRequestException('Arquivo de capa inválido');
+    if (capa) {
+      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedImageTypes.includes(capa.mimetype)) {
+        throw new BadRequestException('Arquivo de capa deve ser uma imagem válida (JPEG, PNG ou WebP)');
+      }
+      
+      if (capa.size < 100) { // Menor que 100 bytes é suspeito
+        throw new BadRequestException('Arquivo de capa muito pequeno, pode estar corrompido');
+      }
+      
+      if (capa.size > 5 * 1024 * 1024) { // 5MB
+        throw new BadRequestException('Imagem de capa excede o limite de 5MB');
+      }
     }
-    if (capa && capa.size > 5 * 1024 * 1024) {
-      throw new BadRequestException('Imagem de capa excede 5MB');
+
+    // Validação adicional de segurança para o DTO
+    if (dto.id && dto.id.includes('..')) {
+      throw new BadRequestException('ID contém caracteres não permitidos');
     }
 
     return this.edicaoService.create(dto, files);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Excluir edição permanentemente' })
+  @ApiParam({ name: 'id', description: 'ID da edição a ser excluída' })
+  @ApiResponse({
+    status: 204,
+    description: 'Edição excluída com sucesso',
+  })
+  @ApiResponse({ status: 404, description: 'Edição não encontrada' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 403, description: 'Acesso negado' })
+  async delete(@Param('id') id: string): Promise<void> {
+    // Validações de segurança para o ID
+    if (!id || id.trim().length === 0) {
+      throw new BadRequestException('ID da edição é obrigatório');
+    }
+    
+    if (id.length > 50) {
+      throw new BadRequestException('ID da edição muito longo');
+    }
+    
+    if (id.includes('..') || id.includes('/') || id.includes('\\')) {
+      throw new BadRequestException('ID contém caracteres não permitidos');
+    }
+    
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
+      throw new BadRequestException('ID deve conter apenas letras, números, hífens e underscores');
+    }
+
+    return this.edicaoService.delete(id.trim());
   }
 }

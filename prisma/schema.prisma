@@ -104,19 +104,6 @@ enum Role {
   JURADO
 }
 
-model Log {
-  logId     Int      @id @default(autoincrement())
-  timestamp DateTime @default(now())
-  route     String
-  method    String
-  userId    String?
-  details   Json?
-
-  user User? @relation(fields: [userId], references: [userId])
-
-  @@map("logs")
-}
-
 model Endereco {
   enderecoId      String   @id @default(cuid())
   userId          String
