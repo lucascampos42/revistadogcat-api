@@ -97,9 +97,30 @@ export class ArtigoController {
     return this.artigoService.findPublicados(listArtigosDto);
   }
 
+  @Get('artigos-homepage')
+  @IsPublic()
+  @ApiOperation({ summary: 'Listar artigos para homepage (público)' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Número máximo de artigos (padrão: 9)',
+    example: 9,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de artigos para homepage retornada com sucesso',
+    type: [ArtigoResponseDto],
+  })
+  async findArtigosHomepage(
+    @Query('limit') limit?: string,
+  ): Promise<ArtigoResponseDto[]> {
+    const limitNumber = limit ? parseInt(limit) : 9;
+    return this.artigoService.findDestaques(limitNumber);
+  }
+
   @Get('destaques')
   @IsPublic()
-  @ApiOperation({ summary: 'Listar artigos em destaque (público)' })
+  @ApiOperation({ summary: 'Listar artigos em destaque (público) - DEPRECATED: use /artigos-homepage' })
   @ApiQuery({
     name: 'limit',
     required: false,
