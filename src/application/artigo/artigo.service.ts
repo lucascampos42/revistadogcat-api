@@ -34,14 +34,19 @@ export class ArtigoService {
       throw new BadRequestException('Data de publicação inválida');
     }
 
-    if (
-      createArtigoDto.status === StatusArtigo.PUBLICADO &&
-      dataPublicacao < new Date()
-    ) {
-      throw new BadRequestException(
-        'Data de publicação não pode ser no passado para artigos publicados',
-      );
-    }
+    /* if (createArtigoDto.status === StatusArtigo.PUBLICADO) {
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0); // Zera as horas para comparar apenas a data
+      
+      const dataPublicacaoSemHora = new Date(dataPublicacao);
+      dataPublicacaoSemHora.setHours(0, 0, 0, 0);
+      
+      if (dataPublicacaoSemHora < hoje) {
+        throw new BadRequestException(
+          'Data de publicação não pode ser no passado para artigos publicados',
+        );
+      }
+    } */
 
     const artigo = await this.artigoRepository.create(createArtigoDto);
     return this.mapToResponseDto(artigo);
@@ -118,6 +123,28 @@ export class ArtigoService {
     const existingArtigo = await this.artigoRepository.findById(artigoId);
     if (!existingArtigo) {
       throw new NotFoundException('Artigo não encontrado');
+    }
+
+    // Validação de data de publicação para artigos publicados
+    if (updateArtigoDto.dataPublicacao) {
+      const dataPublicacao = new Date(updateArtigoDto.dataPublicacao);
+      if (isNaN(dataPublicacao.getTime())) {
+        throw new BadRequestException('Data de publicação inválida');
+      }
+
+      /* if (updateArtigoDto.status === StatusArtigo.PUBLICADO) {
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0); // Zera as horas para comparar apenas a data
+        
+        const dataPublicacaoSemHora = new Date(dataPublicacao);
+        dataPublicacaoSemHora.setHours(0, 0, 0, 0);
+        
+        if (dataPublicacaoSemHora < hoje) {
+          throw new BadRequestException(
+            'Data de publicação não pode ser no passado para artigos publicados',
+          );
+        }
+      } */
     }
 
     const artigo = await this.artigoRepository.update(

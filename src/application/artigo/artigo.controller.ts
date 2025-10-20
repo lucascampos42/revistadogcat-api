@@ -31,6 +31,8 @@ import {
 import { ArtigoService } from './artigo.service';
 import { CreateArtigoDto } from './dto/create-artigo.dto';
 import { UpdateArtigoDto } from './dto/update-artigo.dto';
+import { CreateArtigoWithImageDto } from './dto/create-artigo-with-image.dto';
+import { UpdateArtigoWithImageDto } from './dto/update-artigo-with-image.dto';
 import { ListArtigosDto, ArtigosListResponseDto } from './dto/list-artigos.dto';
 import { ArtigoResponseDto } from './dto/artigo-response.dto';
 import { CreateComentarioDto } from './dto/create-comentario.dto';
@@ -48,11 +50,87 @@ import { Request } from 'express';
 export class ArtigoController {
   constructor(private readonly artigoService: ArtigoService) {}
 
+  /**
+   * Processa upload de imagem e retorna a URL
+   */
+  private async processImageUpload(file?: Express.Multer.File): Promise<string | null> {
+    if (!file) {
+      return null;
+    }
+
+    try {
+      // Gerar nome único para o arquivo AVIF
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      const avifFilename = `artigo-${uniqueSuffix}.avif`;
+      const avifPath = join(process.cwd(), 'uploads', 'artigos', avifFilename);
+
+      // Converter imagem para AVIF usando Sharp
+      await sharp(file.path)
+        .avif({
+          quality: 80,
+          effort: 7,
+        })
+        .toFile(avifPath);
+
+      // Remover arquivo original após conversão
+      await fs.unlink(file.path);
+
+      return `/uploads/artigos/${avifFilename}`;
+    } catch (error) {
+      console.error('Erro ao processar imagem:', error);
+      throw new BadRequestException('Erro ao processar a imagem');
+    }
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Criar novo artigo' })
+  @UseInterceptors(
+    FileInterceptor('imagemCapa', {
+      storage: diskStorage({
+        destination: './uploads/artigos',
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `temp-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(
+            new BadRequestException('Apenas imagens são permitidas'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Criar novo artigo com upload de imagem' })
+  @ApiBody({
+    description: 'Dados do artigo e imagem de capa',
+    schema: {
+      type: 'object',
+      properties: {
+        titulo: { type: 'string' },
+        conteudo: { type: 'string' },
+        resumo: { type: 'string' },
+        autorId: { type: 'string' },
+        categoria: { type: 'string' },
+        status: { type: 'string' },
+        dataPublicacao: { type: 'string' },
+        destaque: { type: 'boolean' },
+        tags: { type: 'array', items: { type: 'string' } },
+        imagemCapa: { type: 'string', format: 'binary' },
+      },
+      required: ['titulo', 'conteudo', 'autorId', 'categoria', 'dataPublicacao'],
+    },
+  })
   @ApiResponse({
     status: 201,
     description: 'Artigo criado com sucesso',
@@ -62,9 +140,30 @@ export class ArtigoController {
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({ status: 403, description: 'Acesso negado' })
   async create(
-    @Body() createArtigoDto: CreateArtigoDto,
+    @Body() createArtigoDto: CreateArtigoWithImageDto,
+    @UploadedFile() imagemCapa?: Express.Multer.File,
   ): Promise<ArtigoResponseDto> {
-    return this.artigoService.create(createArtigoDto);
+    // Processar upload da imagem se fornecida
+    const imagemCapaUrl = await this.processImageUpload(imagemCapa);
+
+    // Converter conteúdo de string para objeto JSON
+    let conteudoJson;
+    try {
+      conteudoJson = typeof createArtigoDto.conteudo === 'string' 
+        ? JSON.parse(createArtigoDto.conteudo) 
+        : createArtigoDto.conteudo;
+    } catch (error) {
+      throw new BadRequestException('Conteúdo deve ser um JSON válido');
+    }
+
+    // Criar DTO para o serviço
+    const artigoData: CreateArtigoDto = {
+      ...createArtigoDto,
+      conteudo: conteudoJson,
+      imagemCapa: imagemCapaUrl || undefined,
+    };
+
+    return this.artigoService.create(artigoData);
   }
 
   @Get()
@@ -167,8 +266,51 @@ export class ArtigoController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Atualizar artigo' })
+  @UseInterceptors(
+    FileInterceptor('imagemCapa', {
+      storage: diskStorage({
+        destination: './uploads/artigos',
+        filename: (req, file, callback) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `temp-${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, callback) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
+          return callback(
+            new BadRequestException('Apenas imagens são permitidas'),
+            false,
+          );
+        }
+        callback(null, true);
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Atualizar artigo com upload de imagem' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
+  @ApiBody({
+    description: 'Dados do artigo e imagem de capa (todos opcionais)',
+    schema: {
+      type: 'object',
+      properties: {
+        titulo: { type: 'string' },
+        conteudo: { type: 'string' },
+        resumo: { type: 'string' },
+        autorId: { type: 'string' },
+        categoria: { type: 'string' },
+        status: { type: 'string' },
+        dataPublicacao: { type: 'string' },
+        destaque: { type: 'boolean' },
+        tags: { type: 'array', items: { type: 'string' } },
+        imagemCapa: { type: 'string', format: 'binary' },
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'Artigo atualizado com sucesso',
@@ -180,19 +322,32 @@ export class ArtigoController {
   @ApiResponse({ status: 404, description: 'Artigo não encontrado' })
   async update(
     @Param('id') id: string,
-    @Body() updateArtigoDto: UpdateArtigoDto,
+    @Body() updateArtigoDto: UpdateArtigoWithImageDto,
+    @UploadedFile() imagemCapa?: Express.Multer.File,
   ): Promise<ArtigoResponseDto> {
-    console.log('=== CONTROLLER: ATUALIZANDO ARTIGO ===');
-    console.log('ID do artigo:', id);
-    console.log('Dados recebidos:', updateArtigoDto);
-    console.log('imagemCapa no DTO:', updateArtigoDto.imagemCapa);
-    
-    const result = await this.artigoService.update(id, updateArtigoDto);
-    
-    console.log('=== CONTROLLER: RESULTADO DA ATUALIZAÇÃO ===');
-    console.log('imagemCapa no resultado:', result.imagemCapa);
-    
-    return result;
+    // Processar upload da imagem se fornecida
+    const imagemCapaUrl = await this.processImageUpload(imagemCapa);
+
+    // Converter conteúdo de string para objeto JSON se fornecido
+    let conteudoJson;
+    if (updateArtigoDto.conteudo) {
+      try {
+        conteudoJson = typeof updateArtigoDto.conteudo === 'string' 
+          ? JSON.parse(updateArtigoDto.conteudo) 
+          : updateArtigoDto.conteudo;
+      } catch (error) {
+        throw new BadRequestException('Conteúdo deve ser um JSON válido');
+      }
+    }
+
+    // Criar DTO para o serviço
+    const artigoData: UpdateArtigoDto = {
+      ...updateArtigoDto,
+      ...(conteudoJson && { conteudo: conteudoJson }),
+      ...(imagemCapaUrl && { imagemCapa: imagemCapaUrl }),
+    };
+
+    return this.artigoService.update(id, artigoData);
   }
 
   @Delete(':id')
@@ -236,102 +391,7 @@ export class ArtigoController {
     return this.artigoService.descurtir(id);
   }
 
-  @Post('imagens/upload')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN, Role.EDITOR)
-  @ApiBearerAuth()
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: diskStorage({
-        destination: './uploads/artigos',
-        filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          callback(null, `artigo-${uniqueSuffix}${ext}`);
-        },
-      }),
-      fileFilter: (req, file, callback) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
-          return callback(
-            new BadRequestException('Apenas imagens são permitidas'),
-            false,
-          );
-        }
-        callback(null, true);
-      },
-      limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
-      },
-    }),
-  )
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload de imagem para artigo' })
-  @ApiBody({
-    description: 'Arquivo de imagem',
-    schema: {
-      type: 'object',
-      properties: { image: { type: 'string', format: 'binary' } },
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Imagem enviada com sucesso',
-    schema: { type: 'object', properties: { url: { type: 'string' } } },
-  })
-  @ApiResponse({ status: 400, description: 'Arquivo inválido' })
-  async uploadImagem(
-    @UploadedFile() file: Express.Multer.File,
-  ): Promise<{ url: string }> {
-    console.log('=== UPLOAD ENDPOINT CHAMADO ===');
-    console.log('Arquivo recebido:', file ? 'SIM' : 'NÃO');
-    if (file) {
-      console.log('Detalhes do arquivo:', {
-        originalname: file.originalname,
-        mimetype: file.mimetype,
-        size: file.size,
-        path: file.path
-      });
-    }
 
-    if (!file) {
-      throw new BadRequestException('Nenhum arquivo foi enviado');
-    }
-
-    try {
-      // Gerar nome único para o arquivo AVIF
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const avifFilename = `artigo-${uniqueSuffix}.avif`;
-      const avifPath = join(process.cwd(), 'uploads', 'artigos', avifFilename);
-
-      console.log('Caminho do arquivo AVIF:', avifPath);
-
-      // Converter imagem para AVIF usando Sharp
-      await sharp(file.path)
-        .avif({
-          quality: 80,
-          effort: 7,
-        })
-        .toFile(avifPath);
-
-      console.log('Conversão para AVIF concluída');
-
-      // Remover arquivo original após conversão
-      await fs.unlink(file.path);
-
-      console.log('Arquivo original removido');
-
-      const url = `/uploads/artigos/${avifFilename}`;
-      console.log('=== UPLOAD CONCLUÍDO ===');
-      console.log('URL gerada:', url);
-      console.log('Retornando objeto:', { url });
-      
-      return { url };
-    } catch (error) {
-      console.error('=== ERRO NO UPLOAD ===');
-      console.error('Erro ao converter imagem para AVIF:', error);
-      throw new BadRequestException('Erro ao processar a imagem');
-    }
-  }
 
   // --- Comentários ---
 
