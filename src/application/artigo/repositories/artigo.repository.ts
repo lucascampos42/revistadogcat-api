@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../core/config/prisma.service';
 import { ArtigoEntity } from '../entities/artigo.entity';
 import { CreateArtigoDto } from '../dto/create-artigo.dto';
@@ -120,17 +120,31 @@ export class ArtigoRepository {
   }
 
   async update(artigoId: string, data: UpdateArtigoDto): Promise<ArtigoEntity> {
+    Logger.log('=== REPOSITORY: ATUALIZANDO ARTIGO ===');
+    Logger.log('ID do artigo: ' + artigoId);
+    Logger.log('Dados recebidos: ' + JSON.stringify(data));
+    
     const updateData: any = { ...data };
 
     if (data.dataPublicacao) {
       updateData.dataPublicacao = new Date(data.dataPublicacao);
     }
 
+    Logger.log('Dados finais para update: ' + JSON.stringify(updateData));
+    Logger.log('Include config: ' + JSON.stringify(this.includeAutorAndComentarios));
+
     const artigo = await this.prisma.artigo.update({
       where: { artigoId },
       data: updateData,
       include: this.includeAutorAndComentarios,
     });
+
+    Logger.log('Artigo após update: ' + JSON.stringify({
+      artigoId: artigo.artigoId,
+      titulo: artigo.titulo,
+      autorId: artigo.autorId,
+      autor: artigo.autor,
+    }));
 
     return new ArtigoEntity(artigo);
   }

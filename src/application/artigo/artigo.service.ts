@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { ArtigoRepository } from './repositories/artigo.repository';
 import { ComentarioRepository } from './repositories/comentario.repository';
@@ -27,7 +28,7 @@ export class ArtigoService {
   async create(createArtigoDto: CreateArtigoDto): Promise<ArtigoResponseDto> {
     console.log('Criando artigo com dados:', createArtigoDto);
     console.log('imagemCapa recebida:', createArtigoDto.imagemCapa);
-    
+
     const dataPublicacao = new Date(createArtigoDto.dataPublicacao);
     if (isNaN(dataPublicacao.getTime())) {
       throw new BadRequestException('Data de publicação inválida');
@@ -110,25 +111,20 @@ export class ArtigoService {
     artigoId: string,
     updateArtigoDto: UpdateArtigoDto,
   ): Promise<ArtigoResponseDto> {
-    console.log('=== SERVICE: ATUALIZANDO ARTIGO ===');
-    console.log('ID do artigo:', artigoId);
-    console.log('DTO recebido:', updateArtigoDto);
-    
+    Logger.log('=== SERVICE: ATUALIZANDO ARTIGO ===');
+    Logger.log('ID do artigo: ' + artigoId);
+    Logger.log('DTO recebido: ' + JSON.stringify(updateArtigoDto));
+
     const existingArtigo = await this.artigoRepository.findById(artigoId);
     if (!existingArtigo) {
       throw new NotFoundException('Artigo não encontrado');
     }
 
-    console.log('Artigo existente - imagemCapa atual:', existingArtigo.imagemCapa);
-
     const artigo = await this.artigoRepository.update(
       artigoId,
       updateArtigoDto,
     );
-    
-    console.log('=== SERVICE: ARTIGO ATUALIZADO ===');
-    console.log('Nova imagemCapa:', artigo.imagemCapa);
-    
+
     return this.mapToResponseDto(artigo);
   }
 
@@ -243,7 +239,27 @@ export class ArtigoService {
   // --- Mappers ---
 
   private mapToResponseDto(artigo: ArtigoEntity): ArtigoResponseDto {
-    return {
+    Logger.log('=== MAPEANDO ARTIGO PARA RESPONSE DTO ===');
+    Logger.log('Artigo recebido: ' + JSON.stringify({
+      artigoId: artigo.artigoId,
+      titulo: artigo.titulo,
+      autorId: artigo.autorId,
+      autor: artigo.autor,
+      imagemCapa: artigo.imagemCapa,
+    }));
+
+    if (!artigo.autor) {
+      Logger.error('ERRO: Autor não encontrado no artigo!');
+      Logger.error('ArtigoEntity completa: ' + JSON.stringify(artigo));
+    } else {
+      Logger.log('Autor encontrado: ' + JSON.stringify({
+        userId: artigo.autor.userId,
+        name: artigo.autor.name,
+        avatarUrl: artigo.autor.avatarUrl,
+      }));
+    }
+
+    const responseDto = {
       artigoId: artigo.artigoId,
       titulo: artigo.titulo,
       conteudo: artigo.conteudo,
@@ -267,6 +283,16 @@ export class ArtigoService {
       createdAt: artigo.createdAt,
       updatedAt: artigo.updatedAt,
     };
+
+    console.log('=== RESPONSE DTO GERADO ===');
+    console.log('Response DTO:', {
+      artigoId: responseDto.artigoId,
+      titulo: responseDto.titulo,
+      autor: responseDto.autor,
+      imagemCapa: responseDto.imagemCapa,
+    });
+
+    return responseDto;
   }
 
   private mapComentarioToResponseDto(

@@ -282,6 +282,17 @@ export class ArtigoController {
   async uploadImagem(
     @UploadedFile() file: Express.Multer.File,
   ): Promise<{ url: string }> {
+    console.log('=== UPLOAD ENDPOINT CHAMADO ===');
+    console.log('Arquivo recebido:', file ? 'SIM' : 'NÃO');
+    if (file) {
+      console.log('Detalhes do arquivo:', {
+        originalname: file.originalname,
+        mimetype: file.mimetype,
+        size: file.size,
+        path: file.path
+      });
+    }
+
     if (!file) {
       throw new BadRequestException('Nenhum arquivo foi enviado');
     }
@@ -292,6 +303,8 @@ export class ArtigoController {
       const avifFilename = `artigo-${uniqueSuffix}.avif`;
       const avifPath = join(process.cwd(), 'uploads', 'artigos', avifFilename);
 
+      console.log('Caminho do arquivo AVIF:', avifPath);
+
       // Converter imagem para AVIF usando Sharp
       await sharp(file.path)
         .avif({
@@ -300,13 +313,21 @@ export class ArtigoController {
         })
         .toFile(avifPath);
 
+      console.log('Conversão para AVIF concluída');
+
       // Remover arquivo original após conversão
       await fs.unlink(file.path);
 
+      console.log('Arquivo original removido');
+
       const url = `/uploads/artigos/${avifFilename}`;
-      console.log('Upload realizado com sucesso. URL:', url);
+      console.log('=== UPLOAD CONCLUÍDO ===');
+      console.log('URL gerada:', url);
+      console.log('Retornando objeto:', { url });
+      
       return { url };
     } catch (error) {
+      console.error('=== ERRO NO UPLOAD ===');
       console.error('Erro ao converter imagem para AVIF:', error);
       throw new BadRequestException('Erro ao processar a imagem');
     }

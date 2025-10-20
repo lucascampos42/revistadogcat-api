@@ -2,7 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AuthModule } from './application/auth/auth.module';
 import { UserModule } from './application/user/user.module';
 import { PrismaService } from './core/config/prisma.service';
-import { LogModule } from './application/log/log.module';
+
 import { HomeModule } from './application/home/home.module';
 import { ArtigoModule } from './application/artigo/artigo.module';
 import { CadastroCaoModule } from './application/cadastro-cao/cadastro-cao.module';
@@ -30,7 +30,6 @@ import { EdicaoModule } from './application/edicao/edicao.module';
     }),
     AuthModule,
     UserModule,
-    LogModule,
     HomeModule,
     ArtigoModule,
     CadastroCaoModule,
