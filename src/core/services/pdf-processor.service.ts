@@ -28,7 +28,11 @@ export class PdfProcessorService {
     }
 
     // Previne path traversal
-    if (pdfPath.includes('..') || outputDir.includes('..') || filename.includes('..')) {
+    if (
+      pdfPath.includes('..') ||
+      outputDir.includes('..') ||
+      filename.includes('..')
+    ) {
       throw new Error('Caminhos contêm caracteres não permitidos');
     }
 
