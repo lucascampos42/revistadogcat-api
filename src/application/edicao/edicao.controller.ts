@@ -33,15 +33,11 @@ import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
-import { FileUploadService } from '../../core/services/file-upload.service';
 
 @ApiTags('Edições')
 @Controller('edicoes')
 export class EdicaoController {
-  constructor(
-    private readonly edicaoService: EdicaoService,
-    private readonly fileUploadService: FileUploadService,
-  ) {}
+  constructor(private readonly edicaoService: EdicaoService) {}
 
   // Helpers
   private ensureDir(path: string) {
@@ -160,14 +156,13 @@ export class EdicaoController {
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string' },
         titulo: { type: 'string' },
-        bimestre: { type: 'string' },
-        ano: { type: 'number' },
+        descricao: { type: 'string' },
+        data: { type: 'string', format: 'date-time' },
         pdf: { type: 'string', format: 'binary' },
         capa: { type: 'string', format: 'binary' },
       },
-      required: ['titulo', 'bimestre', 'ano', 'pdf'],
+      required: ['titulo', 'descricao', 'pdf'],
     },
   })
   @ApiResponse({

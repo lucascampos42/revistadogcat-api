@@ -204,14 +204,14 @@ model Raca {
 }
 
 model Edicao {
-  edicaoId  String   @id @default(cuid())
+  edicaoId  String    @id @default(cuid())
   titulo    String
-  bimestre  String
-  ano       Int
+  descricao String
+  data      DateTime
   pdfUrl    String
   capaUrl   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   @@map("edicoes")
 }

@@ -4,42 +4,21 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { EdicaoRepository } from './repositories/edicao.repository';
-import { FileUploadService } from '../../core/services/file-upload.service';
 import { CreateEdicaoDto } from './dto/create-edicao.dto';
 import { Edicao } from '@prisma/client';
 import { EdicaoResponseDto } from './dto/edicao-response.dto';
-
-function mapBimestreToCode(bimestre: string): string {
-  const map: Record<string, string> = {
-    'Jan/Fev': '01-02',
-    'Fev/Mar': '02-03',
-    'Mar/Abr': '03-04',
-    'Abr/Mai': '04-05',
-    'Mai/Jun': '05-06',
-    'Jun/Jul': '06-07',
-    'Jul/Ago': '07-08',
-    'Ago/Set': '08-09',
-    'Set/Out': '09-10',
-    'Out/Nov': '10-11',
-    'Nov/Dez': '11-12',
-    'Dez/Jan': '12-01',
-  };
-  return map[bimestre] || bimestre.replace(/\s/g, '');
-}
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class EdicaoService {
-  constructor(
-    private readonly edicaoRepository: EdicaoRepository,
-    private readonly fileUploadService: FileUploadService,
-  ) {}
+  constructor(private readonly edicaoRepository: EdicaoRepository) {}
 
   private toResponseDto(edicao: Edicao): EdicaoResponseDto {
     return {
       id: edicao.edicaoId,
       titulo: edicao.titulo,
-      bimestre: edicao.bimestre,
-      ano: edicao.ano,
+      descricao: edicao.descricao,
+      data: edicao.data,
       pdfUrl: edicao.pdfUrl,
       capaUrl: edicao.capaUrl || undefined,
     };
@@ -75,30 +54,22 @@ export class EdicaoService {
     files: { pdf?: Express.Multer.File[]; capa?: Express.Multer.File[] },
   ): Promise<EdicaoResponseDto> {
     const pdf = files.pdf?.[0];
-    if (!pdf || pdf.mimetype !== 'application/pdf') {
-      throw new BadRequestException('Arquivo PDF inválido');
+    if (!pdf) {
+      throw new BadRequestException('Arquivo PDF é obrigatório');
     }
 
     const capa = files.capa?.[0];
 
-    const id = dto.id ?? `${dto.ano}-${mapBimestreToCode(dto.bimestre)}`;
-
-    // Processar arquivos via FileUploadService para garantir resize (capa) e URL consistente
-    const processedPdf = await this.fileUploadService.processUploadedFile(
-      pdf,
-      'magazinePdf',
-    );
-    const pdfUrl = processedPdf.url;
-    const processedCapa = capa
-      ? await this.fileUploadService.processUploadedFile(capa, 'magazineCover')
+    const pdfUrl = `/uploads/revista/${pdf.filename}`;
+    const capaUrl = capa
+      ? `/uploads/revista/capas/${capa.filename}`
       : undefined;
-    const capaUrl = processedCapa?.url;
 
     const created = await this.edicaoRepository.create({
-      edicaoId: id,
+      edicaoId: dto.id || randomUUID(),
       titulo: dto.titulo,
-      bimestre: dto.bimestre,
-      ano: dto.ano,
+      descricao: dto.descricao,
+      data: dto.data ? new Date(dto.data) : new Date(),
       pdfUrl,
       capaUrl,
     });

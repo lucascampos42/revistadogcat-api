@@ -7,11 +7,11 @@ export class EdicaoResponseDto {
   @ApiProperty({ description: 'Título da edição' })
   titulo: string;
 
-  @ApiProperty({ description: 'Bimestre' })
-  bimestre: string;
+  @ApiProperty({ description: 'Descrição da edição' })
+  descricao: string;
 
-  @ApiProperty({ description: 'Ano' })
-  ano: number;
+  @ApiProperty({ description: 'Data da edição' })
+  data: Date;
 
   @ApiProperty({ description: 'URL pública do PDF' })
   pdfUrl: string;

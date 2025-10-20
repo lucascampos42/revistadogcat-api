@@ -30,10 +30,9 @@ describe('AuthRepository', () => {
     lastLogin: new Date(),
     tokenVersion: 1,
     refreshToken: 'refresh_token_hash',
+    refreshTokenExpiresAt: new Date(),
     passwordResetToken: null,
     passwordResetExpires: null,
-    activationToken: null,
-    activationTokenExpires: null,
     blocked: false,
     blockedUntil: null,
     loginAttempts: 0,
@@ -79,10 +78,9 @@ describe('AuthRepository', () => {
         lastLogin: null,
         tokenVersion: 0,
         refreshToken: null,
+        refreshTokenExpiresAt: null,
         passwordResetToken: null,
         passwordResetExpires: null,
-        activationToken: 'activation_token',
-        activationTokenExpires: new Date(Date.now() + 3600000),
         active: false,
         blocked: false,
         blockedUntil: null,
@@ -114,10 +112,9 @@ describe('AuthRepository', () => {
         lastLogin: null,
         tokenVersion: 0,
         refreshToken: null,
+        refreshTokenExpiresAt: null,
         passwordResetToken: null,
         passwordResetExpires: null,
-        activationToken: 'activation_token',
-        activationTokenExpires: new Date(Date.now() + 3600000),
         active: false,
         blocked: false,
         blockedUntil: null,
@@ -184,73 +181,6 @@ describe('AuthRepository', () => {
       );
 
       expect(result).toBeNull();
-    });
-  });
-
-  describe('findUserByActivationToken', () => {
-    it('should find user by valid activation token', async () => {
-      const token = 'activation_token';
-      const userWithActivationToken = {
-        ...mockUser,
-        activationToken: token,
-        activationTokenExpires: new Date(Date.now() + 3600000),
-        active: false,
-      };
-      mockPrismaService.user.findFirst.mockResolvedValue(
-        userWithActivationToken,
-      );
-
-      const result = await repository.findUserByActivationToken(token);
-
-      expect(mockPrismaService.user.findFirst).toHaveBeenCalledWith({
-        where: {
-          activationToken: token,
-          activationTokenExpires: { gte: expect.any(Date) as Date },
-          active: false,
-        },
-      });
-      expect(result).toEqual(userWithActivationToken);
-    });
-
-    it('should return null when activation token not found or expired', async () => {
-      const token = 'invalid_token';
-      mockPrismaService.user.findFirst.mockResolvedValue(null);
-
-      const result = await repository.findUserByActivationToken(token);
-
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('activateUser', () => {
-    it('should activate user and clear activation token', async () => {
-      const userId = '1';
-      const updatedUser = {
-        ...mockUser,
-        active: true,
-        activationToken: null,
-        activationTokenExpires: null,
-      };
-      mockPrismaService.user.update.mockResolvedValue(updatedUser);
-
-      const result = await repository.activateUser(userId);
-
-      expect(mockPrismaService.user.update).toHaveBeenCalledWith({
-        where: { userId },
-        data: {
-          active: true,
-          activationToken: null,
-          activationTokenExpires: null,
-        },
-      });
-      expect(result).toEqual(updatedUser);
-    });
-
-    it('should handle activation errors', async () => {
-      const error = new Error('Activation failed');
-      mockPrismaService.user.update.mockRejectedValue(error);
-
-      await expect(repository.activateUser('1')).rejects.toThrow(error);
     });
   });
 

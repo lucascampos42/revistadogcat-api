@@ -1,26 +1,25 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsInt, Min, Max } from 'class-validator';
+import { IsOptional, IsString, IsDateString } from 'class-validator';
 
 export class CreateEdicaoDto {
   @ApiPropertyOptional({
     description:
-      'ID da edição (opcional). Se não enviado, será gerado a partir de ano+bimestre',
+      'ID da edição (opcional). Se não enviado, será gerado automaticamente',
   })
   @IsOptional()
   @IsString()
   id?: string;
 
-  @ApiProperty({ description: 'Título da edição', example: 'Edição Mar/Abr' })
+  @ApiProperty({ description: 'Título da edição', example: 'Edição de Outubro' })
   @IsString()
   titulo!: string;
 
-  @ApiProperty({ description: 'Bimestre da edição', example: 'Mar/Abr' })
+  @ApiProperty({ description: 'Descrição da edição', example: 'Nesta edição, trazemos...' })
   @IsString()
-  bimestre!: string;
+  descricao!: string;
 
-  @ApiProperty({ description: 'Ano da edição', example: 2025 })
-  @IsInt()
-  @Min(2000)
-  @Max(new Date().getFullYear())
-  ano!: number;
+  @ApiPropertyOptional({ description: 'Data da edição (padrão: data atual)', example: '2025-10-20' })
+  @IsOptional()
+  @IsDateString()
+  data?: Date;
 }

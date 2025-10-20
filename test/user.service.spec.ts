@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UserService } from './user.service';
-import { PrismaService } from '../../core/config/prisma.service';
-import { CreateUserDto } from '../auth/dto/create-auth.dto';
+import { UserService } from '../src/application/user/user.service';
+import { PrismaService } from '../src/core/config/prisma.service';
+import { CreateUserDto } from '../src/application/auth/dto/create-auth.dto';
 import { User, Role } from '@prisma/client';
 
 const mockUserRepository = {
@@ -53,7 +53,7 @@ describe('UserService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('createUser', () => {
+  describe('create', () => {
     it('should create AuthRequest.ts new user with correct data', async () => {
       const createUserDto: CreateUserDto = {
         userName: 'testuser',
@@ -78,8 +78,6 @@ describe('UserService', () => {
         refreshToken: null,
         passwordResetToken: null,
         passwordResetExpires: null,
-        activationToken: null,
-        activationTokenExpires: null,
         blocked: false,
         blockedUntil: null,
         loginAttempts: 0,
@@ -91,14 +89,14 @@ describe('UserService', () => {
 
       mockUserRepository.create.mockResolvedValue(expectedUser);
 
-      const result = await service.createUser(createUserDto);
+      const result = await service.create(createUserDto);
 
       expect(mockUserRepository.create).toHaveBeenCalledWith(createUserDto);
       expect(result).toEqual(expectedUser);
     });
   });
 
-  describe('findAll', () => {
+  describe('findAllPaged', () => {
     it('should return an array of users', async () => {
       const users: User[] = [
         {
@@ -117,8 +115,6 @@ describe('UserService', () => {
           refreshToken: null,
           passwordResetToken: null,
           passwordResetExpires: null,
-          activationToken: null,
-          activationTokenExpires: null,
           blocked: false,
           blockedUntil: null,
           loginAttempts: 0,
@@ -143,8 +139,6 @@ describe('UserService', () => {
           refreshToken: null,
           passwordResetToken: null,
           passwordResetExpires: null,
-          activationToken: null,
-          activationTokenExpires: null,
           blocked: false,
           blockedUntil: null,
           loginAttempts: 0,
@@ -154,11 +148,11 @@ describe('UserService', () => {
           avatarUrl: null,
         },
       ];
-      mockUserRepository.findAll.mockResolvedValue(users);
+      mockUserRepository.findAllPaged.mockResolvedValue(users);
 
-      const result = await service.findAll();
+      const result = await service.findAllPaged({});
       expect(result).toEqual(users);
-      expect(mockUserRepository.findAll).toHaveBeenCalled();
+      expect(mockUserRepository.findAllPaged).toHaveBeenCalled();
     });
   });
 
@@ -180,8 +174,6 @@ describe('UserService', () => {
         refreshToken: null,
         passwordResetToken: null,
         passwordResetExpires: null,
-        activationToken: null,
-        activationTokenExpires: null,
         blocked: false,
         blockedUntil: null,
         loginAttempts: 0,
@@ -217,8 +209,6 @@ describe('UserService', () => {
         refreshToken: null,
         passwordResetToken: null,
         passwordResetExpires: null,
-        activationToken: null,
-        activationTokenExpires: null,
         blocked: false,
         blockedUntil: null,
         loginAttempts: 0,
@@ -261,8 +251,6 @@ describe('UserService', () => {
         refreshToken: null,
         passwordResetToken: null,
         passwordResetExpires: null,
-        activationToken: null,
-        activationTokenExpires: null,
         blocked: false,
         blockedUntil: null,
         loginAttempts: 0,

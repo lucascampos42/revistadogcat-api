@@ -51,54 +51,6 @@ describe('MailService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('sendActivationEmail', () => {
-    it('should send activation email successfully', async () => {
-      const user = {
-        email: 'test@example.com',
-        name: 'Test User',
-        userId: '1',
-      } as any;
-      const activationToken = 'activation_token_123';
-      const frontendUrl = 'https://frontend.com';
-
-      mockConfigService.get.mockReturnValue(frontendUrl);
-      mockMailerService.sendMail.mockResolvedValue({
-        messageId: 'test-message-id',
-      });
-
-      await service.sendActivationEmail(user, activationToken);
-
-      expect(mailerService.sendMail).toHaveBeenCalledWith({
-        to: user.email,
-        subject: 'Ative sua conta - Bem-vindo!',
-        template: './activation',
-        context: {
-          name: user.name,
-          activationUrl: `http://localhost:3000/auth/activate?token=${activationToken}`,
-          token: activationToken,
-        },
-      });
-    });
-
-    it('should handle activation email sending errors', async () => {
-      const user = {
-        email: 'test@example.com',
-        name: 'Test User',
-        userId: '1',
-      } as any;
-      const activationToken = 'activation_token_123';
-      const frontendUrl = 'https://frontend.com';
-      const error = new Error('Email sending failed');
-
-      mockConfigService.get.mockReturnValue(frontendUrl);
-      mockMailerService.sendMail.mockRejectedValue(error);
-
-      await expect(
-        service.sendActivationEmail(user, activationToken),
-      ).rejects.toThrow(error);
-    });
-  });
-
   describe('sendPasswordResetEmail', () => {
     it('should send password reset email successfully', async () => {
       const email = 'test@example.com';

@@ -39,6 +39,7 @@ import { ComentarioResponseDto } from './dto/comentario-response.dto';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
+import { IsPublic } from '../../core/decorators/is-public.decorator';
 import { Role } from '@prisma/client';
 import { Request } from 'express';
 
@@ -83,6 +84,7 @@ export class ArtigoController {
   }
 
   @Get('publicados')
+  @IsPublic()
   @ApiOperation({ summary: 'Listar artigos publicados (público)' })
   @ApiResponse({
     status: 200,
@@ -96,6 +98,7 @@ export class ArtigoController {
   }
 
   @Get('destaques')
+  @IsPublic()
   @ApiOperation({ summary: 'Listar artigos em destaque (público)' })
   @ApiQuery({
     name: 'limit',
@@ -116,6 +119,7 @@ export class ArtigoController {
   }
 
   @Get(':id')
+  @IsPublic()
   @ApiOperation({ summary: 'Obter artigo por ID' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
   @ApiQuery({

@@ -4,8 +4,8 @@ import { PrismaService } from '../../../core/config/prisma.service';
 export interface CreateEdicaoData {
   edicaoId: string;
   titulo: string;
-  bimestre: string;
-  ano: number;
+  descricao: string;
+  data: Date;
   pdfUrl: string;
   capaUrl?: string;
 }
@@ -29,12 +29,16 @@ export class EdicaoRepository {
 
     const where: any = {};
     if (typeof ano === 'number') {
-      where.ano = ano;
+      // Filtrar por ano usando a data
+      where.data = {
+        gte: new Date(`${ano}-01-01`),
+        lt: new Date(`${ano + 1}-01-01`),
+      };
     }
 
     const edicoes = await this.prisma.edicao.findMany({
       where,
-      orderBy: [{ ano: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ data: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,
     });
@@ -48,7 +52,7 @@ export class EdicaoRepository {
 
   async findUltima() {
     return this.prisma.edicao.findFirst({
-      orderBy: [{ ano: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ data: 'desc' }, { createdAt: 'desc' }],
     });
   }
 }
