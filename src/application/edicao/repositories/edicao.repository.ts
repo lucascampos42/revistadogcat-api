@@ -4,7 +4,7 @@ import { PrismaService } from '../../../core/config/prisma.service';
 export interface CreateEdicaoData {
   edicaoId: string;
   titulo: string;
-  descricao: string;
+  descricao?: string;
   data: Date;
   pdfUrl: string;
   capaUrl?: string;

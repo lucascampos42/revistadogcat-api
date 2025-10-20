@@ -4,4 +4,3 @@
  */
 
 export * from './user.mapper';
-export * from './log.mapper';

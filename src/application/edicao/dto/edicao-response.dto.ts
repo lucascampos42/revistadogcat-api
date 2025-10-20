@@ -7,8 +7,8 @@ export class EdicaoResponseDto {
   @ApiProperty({ description: 'Título da edição' })
   titulo: string;
 
-  @ApiProperty({ description: 'Descrição da edição' })
-  descricao: string;
+  @ApiPropertyOptional({ description: 'Descrição da edição (opcional)' })
+  descricao?: string;
 
   @ApiProperty({ description: 'Data da edição' })
   data: Date;

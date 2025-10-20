@@ -199,7 +199,7 @@ export class EdicaoController {
         pdf: { type: 'string', format: 'binary' },
         capa: { type: 'string', format: 'binary' },
       },
-      required: ['titulo', 'descricao', 'pdf'],
+      required: ['titulo', 'pdf'],
     },
   })
   @ApiResponse({

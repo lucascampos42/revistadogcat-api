@@ -25,7 +25,7 @@ export class EdicaoService {
     return {
       id: edicao.edicaoId,
       titulo: edicao.titulo,
-      descricao: edicao.descricao,
+      descricao: edicao.descricao || undefined,
       data: edicao.data,
       pdfUrl: edicao.pdfUrl,
       capaUrl: edicao.capaUrl || undefined,

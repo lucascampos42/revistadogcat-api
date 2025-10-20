@@ -36,17 +36,17 @@ export class CreateEdicaoDto {
   @Transform(({ value }) => value?.trim())
   titulo!: string;
 
-  @ApiProperty({ 
-    description: 'Descrição da edição', 
+  @ApiPropertyOptional({ 
+    description: 'Descrição da edição (opcional)', 
     example: 'Nesta edição, trazemos...',
     minLength: 10,
     maxLength: 1000,
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Descrição é obrigatória' })
   @Length(10, 1000, { message: 'Descrição deve ter entre 10 e 1000 caracteres' })
   @Transform(({ value }) => value?.trim())
-  descricao!: string;
+  descricao?: string;
 
   @ApiPropertyOptional({ 
     description: 'Data da edição (padrão: data atual)', 

@@ -37,7 +37,6 @@ model User {
   deletedAt       DateTime?
 
   // --- Relações ---
-  logs         Log[]
   enderecos    Endereco[]
   cadastrosCao CadastroCao[]
   artigos      Artigo[]
@@ -193,7 +192,7 @@ model Raca {
 model Edicao {
   edicaoId  String    @id @default(cuid())
   titulo    String
-  descricao String
+  descricao String?
   data      DateTime
   pdfUrl    String
   capaUrl   String?
