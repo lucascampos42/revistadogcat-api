@@ -39,10 +39,10 @@ export class FileUploadService {
       imageResize: { width: 400, height: 400, fit: 'cover' as const },
     },
     articleImage: {
-      destination: 'uploads/articles',
-      allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
+      destination: 'uploads/artigos',
+      allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'],
       maxFileSize: 5 * 1024 * 1024, // 5MB
-      fileNamePrefix: 'article',
+      fileNamePrefix: 'artigo',
     },
     dogProfile: {
       destination: 'uploads/dogs/profile',

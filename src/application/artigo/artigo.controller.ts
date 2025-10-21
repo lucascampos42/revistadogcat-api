@@ -12,6 +12,7 @@ import {
   UploadedFile,
   BadRequestException,
   Req,
+  Res,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -43,7 +44,7 @@ import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { IsPublic } from '../../core/decorators/is-public.decorator';
 import { Role } from '@prisma/client';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 
 @ApiTags('Artigos')
 @Controller('artigos')
@@ -236,6 +237,12 @@ export class ArtigoController {
   ): Promise<ArtigoResponseDto[]> {
     const limitNumber = limit ? parseInt(limit) : 5;
     return this.artigoService.findDestaques(limitNumber);
+  }
+
+  @IsPublic()
+  @Get('imagem/:filename')
+  seeUploadedFile(@Param('filename') filename, @Res() res: Response) {
+    return res.sendFile(filename, { root: 'uploads/artigos' });
   }
 
   @Get(':id')

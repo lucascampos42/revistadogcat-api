@@ -40,15 +40,26 @@ async function bootstrap() {
     preflightContinue: false,
   });
 
-  // Criar diretório de uploads se não existir
-  const uploadsPath = join(process.cwd(), 'uploads', 'avatars');
-  if (!existsSync(uploadsPath)) {
-    mkdirSync(uploadsPath, { recursive: true });
-    Logger.log(`Diretório de uploads criado: ${uploadsPath}`);
-  }
+  // Criar diretórios de uploads se não existirem
+  const uploadDirectories = [
+    'uploads/avatars',
+    'uploads/artigos',
+    'uploads/articles',
+    'uploads/dogs/profile',
+    'uploads/dogs/lateral',
+    'uploads/dogs/pedigree'
+  ];
 
-  // Configurar servir arquivos estáticos
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+  uploadDirectories.forEach(dir => {
+    const fullPath = join(__dirname, '..', dir);
+    if (!existsSync(fullPath)) {
+      mkdirSync(fullPath, { recursive: true });
+      Logger.log(`Diretório de uploads criado: ${fullPath}`);
+    }
+  });
+
+  // Configurar arquivos estáticos
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
 
