@@ -47,6 +47,60 @@ export class EdicaoController {
     if (!existsSync(path)) mkdirSync(path, { recursive: true });
   }
 
+  /**
+   * Sanitiza o nome do arquivo removendo caracteres perigosos e normalizando acentos
+   * @param filename Nome original do arquivo
+   * @returns Nome sanitizado do arquivo
+   */
+  private static sanitizeFileName(filename: string): string {
+    if (!filename || filename.trim().length === 0) {
+      return '';
+    }
+
+    // Remove espaços no início e fim
+    let sanitized = filename.trim();
+
+    // Normaliza caracteres acentuados (NFD = Normalization Form Decomposed)
+    sanitized = sanitized.normalize('NFD');
+    
+    // Remove diacríticos (acentos)
+    sanitized = sanitized.replace(/[\u0300-\u036f]/g, '');
+    
+    // Substitui espaços por underscores
+    sanitized = sanitized.replace(/\s+/g, '_');
+    
+    // Remove caracteres perigosos, mantendo apenas: letras, números, pontos, hífens, underscores e parênteses
+    sanitized = sanitized.replace(/[^a-zA-Z0-9._\-()]/g, '');
+    
+    // Remove múltiplos pontos consecutivos
+    sanitized = sanitized.replace(/\.{2,}/g, '.');
+    
+    // Remove múltiplos underscores consecutivos
+    sanitized = sanitized.replace(/_{2,}/g, '_');
+    
+    // Remove pontos e underscores no início e fim
+    sanitized = sanitized.replace(/^[._]+|[._]+$/g, '');
+    
+    // Garante que o arquivo tenha pelo menos um caractere válido antes da extensão
+    if (sanitized.length === 0) {
+      return '';
+    }
+    
+    // Limita o tamanho do nome (sem extensão) a 100 caracteres
+    const parts = sanitized.split('.');
+    if (parts.length > 1) {
+      const extension = parts.pop();
+      const nameWithoutExt = parts.join('.');
+      if (nameWithoutExt.length > 100) {
+        sanitized = nameWithoutExt.substring(0, 100) + '.' + extension;
+      }
+    } else if (sanitized.length > 100) {
+      sanitized = sanitized.substring(0, 100);
+    }
+
+    return sanitized;
+  }
+
   @Get()
   @IsPublic()
   @ApiOperation({ summary: 'Listar edições' })
@@ -166,16 +220,20 @@ export class EdicaoController {
             return;
           }
 
-          // Validação de nome do arquivo (sem caracteres perigosos)
-          if (!/^[a-zA-Z0-9._-]+$/.test(file.originalname)) {
+          // Sanitização e validação de nome do arquivo
+          const sanitizedName = EdicaoController.sanitizeFileName(file.originalname);
+          if (!sanitizedName || sanitizedName.length === 0) {
             cb(
               new BadRequestException(
-                'Nome do arquivo contém caracteres não permitidos',
+                'Nome do arquivo inválido após sanitização',
               ),
               false,
             );
             return;
           }
+          
+          // Atualiza o nome do arquivo com a versão sanitizada
+          file.originalname = sanitizedName;
 
           cb(null, true);
         },
