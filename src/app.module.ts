@@ -16,6 +16,7 @@ import { ResponseFormatInterceptor } from './core/interceptors/response-format.i
 import { JwtModule } from '@nestjs/jwt';
 import { RacaModule } from './application/raca/raca.module';
 import { EdicaoModule } from './application/edicao/edicao.module';
+import { VotacaoModule } from './application/votacao/votacao.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { EdicaoModule } from './application/edicao/edicao.module';
     CadastroCaoModule,
     RacaModule,
     EdicaoModule,
+    VotacaoModule,
     MailModule,
   ],
   controllers: [],
@@ -56,5 +58,5 @@ import { EdicaoModule } from './application/edicao/edicao.module';
   exports: [PrismaService],
 })
 export class AppModule implements NestModule {
-  configure(_consumer: MiddlewareConsumer) {}
+  configure(consumer: MiddlewareConsumer) {}
 }

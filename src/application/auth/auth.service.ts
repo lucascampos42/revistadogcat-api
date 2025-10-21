@@ -224,6 +224,8 @@ export class AuthService {
       passwordResetToken: null,
       passwordResetExpires: null,
       deletedAt: null,
+      votosDisponiveis: 0,
+      votosUtilizados: 0,
     };
 
     const newUser = await this.authRepository.createUser(userToCreate);

@@ -33,6 +33,8 @@ export class UserMapper {
       createdAt: prismaUser.createdAt,
       updatedAt: prismaUser.updatedAt,
       deletedAt: prismaUser.deletedAt || undefined,
+      votosDisponiveis: prismaUser.votosDisponiveis,
+      votosUtilizados: prismaUser.votosUtilizados,
     });
   }
 
@@ -63,6 +65,8 @@ export class UserMapper {
       loginAttempts: userEntity.loginAttempts || 0,
       lastFailedLogin: userEntity.lastFailedLogin || null,
       deletedAt: userEntity.deletedAt || null,
+      votosDisponiveis: userEntity.votosDisponiveis || 0,
+      votosUtilizados: userEntity.votosUtilizados || 0,
     };
   }
 

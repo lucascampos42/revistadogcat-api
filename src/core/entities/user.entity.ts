@@ -31,6 +31,10 @@ export class UserEntity {
   updatedAt: Date;
   deletedAt?: Date;
 
+  // Campos de Votação
+  votosDisponiveis: number;
+  votosUtilizados: number;
+
   constructor(data: Partial<UserEntity>) {
     Object.assign(this, data);
   }
@@ -106,6 +110,8 @@ export type CreateUserData = Omit<
   | 'loginAttempts'
   | 'active'
   | 'blocked'
+  | 'votosDisponiveis'
+  | 'votosUtilizados'
 >;
 
 /**

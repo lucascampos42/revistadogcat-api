@@ -36,11 +36,16 @@ model User {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
+  // --- Campos de Votação ---
+  votosDisponiveis Int @default(0)
+  votosUtilizados  Int @default(0)
+
   // --- Relações ---
   enderecos    Endereco[]
   cadastrosCao CadastroCao[]
   artigos      Artigo[]
   comentarios  Comentario[]
+  votos        Voto[]
 
   @@map("users")
 }
@@ -169,10 +174,17 @@ model CadastroCao {
   updatedAt        DateTime    @updatedAt
   deletedAt        DateTime?
 
+  // --- Campos de Votação ---
+  totalVotos       Int     @default(0)
+  ativo            Boolean @default(true)
+
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
   racaId String
   raca   Raca   @relation(fields: [racaId], references: [racaId])
+
+  // --- Relações de Votação ---
+  votos Voto[]
 
   @@map("cadastros_cao")
 }
@@ -200,4 +212,40 @@ model Edicao {
   updatedAt DateTime  @updatedAt
 
   @@map("edicoes")
+}
+
+model Voto {
+  votoId      String   @id @default(cuid())
+  userId      String
+  cadastroId  String
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user     User        @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  cadastro CadastroCao @relation(fields: [cadastroId], references: [cadastroId], onDelete: Cascade)
+
+  @@unique([userId, cadastroId])
+  @@map("votos")
+}
+
+model KardexVoto {
+  kardexId    String      @id @default(cuid())
+  userId      String
+  cadastroId  String
+  acao        AcaoKardex
+  ip          String?
+  userAgent   String?
+  observacoes String?
+  createdAt   DateTime    @default(now())
+
+  @@map("kardex_votos")
+}
+
+enum AcaoKardex {
+  VOTO_CRIADO
+  VOTO_REMOVIDO
+  VOTO_INVALIDADO
+  USUARIO_BLOQUEADO
+  CADASTRO_DESATIVADO
 }
