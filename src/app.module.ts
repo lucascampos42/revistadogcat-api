@@ -14,6 +14,7 @@ import { GlobalAuthGuard } from './core/guards/global-auth.guard';
 import { GlobalExceptionFilter } from './core/filters';
 import { ResponseFormatInterceptor } from './core/interceptors/response-format.interceptor';
 import { JwtModule } from '@nestjs/jwt';
+import type { JwtSignOptions } from '@nestjs/jwt';
 import { RacaModule } from './application/raca/raca.module';
 import { EdicaoModule } from './application/edicao/edicao.module';
 import { VotacaoModule } from './application/votacao/votacao.module';
@@ -27,7 +28,9 @@ import { VotacaoModule } from './application/votacao/votacao.module';
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET || 'default-secret',
-      signOptions: { expiresIn: process.env.JWT_ACCESS_TTL || '1h' },
+      signOptions: { 
+        expiresIn: (process.env.JWT_ACCESS_TTL || '1h') as JwtSignOptions['expiresIn']
+      },
     }),
     AuthModule,
     UserModule,

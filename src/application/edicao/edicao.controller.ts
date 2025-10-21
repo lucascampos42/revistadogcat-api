@@ -62,30 +62,30 @@ export class EdicaoController {
 
     // Normaliza caracteres acentuados (NFD = Normalization Form Decomposed)
     sanitized = sanitized.normalize('NFD');
-    
+
     // Remove diacríticos (acentos)
     sanitized = sanitized.replace(/[\u0300-\u036f]/g, '');
-    
+
     // Substitui espaços por underscores
     sanitized = sanitized.replace(/\s+/g, '_');
-    
+
     // Remove caracteres perigosos, mantendo apenas: letras, números, pontos, hífens, underscores e parênteses
     sanitized = sanitized.replace(/[^a-zA-Z0-9._\-()]/g, '');
-    
+
     // Remove múltiplos pontos consecutivos
     sanitized = sanitized.replace(/\.{2,}/g, '.');
-    
+
     // Remove múltiplos underscores consecutivos
     sanitized = sanitized.replace(/_{2,}/g, '_');
-    
+
     // Remove pontos e underscores no início e fim
     sanitized = sanitized.replace(/^[._]+|[._]+$/g, '');
-    
+
     // Garante que o arquivo tenha pelo menos um caractere válido antes da extensão
     if (sanitized.length === 0) {
       return '';
     }
-    
+
     // Limita o tamanho do nome (sem extensão) a 100 caracteres
     const parts = sanitized.split('.');
     if (parts.length > 1) {
@@ -188,11 +188,16 @@ export class EdicaoController {
         fileFilter: (req, file, cb) => {
           // Validação rigorosa de tipos MIME e extensões
           const pdfTypes = ['application/pdf'];
-          const imageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-          
+          const imageTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp',
+          ];
+
           // Validação por campo
           const allowed = file.fieldname === 'pdf' ? pdfTypes : imageTypes;
-          
+
           // Verifica MIME type
           if (!allowed.includes(file.mimetype)) {
             cb(
@@ -206,10 +211,9 @@ export class EdicaoController {
 
           // Validação adicional de extensão para segurança
           const ext = file.originalname.toLowerCase().split('.').pop();
-          const allowedExtensions = file.fieldname === 'pdf' 
-            ? ['pdf'] 
-            : ['jpg', 'jpeg', 'png', 'webp'];
-            
+          const allowedExtensions =
+            file.fieldname === 'pdf' ? ['pdf'] : ['jpg', 'jpeg', 'png', 'webp'];
+
           if (!ext || !allowedExtensions.includes(ext)) {
             cb(
               new BadRequestException(
@@ -221,7 +225,9 @@ export class EdicaoController {
           }
 
           // Sanitização e validação de nome do arquivo
-          const sanitizedName = EdicaoController.sanitizeFileName(file.originalname);
+          const sanitizedName = EdicaoController.sanitizeFileName(
+            file.originalname,
+          );
           if (!sanitizedName || sanitizedName.length === 0) {
             cb(
               new BadRequestException(
@@ -231,7 +237,7 @@ export class EdicaoController {
             );
             return;
           }
-          
+
           // Atualiza o nome do arquivo com a versão sanitizada
           file.originalname = sanitizedName;
 
@@ -278,32 +284,47 @@ export class EdicaoController {
     if (!pdf) {
       throw new BadRequestException('Arquivo PDF é obrigatório');
     }
-    
+
     if (pdf.mimetype !== 'application/pdf') {
       throw new BadRequestException('Arquivo deve ser um PDF válido');
     }
-    
-    if (pdf.size < 1024) { // Menor que 1KB é suspeito
-      throw new BadRequestException('Arquivo PDF muito pequeno, pode estar corrompido');
+
+    if (pdf.size < 1024) {
+      // Menor que 1KB é suspeito
+      throw new BadRequestException(
+        'Arquivo PDF muito pequeno, pode estar corrompido',
+      );
     }
-    
-    if (pdf.size > 50 * 1024 * 1024) { // 50MB
+
+    if (pdf.size > 50 * 1024 * 1024) {
+      // 50MB
       throw new BadRequestException('Arquivo PDF excede o limite de 50MB');
     }
 
     // Validação rigorosa da capa (se fornecida)
     const capa = files.capa?.[0];
     if (capa) {
-      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      const allowedImageTypes = [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+      ];
       if (!allowedImageTypes.includes(capa.mimetype)) {
-        throw new BadRequestException('Arquivo de capa deve ser uma imagem válida (JPEG, PNG ou WebP)');
+        throw new BadRequestException(
+          'Arquivo de capa deve ser uma imagem válida (JPEG, PNG ou WebP)',
+        );
       }
-      
-      if (capa.size < 100) { // Menor que 100 bytes é suspeito
-        throw new BadRequestException('Arquivo de capa muito pequeno, pode estar corrompido');
+
+      if (capa.size < 100) {
+        // Menor que 100 bytes é suspeito
+        throw new BadRequestException(
+          'Arquivo de capa muito pequeno, pode estar corrompido',
+        );
       }
-      
-      if (capa.size > 5 * 1024 * 1024) { // 5MB
+
+      if (capa.size > 5 * 1024 * 1024) {
+        // 5MB
         throw new BadRequestException('Imagem de capa excede o limite de 5MB');
       }
     }
@@ -335,17 +356,19 @@ export class EdicaoController {
     if (!id || id.trim().length === 0) {
       throw new BadRequestException('ID da edição é obrigatório');
     }
-    
+
     if (id.length > 50) {
       throw new BadRequestException('ID da edição muito longo');
     }
-    
+
     if (id.includes('..') || id.includes('/') || id.includes('\\')) {
       throw new BadRequestException('ID contém caracteres não permitidos');
     }
-    
+
     if (!/^[a-zA-Z0-9_-]+$/.test(id)) {
-      throw new BadRequestException('ID deve conter apenas letras, números, hífens e underscores');
+      throw new BadRequestException(
+        'ID deve conter apenas letras, números, hífens e underscores',
+      );
     }
 
     return this.edicaoService.delete(id.trim());

@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
+import type { JwtSignOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from '../../core/guards/jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -29,7 +30,10 @@ import { AUTH_REPOSITORY_TOKEN } from './repositories/auth.repository.interface'
           'default-access-secret',
         ),
         signOptions: {
-          expiresIn: configService.get<string>('JWT_TTL', '4h'),
+          expiresIn: configService.get<string>(
+            'JWT_TTL',
+            '4h',
+          ) as JwtSignOptions['expiresIn'],
         },
       }),
     }),
