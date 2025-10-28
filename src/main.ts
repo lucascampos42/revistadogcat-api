@@ -18,27 +18,7 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Configurar CORS
-  app.enableCors({
-    origin: [
-      'http://localhost:4200',
-      'http://localhost:4201',
-      'https://revistadogcat.com.br',
-      'https://www.revistadogcat.com.br',
-    ],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Accept',
-      'Origin',
-      'X-Requested-With',
-      'Access-Control-Request-Method',
-      'Access-Control-Request-Headers',
-    ],
-    credentials: true,
-    optionsSuccessStatus: 200,
-    preflightContinue: false,
-  });
+  app.enableCors();
 
   // Criar diretórios de uploads se não existirem
   const uploadDirectories = [
@@ -47,7 +27,7 @@ async function bootstrap() {
     'uploads/articles',
     'uploads/dogs/profile',
     'uploads/dogs/lateral',
-    'uploads/dogs/pedigree'
+    'uploads/dogs/pedigree',
   ];
 
   uploadDirectories.forEach(dir => {
