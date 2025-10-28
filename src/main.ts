@@ -22,8 +22,8 @@ async function bootstrap() {
     origin: [
       'http://localhost:4200',
       'http://localhost:4201',
-      'http://127.0.0.1:4200',
-      'https://revista.codesdevs.com.br',
+      'https://revistadogcat.com.br',
+      'https://www.revistadogcat.com.br',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
     allowedHeaders: [
