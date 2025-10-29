@@ -17,8 +17,57 @@ async function bootstrap() {
   // Ativar o filtro de exceções global
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // Configurar CORS
-  app.enableCors();
+  // Configurar CORS - apenas origens específicas permitidas
+  const allowedOrigins = [
+    'http://localhost:4200',
+    'http://localhost:4201',
+    'https://revistadogcat.com.br',
+    'http://revistadogcat.com.br',
+    'https://www.revistadogcat.com.br',
+    'http://www.revistadogcat.com.br',
+    'https://api.revistadogcat.com.br',
+    'http://api.revistadogcat.com.br',
+  ];
+
+  // Adicionar origens do ambiente se definidas
+  if (process.env.FRONTEND_URL) {
+    allowedOrigins.push(process.env.FRONTEND_URL);
+  }
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      // Permitir requisições sem origin (ex: mobile apps, Postman, testes)
+      if (!origin) return callback(null, true);
+
+      // Verificar se a origem está na lista permitida
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // Verificar se é um subdomínio do revistadogcat.com.br
+      if (origin.endsWith('.revistadogcat.com.br')) {
+        Logger.log(`CORS permitiu subdomínio: ${origin}`);
+        return callback(null, true);
+      }
+
+      Logger.warn(`CORS bloqueou origem não permitida: ${origin}`);
+      return callback(new Error('Não permitido pelo CORS'), false);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'X-Requested-With',
+      'Origin',
+      'Access-Control-Request-Method',
+      'Access-Control-Request-Headers',
+    ],
+    exposedHeaders: ['Content-Length', 'X-Total-Count'],
+    optionsSuccessStatus: 200,
+    preflightContinue: false,
+  });
 
   // Criar diretórios de uploads se não existirem
   const uploadDirectories = [
@@ -30,7 +79,7 @@ async function bootstrap() {
     'uploads/dogs/pedigree',
   ];
 
-  uploadDirectories.forEach(dir => {
+  uploadDirectories.forEach((dir) => {
     const fullPath = join(__dirname, '..', dir);
     if (!existsSync(fullPath)) {
       mkdirSync(fullPath, { recursive: true });
@@ -64,5 +113,6 @@ async function bootstrap() {
 
   await app.listen(port);
   Logger.log(`Application is running on: http://localhost:${port}`);
+  Logger.log(`Listening on 0.0.0.0:${port}`);
 }
 bootstrap();
