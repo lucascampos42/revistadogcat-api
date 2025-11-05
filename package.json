@@ -21,7 +21,9 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:migrate": "dotenv -e .env.test -- npx prisma migrate dev --name init",
-    "seed": "ts-node prisma/seed.ts"
+    "seed": "ts-node prisma/seed.ts",
+    "postinstall": "npx prisma generate",
+    "coolify:start": "npx prisma migrate deploy && npm run start:prod"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^1.6.1",
