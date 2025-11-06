@@ -394,14 +394,15 @@ export class CadastroCaoService {
     return this.cadastroCaoRepository.countPendentesValidacao();
   }
 
-  /**
-   * Lista cadastros pendentes de validação
-   */
-  async findPendentesValidacao(
-    limit: number = 50,
-  ): Promise<CadastroCaoResponseDto[]> {
-    const cadastros =
-      await this.cadastroCaoRepository.findPendentesValidacao(limit);
-    return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
-  }
-}
+      return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
+    }
+
+    /**
+     * Lista cadastros com raças pendentes de aprovação
+     */
+    async findPendentesRaca(
+      limit: number = 50,
+    ): Promise<CadastroCaoResponseDto[]> {
+      const cadastros = await this.cadastroCaoRepository.findPendentesRaca(limit);
+      return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
+    }}

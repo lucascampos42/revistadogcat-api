@@ -414,7 +414,32 @@ export class CadastroCaoController {
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({ status: 403, description: 'Sem permissão' })
   async contarPendentesValidacao(): Promise<{ count: number }> {
-    const count = await this.cadastroCaoService.countPendentesValidacao();
     return { count };
+  }
+
+  @Get('pendentes-raca')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.FUNCIONARIO)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Listar cadastros com raças pendentes de aprovação',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Limite de resultados (padrão: 50)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de cadastros com raças pendentes',
+    type: [CadastroCaoResponseDto],
+  })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  async listarPendentesRaca(
+    @Query('limit') limit?: string,
+  ): Promise<CadastroCaoResponseDto[]> {
+    const limitNumber = limit ? parseInt(limit) : 50;
+    return this.cadastroCaoService.findPendentesRaca(limitNumber);
   }
 }

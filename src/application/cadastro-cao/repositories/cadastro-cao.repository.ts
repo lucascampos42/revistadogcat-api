@@ -404,4 +404,36 @@ export class CadastroCaoRepository {
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
+
+  /**
+   * Lista cadastros com raças pendentes de aprovação
+   */
+  async findPendentesRaca(limit: number = 50): Promise<CadastroCaoEntity[]> {
+    const cadastros = await this.prisma.cadastroCao.findMany({
+      where: {
+        racaId: null,
+        racaSugerida: {
+          not: null,
+        },
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      take: limit,
+      include: {
+        user: {
+          select: {
+            userId: true,
+            name: true,
+            email: true,
+            telefone: true,
+          },
+        },
+        raca: true,
+      },
+    });
+
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
+  }
 }
