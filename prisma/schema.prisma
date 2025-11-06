@@ -232,8 +232,9 @@ model CadastroCao {
 
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
-  racaId String
-  raca   Raca   @relation(fields: [racaId], references: [racaId])
+  racaSugerida     String?
+  racaId           String?
+  raca             Raca?   @relation(fields: [racaId], references: [racaId])
 
   // --- Relações de Votação ---
   votos Voto[]

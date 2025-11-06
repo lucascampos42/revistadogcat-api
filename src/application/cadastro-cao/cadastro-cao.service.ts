@@ -68,6 +68,15 @@ export class CadastroCaoService {
       );
     }
 
+    if (
+      (!createCadastroCaoDto.racaId && !createCadastroCaoDto.racaSugerida) ||
+      (createCadastroCaoDto.racaId && createCadastroCaoDto.racaSugerida)
+    ) {
+      throw new BadRequestException(
+        'Você deve fornecer ou um `racaId` de uma raça existente ou uma `racaSugerida`, mas não ambos.',
+      );
+    }
+
     this.validateConditionalData(createCadastroCaoDto);
 
     const fotoPerfilUrl = (
@@ -290,6 +299,7 @@ export class CadastroCaoService {
       userId: cadastro.userId,
       nome: cadastro.nome,
       raca: cadastro.raca ? cadastro.raca.nome : undefined,
+      racaSugerida: cadastro.racaSugerida || undefined,
       sexo: cadastro.sexo,
       dataNascimento: cadastro.dataNascimento,
       fotoPerfil: cadastro.fotoPerfil,
@@ -384,14 +394,15 @@ export class CadastroCaoService {
     return this.cadastroCaoRepository.countPendentesValidacao();
   }
 
-  /**
-   * Lista cadastros pendentes de validação
-   */
-  async findPendentesValidacao(
-    limit: number = 50,
-  ): Promise<CadastroCaoResponseDto[]> {
-    const cadastros =
-      await this.cadastroCaoRepository.findPendentesValidacao(limit);
-    return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
-  }
-}
+      return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
+    }
+
+    /**
+     * Lista cadastros com raças pendentes de aprovação
+     */
+    async findPendentesRaca(
+      limit: number = 50,
+    ): Promise<CadastroCaoResponseDto[]> {
+      const cadastros = await this.cadastroCaoRepository.findPendentesRaca(limit);
+      return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
+    }}
