@@ -241,7 +241,7 @@ export class AuthService {
   // --- Tratamento de Falhas e Sucesso de Login ---
 
   private async handleFailedLogin(user: User): Promise<void> {
-    const maxAttempts = 5;
+    const maxAttempts = 20;
     const lockoutDuration = 15 * 60 * 1000;
     const newAttempts = (user.loginAttempts || 0) + 1;
 
