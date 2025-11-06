@@ -16,19 +16,33 @@ import { CadastroCaoResponseDto } from './dto/cadastro-cao-response.dto';
 import { CadastroCaoEntity } from './entities/cadastro-cao.entity';
 import { VideoOption } from '@prisma/client';
 import { UserService } from '../user/user.service';
+import { FileUploadService } from '../../core/services/file-upload.service';
 
 @Injectable()
 export class CadastroCaoService {
   constructor(
     private readonly cadastroCaoRepository: CadastroCaoRepository,
     private readonly userService: UserService,
+    private readonly fileUploadService: FileUploadService,
   ) {}
 
   async create(
     requesterId: string,
     createCadastroCaoDto: CreateCadastroCaoDto,
+    fotoPerfil: Express.Multer.File,
+    fotoLateral: Express.Multer.File,
+    pedigreeFrente?: Express.Multer.File,
+    pedigreeVerso?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     let proprietarioFinalId: string;
+
+    if (!fotoPerfil) {
+      throw new BadRequestException('A foto de perfil é obrigatória.');
+    }
+
+    if (!fotoLateral) {
+      throw new BadRequestException('A foto lateral é obrigatória.');
+    }
 
     if (createCadastroCaoDto.proprietarioId) {
       const proprietario = await this.userService.findUserEntityById(
@@ -56,9 +70,51 @@ export class CadastroCaoService {
 
     this.validateConditionalData(createCadastroCaoDto);
 
+    const fotoPerfilUrl = (
+      await this.fileUploadService.processUploadedFile(fotoPerfil, 'dogs')
+    ).url;
+    const fotoLateralUrl = (
+      await this.fileUploadService.processUploadedFile(fotoLateral, 'dogs')
+    ).url;
+
+    let pedigreeFrenteUrl: string | undefined;
+    let pedigreeVersoUrl: string | undefined;
+
+    if (createCadastroCaoDto.temPedigree) {
+      if (!pedigreeFrente && !pedigreeVerso) {
+        throw new BadRequestException(
+          'Pelo menos uma foto do pedigree (frente ou verso) é obrigatória.',
+        );
+      }
+
+      if (pedigreeFrente) {
+        pedigreeFrenteUrl = (
+          await this.fileUploadService.processUploadedFile(
+            pedigreeFrente,
+            'pedigree',
+          )
+        ).url;
+      }
+
+      if (pedigreeVerso) {
+        pedigreeVersoUrl = (
+          await this.fileUploadService.processUploadedFile(
+            pedigreeVerso,
+            'pedigree',
+          )
+        ).url;
+      }
+    }
+
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
-      createCadastroCaoDto,
+      {
+        ...createCadastroCaoDto,
+        fotoPerfil: fotoPerfilUrl,
+        fotoLateral: fotoLateralUrl,
+        pedigreeFrente: pedigreeFrenteUrl,
+        pedigreeVerso: pedigreeVersoUrl,
+      },
     );
     return this.mapToResponseDto(cadastro);
   }
@@ -192,16 +248,6 @@ export class CadastroCaoService {
       if (!data.registroPedigree) {
         throw new BadRequestException(
           'Registro do pedigree é obrigatório quando o cão tem pedigree',
-        );
-      }
-      if (!data.pedigreeFrente) {
-        throw new BadRequestException(
-          'Arquivo do pedigree (frente) é obrigatório quando o cão tem pedigree',
-        );
-      }
-      if (!data.pedigreeVerso) {
-        throw new BadRequestException(
-          'Arquivo do pedigree (verso) é obrigatório quando o cão tem pedigree',
         );
       }
     }

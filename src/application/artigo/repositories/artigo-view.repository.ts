@@ -37,9 +37,7 @@ export class ArtigoViewRepository {
     return count > 0;
   }
 
-  /**
-   * Conta o total de visualizações únicas de um artigo
-   */
+ 
   async countUniqueViews(artigoId: string): Promise<number> {
     const result = await this.prisma.artigoView.groupBy({
       by: ['fingerprint'],

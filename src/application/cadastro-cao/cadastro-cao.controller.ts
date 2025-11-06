@@ -13,7 +13,10 @@ import {
   UploadedFiles,
   BadRequestException,
 } from '@nestjs/common';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -54,6 +57,15 @@ export class CadastroCaoController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar novo cadastro de cão' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'fotoPerfil', maxCount: 1 },
+      { name: 'fotoLateral', maxCount: 1 },
+      { name: 'pedigreeFrente', maxCount: 1 },
+      { name: 'pedigreeVerso', maxCount: 1 },
+    ]),
+  )
   @ApiResponse({
     status: 201,
     description: 'Cadastro criado com sucesso',
@@ -64,10 +76,21 @@ export class CadastroCaoController {
   async create(
     @Request() req,
     @Body() createCadastroCaoDto: CreateCadastroCaoDto,
+    @UploadedFiles()
+    files: {
+      fotoPerfil?: Express.Multer.File[];
+      fotoLateral?: Express.Multer.File[];
+      pedigreeFrente?: Express.Multer.File[];
+      pedigreeVerso?: Express.Multer.File[];
+    },
   ): Promise<CadastroCaoResponseDto> {
     return this.cadastroCaoService.create(
       req.user.userId,
       createCadastroCaoDto,
+      files.fotoPerfil?.[0],
+      files.fotoLateral?.[0],
+      files.pedigreeFrente?.[0],
+      files.pedigreeVerso?.[0],
     );
   }
 
@@ -298,129 +321,6 @@ export class CadastroCaoController {
   ): Promise<{ message: string }> {
     await this.cadastroCaoService.remove(id, req.user.userId);
     return { message: 'Cadastro excluído com sucesso' };
-  }
-
-  @Post('upload-fotos')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @UseInterceptors(FilesInterceptor('files', 10))
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload de fotos para cadastro de cão' })
-  @ApiBody({
-    description: 'Arquivos de imagem (máximo 10)',
-    schema: {
-      type: 'object',
-      properties: {
-        files: {
-          type: 'array',
-          items: {
-            type: 'string',
-            format: 'binary',
-          },
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Fotos enviadas com sucesso',
-    schema: {
-      type: 'object',
-      properties: {
-        urls: {
-          type: 'array',
-          items: { type: 'string' },
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'Arquivos inválidos' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  async uploadFotos(
-    @UploadedFiles() files: Express.Multer.File[],
-  ): Promise<{ urls: string[] }> {
-    if (!files || files.length === 0) {
-      throw new BadRequestException('Nenhum arquivo foi enviado');
-    }
-
-    if (files.length > 10) {
-      throw new BadRequestException('Máximo de 10 arquivos permitidos');
-    }
-
-    const urls: string[] = [];
-
-    for (const file of files) {
-      const result = await this.fileUploadService.processUploadedFile(
-        file,
-        'dogProfile',
-      );
-      urls.push(result.url);
-    }
-
-    return { urls };
-  }
-
-  @Post('upload-pedigree')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @UseInterceptors(FilesInterceptor('files', 2))
-  @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload de arquivos de pedigree (frente e verso)' })
-  @ApiBody({
-    description: 'Arquivos de pedigree (frente e verso)',
-    schema: {
-      type: 'object',
-      properties: {
-        files: {
-          type: 'array',
-          items: {
-            type: 'string',
-            format: 'binary',
-          },
-          maxItems: 2,
-        },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Arquivos de pedigree enviados com sucesso',
-    schema: {
-      type: 'object',
-      properties: {
-        urls: {
-          type: 'array',
-          items: { type: 'string' },
-        },
-      },
-    },
-  })
-  @ApiResponse({ status: 400, description: 'Arquivos inválidos' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  async uploadPedigree(
-    @UploadedFiles() files: Express.Multer.File[],
-  ): Promise<{ urls: string[] }> {
-    if (!files || files.length === 0) {
-      throw new BadRequestException('Nenhum arquivo foi enviado');
-    }
-
-    if (files.length > 2) {
-      throw new BadRequestException(
-        'Máximo de 2 arquivos permitidos (frente e verso)',
-      );
-    }
-
-    const urls: string[] = [];
-
-    for (const file of files) {
-      const result = await this.fileUploadService.processUploadedFile(
-        file,
-        'dogPedigree',
-      );
-      urls.push(result.url);
-    }
-
-    return { urls };
   }
 
   @Post(':id/aprovar')
