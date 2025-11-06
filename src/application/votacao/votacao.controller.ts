@@ -18,6 +18,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 import { Request } from 'express';
+import { VotoTipo } from '@prisma/client';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { User } from '../../core/decorators/get-user.decorator';
 import { VotacaoService } from './votacao.service';
@@ -89,12 +90,19 @@ export class VotacaoController {
   async removerVoto(
     @User('userId') userId: string,
     @Param('cadastroId') cadastroId: string,
+    @Query('tipo') tipo: VotoTipo,
     @Req() req: Request,
   ): Promise<void> {
     const ip = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('User-Agent');
 
-    return this.votacaoService.removerVoto(userId, cadastroId, ip, userAgent);
+    return this.votacaoService.removerVoto(
+      userId,
+      cadastroId,
+      tipo,
+      ip,
+      userAgent,
+    );
   }
 
   @Get('meus-votos')
@@ -142,10 +150,8 @@ export class VotacaoController {
   async listarVotosPublico(
     @Query() params: ListVotosDto,
   ): Promise<VotosListResponseDto> {
-    // Para rota pública, removemos informações sensíveis como IP
     const votos = await this.votacaoService.listarVotos(params);
 
-    // Remove IPs dos votos para rota pública
     votos.votos = votos.votos.map((voto) => ({
       ...voto,
       ip: undefined,
@@ -167,15 +173,20 @@ export class VotacaoController {
     description: 'Status de votação do usuário',
   })
   async obterStatusVotacao(@User('userId') userId: string): Promise<{
-    votosDisponiveis: number;
-    votosUtilizados: number;
-    votosRestantes: number;
+    votosDisponiveisComum: number;
+    votosUtilizadosComum: number;
+    votosDisponiveisSuper: number;
+    votosUtilizadosSuper: number;
+    votosRestantesComum: number;
+    votosRestantesSuper: number;
   }> {
     const usuario = await this.votacaoService['prisma'].user.findUnique({
       where: { userId },
       select: {
-        votosDisponiveis: true,
-        votosUtilizados: true,
+        votosDisponiveisComum: true,
+        votosUtilizadosComum: true,
+        votosDisponiveisSuper: true,
+        votosUtilizadosSuper: true,
       },
     });
 
@@ -184,9 +195,14 @@ export class VotacaoController {
     }
 
     return {
-      votosDisponiveis: usuario.votosDisponiveis,
-      votosUtilizados: usuario.votosUtilizados,
-      votosRestantes: usuario.votosDisponiveis - usuario.votosUtilizados,
+      votosDisponiveisComum: usuario.votosDisponiveisComum,
+      votosUtilizadosComum: usuario.votosUtilizadosComum,
+      votosDisponiveisSuper: usuario.votosDisponiveisSuper,
+      votosUtilizadosSuper: usuario.votosUtilizadosSuper,
+      votosRestantesComum:
+        (usuario.votosDisponiveisComum || 0) - (usuario.votosUtilizadosComum || 0),
+      votosRestantesSuper:
+        (usuario.votosDisponiveisSuper || 0) - (usuario.votosUtilizadosSuper || 0),
     };
   }
 
@@ -204,22 +220,37 @@ export class VotacaoController {
   async verificarVoto(
     @User('userId') userId: string,
     @Param('cadastroId') cadastroId: string,
+    @Query('tipo') tipo?: VotoTipo,
   ): Promise<{ jaVotou: boolean; voto?: VotoResponseDto }> {
-    const voto = await this.votacaoService['prisma'].voto.findUnique({
-      where: {
-        userId_cadastroId: {
-          userId,
-          cadastroId,
-        },
-      },
-      select: {
-        votoId: true,
-        userId: true,
-        cadastroId: true,
-        createdAt: true,
-        ip: true,
-      },
-    });
+    const voto = tipo
+      ? await this.votacaoService['prisma'].voto.findUnique({
+          where: {
+            userId_cadastroId_tipo: {
+              userId,
+              cadastroId,
+              tipo,
+            },
+          },
+          select: {
+            votoId: true,
+            userId: true,
+            cadastroId: true,
+            tipo: true,
+            createdAt: true,
+            ip: true,
+          },
+        })
+      : await this.votacaoService['prisma'].voto.findFirst({
+          where: { userId, cadastroId },
+          select: {
+            votoId: true,
+            userId: true,
+            cadastroId: true,
+            tipo: true,
+            createdAt: true,
+            ip: true,
+          },
+        });
 
     return {
       jaVotou: !!voto,

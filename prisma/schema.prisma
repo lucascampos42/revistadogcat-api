@@ -36,9 +36,11 @@ model User {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
-  // --- Campos de Votação ---
-  votosDisponiveis Int @default(0)
-  votosUtilizados  Int @default(0)
+  // Saldos separados para votos comuns e super votos
+  votosDisponiveisComum Int @default(0)
+  votosUtilizadosComum  Int @default(0)
+  votosDisponiveisSuper Int @default(0)
+  votosUtilizadosSuper  Int @default(0)
 
   // --- Relações ---
   enderecos    Endereco[]
@@ -106,6 +108,12 @@ enum Role {
   EDITOR
   FUNCIONARIO
   JURADO
+}
+
+// Tipo de voto para diferenciar votos comuns e super votos
+enum VotoTipo {
+  COMUM
+  SUPER
 }
 
 model Endereco {
@@ -218,6 +226,7 @@ model Voto {
   votoId      String   @id @default(cuid())
   userId      String
   cadastroId  String
+  tipo        VotoTipo @default(COMUM)
   ip          String?
   userAgent   String?
   createdAt   DateTime @default(now())
@@ -225,7 +234,8 @@ model Voto {
   user     User        @relation(fields: [userId], references: [userId], onDelete: Cascade)
   cadastro CadastroCao @relation(fields: [cadastroId], references: [cadastroId], onDelete: Cascade)
 
-  @@unique([userId, cadastroId])
+  // Um voto por tipo por usuário para cada cão
+  @@unique([userId, cadastroId, tipo])
   @@map("votos")
 }
 
@@ -234,6 +244,7 @@ model KardexVoto {
   userId      String
   cadastroId  String
   acao        AcaoKardex
+  tipo        VotoTipo?
   ip          String?
   userAgent   String?
   observacoes String?

@@ -31,33 +31,25 @@ export class UserEntity {
   updatedAt: Date;
   deletedAt?: Date;
 
-  // Campos de Votação
-  votosDisponiveis: number;
-  votosUtilizados: number;
+  votosDisponiveisComum: number;
+  votosUtilizadosComum: number;
+  votosDisponiveisSuper: number;
+  votosUtilizadosSuper: number;
 
   constructor(data: Partial<UserEntity>) {
     Object.assign(this, data);
   }
 
-  /**
-   * Verifica se o usuário está ativo
-   */
   isActive(): boolean {
     return this.active && !this.blocked && !this.deletedAt;
   }
 
-  /**
-   * Verifica se o usuário está bloqueado
-   */
   isBlocked(): boolean {
     if (!this.blocked) return false;
     if (!this.blockedUntil) return true;
     return new Date() < this.blockedUntil;
   }
 
-  /**
-   * Verifica se o token de reset de senha é válido
-   */
   isPasswordResetTokenValid(): boolean {
     return (
       !!this.passwordResetToken &&
@@ -65,10 +57,6 @@ export class UserEntity {
       new Date() < this.passwordResetExpires
     );
   }
-
-  /**
-   * Remove dados sensíveis para retorno público
-   */
   toPublic() {
     const {
       password,
@@ -85,9 +73,6 @@ export class UserEntity {
   }
 }
 
-/**
- * Enum para os papéis do usuário
- */
 export enum UserRole {
   USUARIO = 'USUARIO',
   DONO_PET_APROVADO = 'DONO_PET_APROVADO',
@@ -98,9 +83,6 @@ export enum UserRole {
   FUNCIONARIO = 'FUNCIONARIO',
 }
 
-/**
- * Tipo para criação de usuário (sem campos gerados automaticamente)
- */
 export type CreateUserData = Omit<
   UserEntity,
   | 'userId'
@@ -110,13 +92,12 @@ export type CreateUserData = Omit<
   | 'loginAttempts'
   | 'active'
   | 'blocked'
-  | 'votosDisponiveis'
-  | 'votosUtilizados'
+  | 'votosDisponiveisComum'
+  | 'votosUtilizadosComum'
+  | 'votosDisponiveisSuper'
+  | 'votosUtilizadosSuper'
 >;
 
-/**
- * Tipo para atualização de usuário (campos opcionais)
- */
 export type UpdateUserData = Partial<
   Omit<UserEntity, 'userId' | 'createdAt' | 'updatedAt'>
 >;
