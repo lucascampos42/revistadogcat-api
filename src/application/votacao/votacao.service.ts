@@ -5,7 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../../core/config/prisma.service';
-import { AcaoKardex } from '@prisma/client';
+import { VotacaoRealtimeService } from './votacao-realtime.service';
+import { AcaoKardex, VotoTipo } from '@prisma/client';
 import {
   CreateVotoDto,
   VotoResponseDto,
@@ -16,7 +17,24 @@ import {
 
 @Injectable()
 export class VotacaoService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly realtime: VotacaoRealtimeService,
+  ) {}
+
+  private async emitirEventoAtualizacao(cadastroId: string, tipo: VotoTipo) {
+    const cadastro = await this.prisma.cadastroCao.findUnique({
+      where: { cadastroId },
+      select: { totalVotos: true },
+    });
+    if (!cadastro) return;
+
+    this.realtime.emitirAtualizacao({
+      cadastroId,
+      totalVotos: cadastro.totalVotos,
+      tipo,
+    });
+  }
 
   async votar(
     userId: string,
@@ -24,9 +42,8 @@ export class VotacaoService {
     ip?: string,
     userAgent?: string,
   ): Promise<VotoResponseDto> {
-    const { cadastroId } = createVotoDto;
+    const { cadastroId, tipo } = createVotoDto;
 
-    // Verificar se o usuário existe e está ativo
     const usuario = await this.prisma.user.findUnique({
       where: { userId },
       select: {
@@ -34,8 +51,10 @@ export class VotacaoService {
         active: true,
         blocked: true,
         role: true,
-        votosDisponiveis: true,
-        votosUtilizados: true,
+        votosDisponiveisComum: true,
+        votosUtilizadosComum: true,
+        votosDisponiveisSuper: true,
+        votosUtilizadosSuper: true,
       },
     });
 
@@ -47,12 +66,25 @@ export class VotacaoService {
       throw new ForbiddenException('Usuário inativo ou bloqueado');
     }
 
-    // Verificar se o usuário tem votos disponíveis
-    if (usuario.votosUtilizados >= usuario.votosDisponiveis) {
-      throw new BadRequestException('Usuário não possui votos disponíveis');
+    const disponiveisPorTipo =
+      tipo === VotoTipo.SUPER
+        ? usuario.votosDisponiveisSuper
+        : usuario.votosDisponiveisComum;
+    const utilizadosPorTipo =
+      tipo === VotoTipo.SUPER
+        ? usuario.votosUtilizadosSuper
+        : usuario.votosUtilizadosComum;
+
+    if (
+      disponiveisPorTipo !== undefined &&
+      utilizadosPorTipo !== undefined &&
+      utilizadosPorTipo >= disponiveisPorTipo
+    ) {
+      throw new BadRequestException(
+        `Usuário não possui votos ${tipo === VotoTipo.SUPER ? 'super' : 'comuns'} disponíveis`,
+      );
     }
 
-    // Verificar se o cadastro existe e está ativo
     const cadastro = await this.prisma.cadastroCao.findUnique({
       where: { cadastroId },
       select: {
@@ -71,17 +103,16 @@ export class VotacaoService {
       throw new BadRequestException('Cadastro de cão inativo ou removido');
     }
 
-    // Verificar se o usuário não está tentando votar no próprio cão
     if (cadastro.userId === userId) {
       throw new BadRequestException('Não é possível votar no próprio cão');
     }
 
-    // Verificar se o usuário já votou neste cão
     const votoExistente = await this.prisma.voto.findUnique({
       where: {
-        userId_cadastroId: {
+        userId_cadastroId_tipo: {
           userId,
           cadastroId,
+          tipo,
         },
       },
     });
@@ -90,29 +121,26 @@ export class VotacaoService {
       throw new BadRequestException('Usuário já votou neste cão');
     }
 
-    // Criar o voto em uma transação
     const resultado = await this.prisma.$transaction(async (tx) => {
-      // Criar o voto
       const novoVoto = await tx.voto.create({
         data: {
           userId,
           cadastroId,
+          tipo,
           ip,
           userAgent,
         },
       });
 
-      // Atualizar contador de votos do usuário
       await tx.user.update({
         where: { userId },
         data: {
-          votosUtilizados: {
-            increment: 1,
-          },
+          ...(tipo === VotoTipo.SUPER
+            ? { votosUtilizadosSuper: { increment: 1 } }
+            : { votosUtilizadosComum: { increment: 1 } }),
         },
       });
 
-      // Atualizar contador de votos do cão
       await tx.cadastroCao.update({
         where: { cadastroId },
         data: {
@@ -122,12 +150,12 @@ export class VotacaoService {
         },
       });
 
-      // Registrar no kardex
       await tx.kardexVoto.create({
         data: {
           userId,
           cadastroId,
           acao: AcaoKardex.VOTO_CRIADO,
+          tipo,
           ip,
           userAgent,
           observacoes: 'Voto criado com sucesso',
@@ -137,10 +165,13 @@ export class VotacaoService {
       return novoVoto;
     });
 
+    await this.emitirEventoAtualizacao(cadastroId, tipo);
+
     return {
       votoId: resultado.votoId,
       userId: resultado.userId,
       cadastroId: resultado.cadastroId,
+      tipo: tipo,
       createdAt: resultado.createdAt,
       ip: resultado.ip,
     };
@@ -149,15 +180,16 @@ export class VotacaoService {
   async removerVoto(
     userId: string,
     cadastroId: string,
+    tipo: VotoTipo,
     ip?: string,
     userAgent?: string,
   ): Promise<void> {
-    // Verificar se o voto existe
     const voto = await this.prisma.voto.findUnique({
       where: {
-        userId_cadastroId: {
+        userId_cadastroId_tipo: {
           userId,
           cadastroId,
+          tipo,
         },
       },
     });
@@ -166,29 +198,26 @@ export class VotacaoService {
       throw new NotFoundException('Voto não encontrado');
     }
 
-    // Remover o voto em uma transação
     await this.prisma.$transaction(async (tx) => {
-      // Remover o voto
       await tx.voto.delete({
         where: {
-          userId_cadastroId: {
+          userId_cadastroId_tipo: {
             userId,
             cadastroId,
+            tipo,
           },
         },
       });
 
-      // Atualizar contador de votos do usuário
       await tx.user.update({
         where: { userId },
         data: {
-          votosUtilizados: {
-            decrement: 1,
-          },
+          ...(tipo === VotoTipo.SUPER
+            ? { votosUtilizadosSuper: { decrement: 1 } }
+            : { votosUtilizadosComum: { decrement: 1 } }),
         },
       });
 
-      // Atualizar contador de votos do cão
       await tx.cadastroCao.update({
         where: { cadastroId },
         data: {
@@ -198,18 +227,20 @@ export class VotacaoService {
         },
       });
 
-      // Registrar no kardex
       await tx.kardexVoto.create({
         data: {
           userId,
           cadastroId,
           acao: AcaoKardex.VOTO_REMOVIDO,
+          tipo,
           ip,
           userAgent,
           observacoes: 'Voto removido pelo usuário',
         },
       });
     });
+
+    await this.emitirEventoAtualizacao(cadastroId, tipo);
   }
 
   async listarVotos(params: ListVotosDto): Promise<VotosListResponseDto> {
@@ -233,6 +264,10 @@ export class VotacaoService {
       where.cadastroId = cadastroId;
     }
 
+    if (params.tipo) {
+      where.tipo = params.tipo;
+    }
+
     if (dataInicial || dataFinal) {
       where.createdAt = {};
       if (dataInicial) {
@@ -253,6 +288,7 @@ export class VotacaoService {
           votoId: true,
           userId: true,
           cadastroId: true,
+          tipo: true,
           createdAt: true,
           ip: true,
         },
@@ -330,7 +366,7 @@ export class VotacaoService {
     await this.prisma.user.update({
       where: { userId },
       data: {
-        votosDisponiveis: quantidade,
+        votosDisponiveisComum: quantidade,
       },
     });
   }
@@ -341,7 +377,8 @@ export class VotacaoService {
     await this.prisma.user.updateMany({
       where,
       data: {
-        votosUtilizados: 0,
+        votosUtilizadosComum: 0,
+        votosUtilizadosSuper: 0,
       },
     });
   }
@@ -371,9 +408,9 @@ export class VotacaoService {
       await tx.user.update({
         where: { userId: voto.userId },
         data: {
-          votosUtilizados: {
-            decrement: 1,
-          },
+          ...(voto.tipo === VotoTipo.SUPER
+            ? { votosUtilizadosSuper: { decrement: 1 } }
+            : { votosUtilizadosComum: { decrement: 1 } }),
         },
       });
 
@@ -393,6 +430,7 @@ export class VotacaoService {
           userId: voto.userId,
           cadastroId: voto.cadastroId,
           acao: AcaoKardex.VOTO_INVALIDADO,
+          tipo: voto.tipo,
           ip,
           userAgent,
           observacoes: `Voto invalidado por admin ${adminUserId}. ${observacoes || ''}`,
@@ -409,6 +447,7 @@ export class VotacaoService {
         votoId: true,
         userId: true,
         cadastroId: true,
+        tipo: true,
         createdAt: true,
         ip: true,
       },

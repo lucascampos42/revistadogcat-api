@@ -33,8 +33,10 @@ export class UserMapper {
       createdAt: prismaUser.createdAt,
       updatedAt: prismaUser.updatedAt,
       deletedAt: prismaUser.deletedAt || undefined,
-      votosDisponiveis: prismaUser.votosDisponiveis,
-      votosUtilizados: prismaUser.votosUtilizados,
+      votosDisponiveisComum: prismaUser.votosDisponiveisComum,
+      votosUtilizadosComum: prismaUser.votosUtilizadosComum,
+      votosDisponiveisSuper: prismaUser.votosDisponiveisSuper,
+      votosUtilizadosSuper: prismaUser.votosUtilizadosSuper,
     });
   }
 
@@ -65,8 +67,10 @@ export class UserMapper {
       loginAttempts: userEntity.loginAttempts || 0,
       lastFailedLogin: userEntity.lastFailedLogin || null,
       deletedAt: userEntity.deletedAt || null,
-      votosDisponiveis: userEntity.votosDisponiveis || 0,
-      votosUtilizados: userEntity.votosUtilizados || 0,
+      votosDisponiveisComum: userEntity.votosDisponiveisComum || 0,
+      votosUtilizadosComum: userEntity.votosUtilizadosComum || 0,
+      votosDisponiveisSuper: userEntity.votosDisponiveisSuper || 0,
+      votosUtilizadosSuper: userEntity.votosUtilizadosSuper || 0,
     };
   }
 
@@ -113,6 +117,16 @@ export class UserMapper {
       updateData.lastFailedLogin = userEntity.lastFailedLogin || null;
     if (userEntity.deletedAt !== undefined)
       updateData.deletedAt = userEntity.deletedAt || null;
+
+    // Atualizações de saldos de votos por tipo
+    if (userEntity.votosDisponiveisComum !== undefined)
+      updateData.votosDisponiveisComum = userEntity.votosDisponiveisComum;
+    if (userEntity.votosUtilizadosComum !== undefined)
+      updateData.votosUtilizadosComum = userEntity.votosUtilizadosComum;
+    if (userEntity.votosDisponiveisSuper !== undefined)
+      updateData.votosDisponiveisSuper = userEntity.votosDisponiveisSuper;
+    if (userEntity.votosUtilizadosSuper !== undefined)
+      updateData.votosUtilizadosSuper = userEntity.votosUtilizadosSuper;
 
     return updateData;
   }

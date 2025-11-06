@@ -85,13 +85,35 @@ export class AdminVotosController {
   })
   async definirVotosUsuario(
     @Param('userId') userId: string,
-    @Body() body: { quantidade: number },
+    @Body()
+    body: { quantidadeComum?: number; quantidadeSuper?: number },
   ): Promise<BaseResponseDto> {
-    await this.votacaoService.definirVotosDisponiveis(userId, body.quantidade);
+    if (
+      body.quantidadeComum === undefined &&
+      body.quantidadeSuper === undefined
+    ) {
+      throw new Error(
+        'Informe quantidadeComum e/ou quantidadeSuper para atualizar os saldos',
+      );
+    }
+
+    await this.votacaoService['prisma'].user.update({
+      where: { userId },
+      data: {
+        ...(body.quantidadeComum !== undefined
+          ? {
+              votosDisponiveisComum: body.quantidadeComum,
+            }
+          : {}),
+        ...(body.quantidadeSuper !== undefined
+          ? { votosDisponiveisSuper: body.quantidadeSuper }
+          : {}),
+      },
+    });
 
     return {
       success: true,
-      message: `Votos definidos para o usuário: ${body.quantidade}`,
+      message: `Saldos de votos atualizados para o usuário`,
       timestamp: new Date().toISOString(),
       statusCode: 200,
     };
@@ -178,8 +200,10 @@ export class AdminVotosController {
         userId: true,
         name: true,
         email: true,
-        votosDisponiveis: true,
-        votosUtilizados: true,
+        votosDisponiveisComum: true,
+        votosUtilizadosComum: true,
+        votosDisponiveisSuper: true,
+        votosUtilizadosSuper: true,
       },
     });
 
@@ -256,10 +280,12 @@ export class AdminVotosController {
     @Body()
     body: {
       quantidade: number;
+      quantidadeSuper?: number;
       filtro: {
         role?: Role;
         ativo?: boolean;
         assinante?: boolean;
+        donoDeCao?: boolean;
       };
     },
   ): Promise<BaseResponseDto> {
@@ -280,16 +306,27 @@ export class AdminVotosController {
       };
     }
 
+    // Filtro por donos de cão
+    if (body.filtro.donoDeCao) {
+      where.cadastrosCao = { some: {} };
+    }
+
+    const data: any = {
+      votosDisponiveisComum: body.quantidade,
+    };
+
+    if (body.quantidadeSuper !== undefined) {
+      data.votosDisponiveisSuper = body.quantidadeSuper;
+    }
+
     const resultado = await this.votacaoService['prisma'].user.updateMany({
       where,
-      data: {
-        votosDisponiveis: body.quantidade,
-      },
+      data,
     });
 
     return {
       success: true,
-      message: `Votos definidos para ${resultado.count} usuários`,
+      message: `Saldos de votos definidos para ${resultado.count} usuários`,
       timestamp: new Date().toISOString(),
       statusCode: 200,
     };

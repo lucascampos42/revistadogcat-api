@@ -7,16 +7,30 @@ import { KardexService } from './kardex.service';
 import { ExportacaoService } from './exportacao.service';
 import { RelatorioService } from './relatorio.service';
 import { PrismaModule } from '../../core/config/prisma.module';
+import { VotacaoRealtimeService } from './votacao-realtime.service';
+import { VotacaoStreamController } from './votacao-stream.controller';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [VotacaoController, AdminVotosController, KardexController],
+  controllers: [
+    VotacaoController,
+    AdminVotosController,
+    KardexController,
+    VotacaoStreamController,
+  ],
   providers: [
     VotacaoService,
     KardexService,
     ExportacaoService,
     RelatorioService,
+    VotacaoRealtimeService,
   ],
-  exports: [VotacaoService, KardexService, ExportacaoService, RelatorioService],
+  exports: [
+    VotacaoService,
+    KardexService,
+    ExportacaoService,
+    RelatorioService,
+    VotacaoRealtimeService,
+  ],
 })
 export class VotacaoModule {}

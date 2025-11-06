@@ -9,7 +9,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { AcaoKardex } from '@prisma/client';
+import { AcaoKardex, VotoTipo } from '@prisma/client';
 
 export class CreateVotoDto {
   @ApiProperty({
@@ -18,6 +18,14 @@ export class CreateVotoDto {
   })
   @IsString()
   cadastroId: string;
+
+  @ApiProperty({
+    enum: VotoTipo,
+    description: 'Tipo do voto (COMUM ou SUPER)',
+    default: VotoTipo.COMUM,
+  })
+  @IsEnum(VotoTipo)
+  tipo: VotoTipo = VotoTipo.COMUM;
 }
 
 export class VotoResponseDto {
@@ -29,6 +37,9 @@ export class VotoResponseDto {
 
   @ApiProperty({ description: 'ID do cadastro votado' })
   cadastroId: string;
+
+  @ApiProperty({ enum: VotoTipo, description: 'Tipo do voto' })
+  tipo: VotoTipo;
 
   @ApiProperty({ description: 'Data do voto' })
   createdAt: Date;
@@ -77,6 +88,14 @@ export class ListVotosDto {
   cadastroId?: string;
 
   @ApiPropertyOptional({
+    enum: VotoTipo,
+    description: 'Tipo do voto para filtrar',
+  })
+  @IsOptional()
+  @IsEnum(VotoTipo)
+  tipo?: VotoTipo;
+
+  @ApiPropertyOptional({
     description: 'Data inicial para filtro (ISO string)',
   })
   @IsOptional()
@@ -120,6 +139,9 @@ export class KardexVotoDto {
 
   @ApiProperty({ enum: AcaoKardex, description: 'Ação realizada' })
   acao: AcaoKardex;
+
+  @ApiPropertyOptional({ enum: VotoTipo, description: 'Tipo do voto relacionado à ação' })
+  tipo?: VotoTipo | null;
 
   @ApiProperty({ description: 'Data da ação' })
   createdAt: Date;
@@ -211,6 +233,26 @@ export class KardexListResponseDto {
 
   @ApiProperty({ description: 'Total de páginas' })
   totalPages: number;
+}
+
+export class StatusVotacaoUsuarioDto {
+  @ApiProperty({ description: 'Votos comuns disponíveis' })
+  votosDisponiveisComum: number;
+
+  @ApiProperty({ description: 'Votos comuns utilizados' })
+  votosUtilizadosComum: number;
+
+  @ApiProperty({ description: 'Votos super disponíveis' })
+  votosDisponiveisSuper: number;
+
+  @ApiProperty({ description: 'Votos super utilizados' })
+  votosUtilizadosSuper: number;
+
+  @ApiProperty({ description: 'Votos restantes (comum)' })
+  votosRestantesComum: number;
+
+  @ApiProperty({ description: 'Votos restantes (super)' })
+  votosRestantesSuper: number;
 }
 
 export class EstatisticasVotacaoDto {
