@@ -26,14 +26,23 @@ export class CreateCadastroCaoDto {
   @IsNotEmpty()
   nome: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     description:
-      'ID da raça do cão. Deve ser um ID válido obtido do endpoint /racas.',
+      'ID da raça do cão. Use este campo se a raça já existir. Não use junto com `racaSugerida`.',
     example: 'clz987654321',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  racaId: string;
+  racaId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Nome da nova raça sugerida. Use este campo se a raça não existir na lista. Não use junto com `racaId`.',
+    example: 'Vira-lata Caramelo',
+  })
+  @IsOptional()
+  @IsString()
+  racaSugerida?: string;
 
   @ApiProperty({ description: 'Sexo do cão', enum: SexoCao })
   @IsEnum(SexoCao)
