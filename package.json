@@ -26,7 +26,7 @@
     "coolify:start": "npx prisma migrate deploy && npm run start:prod"
   },
   "dependencies": {
-    "@nestjs-modules/mailer": "^1.6.1",
+    "@getbrevo/brevo": "^3.0.1",
     "@nestjs/common": "^11.1.5",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.5",
@@ -43,7 +43,6 @@
     "class-transformer": "^0.5.1",
     "dotenv": "^17.2.1",
     "multer": "^2.0.2",
-    "nodemailer": "^7.0.9",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pdf2pic": "^3.2.0",
@@ -64,7 +63,6 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.7",
-    "@types/nodemailer": "^6.4.17",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "class-validator": "^0.14.2",
