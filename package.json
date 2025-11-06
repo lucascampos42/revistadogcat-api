@@ -23,7 +23,10 @@
     "test:migrate": "dotenv -e .env.test -- npx prisma migrate dev --name init",
     "seed": "ts-node prisma/seed.ts",
     "postinstall": "npx prisma generate",
-    "coolify:start": "npx prisma migrate deploy && npm run start:prod"
+    "coolify:start": "npx prisma migrate deploy && npm run start:prod",
+    "user:check": "ts-node scripts/check-user.ts check",
+    "user:reset": "ts-node scripts/check-user.ts reset",
+    "user:list": "ts-node scripts/check-user.ts list"
   },
   "dependencies": {
     "@getbrevo/brevo": "^3.0.1",
