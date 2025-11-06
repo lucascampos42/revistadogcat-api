@@ -16,19 +16,33 @@ import { CadastroCaoResponseDto } from './dto/cadastro-cao-response.dto';
 import { CadastroCaoEntity } from './entities/cadastro-cao.entity';
 import { VideoOption } from '@prisma/client';
 import { UserService } from '../user/user.service';
+import { FileUploadService } from '../../core/services/file-upload.service';
 
 @Injectable()
 export class CadastroCaoService {
   constructor(
     private readonly cadastroCaoRepository: CadastroCaoRepository,
     private readonly userService: UserService,
+    private readonly fileUploadService: FileUploadService,
   ) {}
 
   async create(
     requesterId: string,
     createCadastroCaoDto: CreateCadastroCaoDto,
+    fotoPerfil: Express.Multer.File,
+    fotoLateral: Express.Multer.File,
+    pedigreeFrente?: Express.Multer.File,
+    pedigreeVerso?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     let proprietarioFinalId: string;
+
+    if (!fotoPerfil) {
+      throw new BadRequestException('A foto de perfil é obrigatória.');
+    }
+
+    if (!fotoLateral) {
+      throw new BadRequestException('A foto lateral é obrigatória.');
+    }
 
     if (createCadastroCaoDto.proprietarioId) {
       const proprietario = await this.userService.findUserEntityById(
@@ -56,9 +70,51 @@ export class CadastroCaoService {
 
     this.validateConditionalData(createCadastroCaoDto);
 
+    const fotoPerfilUrl = (
+      await this.fileUploadService.processUploadedFile(fotoPerfil, 'dogs')
+    ).url;
+    const fotoLateralUrl = (
+      await this.fileUploadService.processUploadedFile(fotoLateral, 'dogs')
+    ).url;
+
+    let pedigreeFrenteUrl: string | undefined;
+    let pedigreeVersoUrl: string | undefined;
+
+    if (createCadastroCaoDto.temPedigree) {
+      if (!pedigreeFrente && !pedigreeVerso) {
+        throw new BadRequestException(
+          'Pelo menos uma foto do pedigree (frente ou verso) é obrigatória.',
+        );
+      }
+
+      if (pedigreeFrente) {
+        pedigreeFrenteUrl = (
+          await this.fileUploadService.processUploadedFile(
+            pedigreeFrente,
+            'pedigree',
+          )
+        ).url;
+      }
+
+      if (pedigreeVerso) {
+        pedigreeVersoUrl = (
+          await this.fileUploadService.processUploadedFile(
+            pedigreeVerso,
+            'pedigree',
+          )
+        ).url;
+      }
+    }
+
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
-      createCadastroCaoDto,
+      {
+        ...createCadastroCaoDto,
+        fotoPerfil: fotoPerfilUrl,
+        fotoLateral: fotoLateralUrl,
+        pedigreeFrente: pedigreeFrenteUrl,
+        pedigreeVerso: pedigreeVersoUrl,
+      },
     );
     return this.mapToResponseDto(cadastro);
   }
@@ -194,16 +250,6 @@ export class CadastroCaoService {
           'Registro do pedigree é obrigatório quando o cão tem pedigree',
         );
       }
-      if (!data.pedigreeFrente) {
-        throw new BadRequestException(
-          'Arquivo do pedigree (frente) é obrigatório quando o cão tem pedigree',
-        );
-      }
-      if (!data.pedigreeVerso) {
-        throw new BadRequestException(
-          'Arquivo do pedigree (verso) é obrigatório quando o cão tem pedigree',
-        );
-      }
     }
 
     if (data.temMicrochip === true) {
@@ -264,6 +310,88 @@ export class CadastroCaoService {
       observacoes: cadastro.observacoes || undefined,
       createdAt: cadastro.createdAt,
       updatedAt: cadastro.updatedAt,
+      status: cadastro.status,
+      motivoRejeicao: cadastro.motivoRejeicao || undefined,
+      aprovadoPor: cadastro.aprovadoPor || undefined,
+      aprovadoEm: cadastro.aprovadoEm || undefined,
+      ativo: cadastro.ativo,
+      totalVotos: cadastro.totalVotos,
     };
+  }
+
+  /**
+   * Aprova um cadastro de cão
+   */
+  async aprovarCadastro(
+    cadastroId: string,
+    aprovadoPor: string,
+  ): Promise<CadastroCaoResponseDto> {
+    const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!cadastro) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+
+    if (cadastro.status !== 'PENDENTE') {
+      throw new BadRequestException(
+        'Apenas cadastros pendentes podem ser aprovados',
+      );
+    }
+
+    const cadastroAprovado = await this.cadastroCaoRepository.aprovarCadastro(
+      cadastroId,
+      aprovadoPor,
+    );
+
+    return this.mapToResponseDto(cadastroAprovado);
+  }
+
+  /**
+   * Rejeita um cadastro de cão
+   */
+  async rejeitarCadastro(
+    cadastroId: string,
+    motivoRejeicao: string,
+    aprovadoPor: string,
+  ): Promise<CadastroCaoResponseDto> {
+    const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!cadastro) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+
+    if (cadastro.status !== 'PENDENTE') {
+      throw new BadRequestException(
+        'Apenas cadastros pendentes podem ser rejeitados',
+      );
+    }
+
+    if (!motivoRejeicao || motivoRejeicao.trim() === '') {
+      throw new BadRequestException('Motivo da rejeição é obrigatório');
+    }
+
+    const cadastroRejeitado = await this.cadastroCaoRepository.rejeitarCadastro(
+      cadastroId,
+      motivoRejeicao,
+      aprovadoPor,
+    );
+
+    return this.mapToResponseDto(cadastroRejeitado);
+  }
+
+  /**
+   * Conta cadastros pendentes de validação
+   */
+  async countPendentesValidacao(): Promise<number> {
+    return this.cadastroCaoRepository.countPendentesValidacao();
+  }
+
+  /**
+   * Lista cadastros pendentes de validação
+   */
+  async findPendentesValidacao(
+    limit: number = 50,
+  ): Promise<CadastroCaoResponseDto[]> {
+    const cadastros =
+      await this.cadastroCaoRepository.findPendentesValidacao(limit);
+    return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
   }
 }

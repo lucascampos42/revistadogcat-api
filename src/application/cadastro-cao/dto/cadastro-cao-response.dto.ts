@@ -73,4 +73,26 @@ export class CadastroCaoResponseDto {
 
   @ApiProperty({ description: 'Data de última atualização' })
   updatedAt: Date;
+
+  @ApiProperty({
+    description: 'Status do cadastro',
+    enum: ['PENDENTE', 'APROVADO', 'REJEITADO'],
+    example: 'PENDENTE',
+  })
+  status: string;
+
+  @ApiPropertyOptional({ description: 'Motivo da rejeição (se aplicável)' })
+  motivoRejeicao?: string;
+
+  @ApiPropertyOptional({ description: 'ID do admin que aprovou/rejeitou' })
+  aprovadoPor?: string;
+
+  @ApiPropertyOptional({ description: 'Data da aprovação/rejeição' })
+  aprovadoEm?: Date;
+
+  @ApiProperty({ description: 'Se o cadastro está ativo' })
+  ativo: boolean;
+
+  @ApiProperty({ description: 'Total de votos recebidos' })
+  totalVotos: number;
 }

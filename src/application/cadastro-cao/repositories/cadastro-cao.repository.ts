@@ -51,6 +51,21 @@ export class CadastroCaoRepository {
       where.sexo = params.sexo;
     }
 
+    // Filtro por status
+    if (params.status) {
+      where.status = params.status as any;
+    }
+
+    // Filtro por ativo/inativo
+    if (params.ativo !== undefined) {
+      where.ativo = params.ativo === 'true';
+    }
+
+    // Filtro apenas cadastros pendentes de validação
+    if (params.pendentesValidacao === 'true') {
+      where.status = 'PENDENTE';
+    }
+
     if (params.cidade || params.estado) {
       const someFilter: Prisma.EnderecoWhereInput = {};
       if (params.cidade) {
@@ -294,6 +309,93 @@ export class CadastroCaoRepository {
                 estado: true,
               },
             },
+          },
+        },
+        raca: true,
+      },
+    });
+
+    return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
+  }
+
+  /**
+   * Aprova um cadastro de cão
+   */
+  async aprovarCadastro(
+    cadastroId: string,
+    aprovadoPor: string,
+  ): Promise<CadastroCaoEntity> {
+    const cadastro = await this.prisma.cadastroCao.update({
+      where: { cadastroId },
+      data: {
+        status: 'APROVADO',
+        aprovadoPor,
+        aprovadoEm: new Date(),
+        motivoRejeicao: null,
+      },
+      include: { raca: true },
+    });
+
+    return new CadastroCaoEntity(cadastro);
+  }
+
+  /**
+   * Rejeita um cadastro de cão
+   */
+  async rejeitarCadastro(
+    cadastroId: string,
+    motivoRejeicao: string,
+    aprovadoPor: string,
+  ): Promise<CadastroCaoEntity> {
+    const cadastro = await this.prisma.cadastroCao.update({
+      where: { cadastroId },
+      data: {
+        status: 'REJEITADO',
+        motivoRejeicao,
+        aprovadoPor,
+        aprovadoEm: new Date(),
+        ativo: false,
+      },
+      include: { raca: true },
+    });
+
+    return new CadastroCaoEntity(cadastro);
+  }
+
+  /**
+   * Conta cadastros pendentes de validação
+   */
+  async countPendentesValidacao(): Promise<number> {
+    return this.prisma.cadastroCao.count({
+      where: {
+        status: 'PENDENTE',
+        deletedAt: null,
+      },
+    });
+  }
+
+  /**
+   * Lista cadastros pendentes de validação
+   */
+  async findPendentesValidacao(
+    limit: number = 50,
+  ): Promise<CadastroCaoEntity[]> {
+    const cadastros = await this.prisma.cadastroCao.findMany({
+      where: {
+        status: 'PENDENTE',
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      take: limit,
+      include: {
+        user: {
+          select: {
+            userId: true,
+            name: true,
+            email: true,
+            telefone: true,
           },
         },
         raca: true,

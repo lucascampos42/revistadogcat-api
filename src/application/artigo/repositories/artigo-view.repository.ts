@@ -20,11 +20,6 @@ export class ArtigoViewRepository {
       },
     });
   }
-
-  /**
-   * Verifica se já existe uma visualização para este fingerprint e artigo
-   * nas últimas 24 horas
-   */
   async hasRecentView(artigoId: string, fingerprint: string): Promise<boolean> {
     const oneDayAgo = new Date();
     oneDayAgo.setHours(oneDayAgo.getHours() - 24);
@@ -42,9 +37,7 @@ export class ArtigoViewRepository {
     return count > 0;
   }
 
-  /**
-   * Conta o total de visualizações únicas de um artigo
-   */
+ 
   async countUniqueViews(artigoId: string): Promise<number> {
     const result = await this.prisma.artigoView.groupBy({
       by: ['fingerprint'],
