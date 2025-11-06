@@ -1,0 +1,86 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Build outputs
+dist
+build
+*.tsbuildinfo
+
+# Tests
+coverage
+.nyc_output
+*.test.js
+*.spec.js
+test
+tests
+__tests__
+
+# Development files
+.vscode
+.idea
+.DS_Store
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation (exceto README.md)
+docs
+BREVO_SETUP.md
+MIGRATION_SUMMARY.md
+QUICK_START_BREVO.md
+CHANGELOG_BREVO.md
+COOLIFY_DEPLOY.md
+src/core/mail/EXAMPLES.md
+
+# Environment files (serão injetados pelo Coolify)
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*
+
+# Uploads e arquivos temporários (conteúdo, mas não a estrutura)
+uploads/**/*
+!uploads/.gitkeep
+tmp
+temp
+*.tmp
+
+# Scripts de desenvolvimento
+scripts
+bruno
+
+# Editor configs
+.editorconfig
+.prettierrc
+.prettierignore
+.eslintrc
+.eslintrc.js
+.eslintrc.json
+eslint.config.mjs
+
+# Lock files alternativos
+yarn.lock
+pnpm-lock.yaml
+bun.lock
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Misc
+*.swp
+*.swo
+*~
+.cache
