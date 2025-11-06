@@ -13,6 +13,8 @@ import {
   BadRequestException,
   Req,
   Res,
+  Ip,
+  Headers,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -39,6 +41,11 @@ import { ArtigoResponseDto } from './dto/artigo-response.dto';
 import { CreateComentarioDto } from './dto/create-comentario.dto';
 import { UpdateComentarioDto } from './dto/update-comentario.dto';
 import { ComentarioResponseDto } from './dto/comentario-response.dto';
+import { ViewArtigoDto, ViewStatsResponseDto } from './dto/view-artigo.dto';
+import {
+  CurtirArtigoDto,
+  ToggleCurtidaResponseDto,
+} from './dto/curtir-artigo.dto';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
@@ -54,7 +61,9 @@ export class ArtigoController {
   /**
    * Processa upload de imagem e retorna a URL
    */
-  private async processImageUpload(file?: Express.Multer.File): Promise<string | null> {
+  private async processImageUpload(
+    file?: Express.Multer.File,
+  ): Promise<string | null> {
     if (!file) {
       return null;
     }
@@ -92,7 +101,8 @@ export class ArtigoController {
       storage: diskStorage({
         destination: './uploads/artigos',
         filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           callback(null, `temp-${uniqueSuffix}${ext}`);
         },
@@ -129,7 +139,13 @@ export class ArtigoController {
         tags: { type: 'array', items: { type: 'string' } },
         imagemCapa: { type: 'string', format: 'binary' },
       },
-      required: ['titulo', 'conteudo', 'autorId', 'categoria', 'dataPublicacao'],
+      required: [
+        'titulo',
+        'conteudo',
+        'autorId',
+        'categoria',
+        'dataPublicacao',
+      ],
     },
   })
   @ApiResponse({
@@ -150,9 +166,10 @@ export class ArtigoController {
     // Converter conteúdo de string para objeto JSON
     let conteudoJson;
     try {
-      conteudoJson = typeof createArtigoDto.conteudo === 'string' 
-        ? JSON.parse(createArtigoDto.conteudo) 
-        : createArtigoDto.conteudo;
+      conteudoJson =
+        typeof createArtigoDto.conteudo === 'string'
+          ? JSON.parse(createArtigoDto.conteudo)
+          : createArtigoDto.conteudo;
     } catch (error) {
       throw new BadRequestException('Conteúdo deve ser um JSON válido');
     }
@@ -220,7 +237,10 @@ export class ArtigoController {
 
   @Get('destaques')
   @IsPublic()
-  @ApiOperation({ summary: 'Listar artigos em destaque (público) - DEPRECATED: use /artigos-homepage' })
+  @ApiOperation({
+    summary:
+      'Listar artigos em destaque (público) - DEPRECATED: use /artigos-homepage',
+  })
   @ApiQuery({
     name: 'limit',
     required: false,
@@ -278,7 +298,8 @@ export class ArtigoController {
       storage: diskStorage({
         destination: './uploads/artigos',
         filename: (req, file, callback) => {
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           callback(null, `temp-${uniqueSuffix}${ext}`);
         },
@@ -339,9 +360,10 @@ export class ArtigoController {
     let conteudoJson;
     if (updateArtigoDto.conteudo) {
       try {
-        conteudoJson = typeof updateArtigoDto.conteudo === 'string' 
-          ? JSON.parse(updateArtigoDto.conteudo) 
-          : updateArtigoDto.conteudo;
+        conteudoJson =
+          typeof updateArtigoDto.conteudo === 'string'
+            ? JSON.parse(updateArtigoDto.conteudo)
+            : updateArtigoDto.conteudo;
       } catch (error) {
         throw new BadRequestException('Conteúdo deve ser um JSON válido');
       }
@@ -372,8 +394,153 @@ export class ArtigoController {
     return { message: 'Artigo excluído com sucesso' };
   }
 
+  @Post(':id/view')
+  @IsPublic()
+  @ApiOperation({ summary: 'Registrar visualização de artigo' })
+  @ApiParam({ name: 'id', description: 'ID do artigo' })
+  @ApiResponse({
+    status: 200,
+    description: 'Visualização registrada',
+    type: ViewStatsResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Artigo não encontrado' })
+  async registrarVisualizacao(
+    @Param('id') id: string,
+    @Body() viewData: ViewArtigoDto,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ): Promise<ViewStatsResponseDto> {
+    return this.artigoService.registrarVisualizacao(id, {
+      ...viewData,
+      ip,
+      userAgent,
+    });
+  }
+
+  @Get(':id/view/check')
+  @IsPublic()
+  @ApiOperation({ summary: 'Verificar se já visualizou o artigo' })
+  @ApiParam({ name: 'id', description: 'ID do artigo' })
+  @ApiQuery({ name: 'fingerprint', description: 'Fingerprint do dispositivo' })
+  @ApiResponse({
+    status: 200,
+    description: 'Status de visualização',
+    schema: {
+      type: 'object',
+      properties: {
+        visualizado: { type: 'boolean' },
+      },
+    },
+  })
+  async verificarVisualizacao(
+    @Param('id') id: string,
+    @Query('fingerprint') fingerprint: string,
+  ): Promise<{ visualizado: boolean }> {
+    const visualizado = await this.artigoService.verificarVisualizacao(
+      id,
+      fingerprint,
+    );
+    return { visualizado };
+  }
+
+  @Post(':id/curtida/toggle')
+  @IsPublic()
+  @ApiOperation({
+    summary: 'Toggle curtida em artigo (adiciona ou remove)',
+  })
+  @ApiParam({ name: 'id', description: 'ID do artigo' })
+  @ApiResponse({
+    status: 200,
+    description: 'Curtida atualizada com sucesso',
+    type: ToggleCurtidaResponseDto,
+  })
+  @ApiResponse({ status: 404, description: 'Artigo não encontrado' })
+  async toggleCurtida(
+    @Param('id') id: string,
+    @Body() curtidaData: CurtirArtigoDto,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ): Promise<ToggleCurtidaResponseDto> {
+    return this.artigoService.toggleCurtida(id, {
+      ...curtidaData,
+      ip,
+      userAgent,
+    });
+  }
+
+  @Get(':id/curtida/check')
+  @IsPublic()
+  @ApiOperation({ summary: 'Verificar se já curtiu o artigo' })
+  @ApiParam({ name: 'id', description: 'ID do artigo' })
+  @ApiQuery({ name: 'fingerprint', description: 'Fingerprint do dispositivo' })
+  @ApiResponse({
+    status: 200,
+    description: 'Status de curtida',
+    schema: {
+      type: 'object',
+      properties: {
+        curtido: { type: 'boolean' },
+      },
+    },
+  })
+  async verificarCurtida(
+    @Param('id') id: string,
+    @Query('fingerprint') fingerprint: string,
+  ): Promise<{ curtido: boolean }> {
+    const curtido = await this.artigoService.verificarCurtida(id, fingerprint);
+    return { curtido };
+  }
+
+  @Get(':id/stats/curtidas')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obter estatísticas de curtidas do artigo' })
+  @ApiParam({ name: 'id', description: 'ID do artigo' })
+  @ApiQuery({
+    name: 'days',
+    required: false,
+    description: 'Número de dias para estatísticas (padrão: 30)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estatísticas de curtidas',
+  })
+  async obterEstatisticasCurtidas(
+    @Param('id') id: string,
+    @Query('days') days?: string,
+  ) {
+    const daysNumber = days ? parseInt(days) : 30;
+    return this.artigoService.obterEstatisticasCurtidas(id, daysNumber);
+  }
+
+  @Get(':id/stats/views')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obter estatísticas de visualizações do artigo' })
+  @ApiParam({ name: 'id', description: 'ID do artigo' })
+  @ApiQuery({
+    name: 'days',
+    required: false,
+    description: 'Número de dias para estatísticas (padrão: 30)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Estatísticas de visualizações',
+  })
+  async obterEstatisticasVisualizacoes(
+    @Param('id') id: string,
+    @Query('days') days?: string,
+  ) {
+    const daysNumber = days ? parseInt(days) : 30;
+    return this.artigoService.obterEstatisticasVisualizacoes(id, daysNumber);
+  }
+
+  // --- Endpoints legados (manter compatibilidade) ---
+
   @Post(':id/curtir')
-  @ApiOperation({ summary: 'Curtir artigo' })
+  @ApiOperation({ summary: 'Curtir artigo (DEPRECATED: use /curtida/toggle)' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
   @ApiResponse({
     status: 200,
@@ -386,7 +553,9 @@ export class ArtigoController {
   }
 
   @Post(':id/descurtir')
-  @ApiOperation({ summary: 'Descurtir artigo' })
+  @ApiOperation({
+    summary: 'Descurtir artigo (DEPRECATED: use /curtida/toggle)',
+  })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
   @ApiResponse({
     status: 200,
@@ -397,8 +566,6 @@ export class ArtigoController {
   async descurtir(@Param('id') id: string): Promise<ArtigoResponseDto> {
     return this.artigoService.descurtir(id);
   }
-
-
 
   // --- Comentários ---
 

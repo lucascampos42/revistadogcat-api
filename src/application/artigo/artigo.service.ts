@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { ArtigoRepository } from './repositories/artigo.repository';
 import { ComentarioRepository } from './repositories/comentario.repository';
+import { ArtigoViewRepository } from './repositories/artigo-view.repository';
+import { ArtigoCurtidaRepository } from './repositories/artigo-curtida.repository';
 import { CreateArtigoDto } from './dto/create-artigo.dto';
 import { UpdateArtigoDto } from './dto/update-artigo.dto';
 import { ListArtigosDto, ArtigosListResponseDto } from './dto/list-artigos.dto';
@@ -14,6 +16,11 @@ import { ArtigoResponseDto } from './dto/artigo-response.dto';
 import { ComentarioResponseDto } from './dto/comentario-response.dto';
 import { CreateComentarioDto } from './dto/create-comentario.dto';
 import { UpdateComentarioDto } from './dto/update-comentario.dto';
+import { ViewArtigoDto, ViewStatsResponseDto } from './dto/view-artigo.dto';
+import {
+  CurtirArtigoDto,
+  ToggleCurtidaResponseDto,
+} from './dto/curtir-artigo.dto';
 import { ArtigoEntity } from './entities/artigo.entity';
 import { ComentarioEntity } from './entities/comentario.entity';
 import { StatusArtigo } from '@prisma/client';
@@ -23,30 +30,15 @@ export class ArtigoService {
   constructor(
     private readonly artigoRepository: ArtigoRepository,
     private readonly comentarioRepository: ComentarioRepository,
+    private readonly artigoViewRepository: ArtigoViewRepository,
+    private readonly artigoCurtidaRepository: ArtigoCurtidaRepository,
   ) {}
 
   async create(createArtigoDto: CreateArtigoDto): Promise<ArtigoResponseDto> {
-    console.log('Criando artigo com dados:', createArtigoDto);
-    console.log('imagemCapa recebida:', createArtigoDto.imagemCapa);
-
     const dataPublicacao = new Date(createArtigoDto.dataPublicacao);
     if (isNaN(dataPublicacao.getTime())) {
       throw new BadRequestException('Data de publicação inválida');
     }
-
-    /* if (createArtigoDto.status === StatusArtigo.PUBLICADO) {
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0); // Zera as horas para comparar apenas a data
-      
-      const dataPublicacaoSemHora = new Date(dataPublicacao);
-      dataPublicacaoSemHora.setHours(0, 0, 0, 0);
-      
-      if (dataPublicacaoSemHora < hoje) {
-        throw new BadRequestException(
-          'Data de publicação não pode ser no passado para artigos publicados',
-        );
-      }
-    } */
 
     const artigo = await this.artigoRepository.create(createArtigoDto);
     return this.mapToResponseDto(artigo);
@@ -112,39 +104,64 @@ export class ArtigoService {
     return this.mapToResponseDto(artigo);
   }
 
+  /**
+   * Registra uma visualização de artigo com controle por fingerprint
+   */
+  async registrarVisualizacao(
+    artigoId: string,
+    viewData: ViewArtigoDto,
+  ): Promise<ViewStatsResponseDto> {
+    const artigo = await this.artigoRepository.findById(artigoId);
+    if (!artigo || !artigo.isPublicado()) {
+      throw new NotFoundException('Artigo publicado não encontrado');
+    }
+
+    const hasRecentView = await this.artigoViewRepository.hasRecentView(
+      artigoId,
+      viewData.fingerprint,
+    );
+
+    let contabilizada = false;
+
+    if (!hasRecentView) {
+      await this.artigoViewRepository.createView(artigoId, viewData);
+      await this.artigoRepository.incrementVisualizacoes(artigoId);
+      contabilizada = true;
+    }
+
+    const totalViews =
+      await this.artigoViewRepository.countTotalViews(artigoId);
+
+    return {
+      totalViews,
+      contabilizada,
+    };
+  }
+
+  /**
+   * Verifica se um fingerprint já visualizou o artigo
+   */
+  async verificarVisualizacao(
+    artigoId: string,
+    fingerprint: string,
+  ): Promise<boolean> {
+    return await this.artigoViewRepository.hasRecentView(artigoId, fingerprint);
+  }
+
   async update(
     artigoId: string,
     updateArtigoDto: UpdateArtigoDto,
   ): Promise<ArtigoResponseDto> {
-    Logger.log('=== SERVICE: ATUALIZANDO ARTIGO ===');
-    Logger.log('ID do artigo: ' + artigoId);
-    Logger.log('DTO recebido: ' + JSON.stringify(updateArtigoDto));
-
     const existingArtigo = await this.artigoRepository.findById(artigoId);
     if (!existingArtigo) {
       throw new NotFoundException('Artigo não encontrado');
     }
 
-    // Validação de data de publicação para artigos publicados
     if (updateArtigoDto.dataPublicacao) {
       const dataPublicacao = new Date(updateArtigoDto.dataPublicacao);
       if (isNaN(dataPublicacao.getTime())) {
         throw new BadRequestException('Data de publicação inválida');
       }
-
-      /* if (updateArtigoDto.status === StatusArtigo.PUBLICADO) {
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0); // Zera as horas para comparar apenas a data
-        
-        const dataPublicacaoSemHora = new Date(dataPublicacao);
-        dataPublicacaoSemHora.setHours(0, 0, 0, 0);
-        
-        if (dataPublicacaoSemHora < hoje) {
-          throw new BadRequestException(
-            'Data de publicação não pode ser no passado para artigos publicados',
-          );
-        }
-      } */
     }
 
     const artigo = await this.artigoRepository.update(
@@ -162,6 +179,61 @@ export class ArtigoService {
     }
     await this.artigoRepository.delete(artigoId);
   }
+
+  /**
+   * Toggle curtida em um artigo (adiciona ou remove baseado no fingerprint)
+   */
+  async toggleCurtida(
+    artigoId: string,
+    curtidaData: CurtirArtigoDto,
+  ): Promise<ToggleCurtidaResponseDto> {
+    const artigo = await this.artigoRepository.findById(artigoId);
+    if (!artigo || !artigo.isPublicado()) {
+      throw new NotFoundException('Artigo publicado não encontrado');
+    }
+
+    const result = await this.artigoCurtidaRepository.toggleCurtida(
+      artigoId,
+      curtidaData,
+    );
+
+    await this.artigoRepository.setCurtidas(artigoId, result.total);
+
+    return {
+      curtido: result.curtido,
+      totalCurtidas: result.total,
+    };
+  }
+
+  async verificarCurtida(
+    artigoId: string,
+    fingerprint: string,
+  ): Promise<boolean> {
+    return await this.artigoCurtidaRepository.hasCurtida(artigoId, fingerprint);
+  }
+
+  /**
+   * Obtém estatísticas de curtidas de um artigo
+   */
+  async obterEstatisticasCurtidas(artigoId: string, days: number = 30) {
+    const artigo = await this.artigoRepository.findById(artigoId);
+    if (!artigo) {
+      throw new NotFoundException('Artigo não encontrado');
+    }
+
+    return await this.artigoCurtidaRepository.getCurtidaStats(artigoId, days);
+  }
+
+  async obterEstatisticasVisualizacoes(artigoId: string, days: number = 30) {
+    const artigo = await this.artigoRepository.findById(artigoId);
+    if (!artigo) {
+      throw new NotFoundException('Artigo não encontrado');
+    }
+
+    return await this.artigoViewRepository.getViewStats(artigoId, days);
+  }
+
+  // --- Métodos legados (manter compatibilidade) ---
 
   async curtir(artigoId: string): Promise<ArtigoResponseDto> {
     const artigo = await this.artigoRepository.findById(artigoId);
@@ -266,24 +338,9 @@ export class ArtigoService {
   // --- Mappers ---
 
   private mapToResponseDto(artigo: ArtigoEntity): ArtigoResponseDto {
-    Logger.log('=== MAPEANDO ARTIGO PARA RESPONSE DTO ===');
-    Logger.log('Artigo recebido: ' + JSON.stringify({
-      artigoId: artigo.artigoId,
-      titulo: artigo.titulo,
-      autorId: artigo.autorId,
-      autor: artigo.autor,
-      imagemCapa: artigo.imagemCapa,
-    }));
-
     if (!artigo.autor) {
       Logger.error('ERRO: Autor não encontrado no artigo!');
       Logger.error('ArtigoEntity completa: ' + JSON.stringify(artigo));
-    } else {
-      Logger.log('Autor encontrado: ' + JSON.stringify({
-        userId: artigo.autor.userId,
-        name: artigo.autor.name,
-        avatarUrl: artigo.autor.avatarUrl,
-      }));
     }
 
     const responseDto = {
@@ -310,14 +367,6 @@ export class ArtigoService {
       createdAt: artigo.createdAt,
       updatedAt: artigo.updatedAt,
     };
-
-    console.log('=== RESPONSE DTO GERADO ===');
-    console.log('Response DTO:', {
-      artigoId: responseDto.artigoId,
-      titulo: responseDto.titulo,
-      autor: responseDto.autor,
-      imagemCapa: responseDto.imagemCapa,
-    });
 
     return responseDto;
   }

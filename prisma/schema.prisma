@@ -84,8 +84,40 @@ model Artigo {
   updatedAt      DateTime        @updatedAt
   deletedAt      DateTime?
   comentarios    Comentario[]
+  views          ArtigoView[]
+  likes          ArtigoCurtida[]
 
   @@map("artigos")
+}
+
+model ArtigoView {
+  viewId       String   @id @default(cuid())
+  artigoId     String
+  artigo       Artigo   @relation(fields: [artigoId], references: [artigoId], onDelete: Cascade)
+  userId       String?
+  fingerprint  String
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([artigoId])
+  @@index([fingerprint, artigoId])
+  @@map("artigo_views")
+}
+
+model ArtigoCurtida {
+  curtidaId   String   @id @default(cuid())
+  artigoId    String
+  artigo      Artigo   @relation(fields: [artigoId], references: [artigoId], onDelete: Cascade)
+  userId      String?
+  fingerprint String
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  @@unique([fingerprint, artigoId])
+  @@index([artigoId])
+  @@map("artigo_curtidas")
 }
 
 enum CategoriaArtigo {
