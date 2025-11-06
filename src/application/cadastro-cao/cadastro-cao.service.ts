@@ -264,6 +264,88 @@ export class CadastroCaoService {
       observacoes: cadastro.observacoes || undefined,
       createdAt: cadastro.createdAt,
       updatedAt: cadastro.updatedAt,
+      status: cadastro.status,
+      motivoRejeicao: cadastro.motivoRejeicao || undefined,
+      aprovadoPor: cadastro.aprovadoPor || undefined,
+      aprovadoEm: cadastro.aprovadoEm || undefined,
+      ativo: cadastro.ativo,
+      totalVotos: cadastro.totalVotos,
     };
+  }
+
+  /**
+   * Aprova um cadastro de cão
+   */
+  async aprovarCadastro(
+    cadastroId: string,
+    aprovadoPor: string,
+  ): Promise<CadastroCaoResponseDto> {
+    const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!cadastro) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+
+    if (cadastro.status !== 'PENDENTE') {
+      throw new BadRequestException(
+        'Apenas cadastros pendentes podem ser aprovados',
+      );
+    }
+
+    const cadastroAprovado = await this.cadastroCaoRepository.aprovarCadastro(
+      cadastroId,
+      aprovadoPor,
+    );
+
+    return this.mapToResponseDto(cadastroAprovado);
+  }
+
+  /**
+   * Rejeita um cadastro de cão
+   */
+  async rejeitarCadastro(
+    cadastroId: string,
+    motivoRejeicao: string,
+    aprovadoPor: string,
+  ): Promise<CadastroCaoResponseDto> {
+    const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!cadastro) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+
+    if (cadastro.status !== 'PENDENTE') {
+      throw new BadRequestException(
+        'Apenas cadastros pendentes podem ser rejeitados',
+      );
+    }
+
+    if (!motivoRejeicao || motivoRejeicao.trim() === '') {
+      throw new BadRequestException('Motivo da rejeição é obrigatório');
+    }
+
+    const cadastroRejeitado = await this.cadastroCaoRepository.rejeitarCadastro(
+      cadastroId,
+      motivoRejeicao,
+      aprovadoPor,
+    );
+
+    return this.mapToResponseDto(cadastroRejeitado);
+  }
+
+  /**
+   * Conta cadastros pendentes de validação
+   */
+  async countPendentesValidacao(): Promise<number> {
+    return this.cadastroCaoRepository.countPendentesValidacao();
+  }
+
+  /**
+   * Lista cadastros pendentes de validação
+   */
+  async findPendentesValidacao(
+    limit: number = 50,
+  ): Promise<CadastroCaoResponseDto[]> {
+    const cadastros =
+      await this.cadastroCaoRepository.findPendentesValidacao(limit);
+    return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
   }
 }

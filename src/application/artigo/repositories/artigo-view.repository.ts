@@ -20,11 +20,6 @@ export class ArtigoViewRepository {
       },
     });
   }
-
-  /**
-   * Verifica se já existe uma visualização para este fingerprint e artigo
-   * nas últimas 24 horas
-   */
   async hasRecentView(artigoId: string, fingerprint: string): Promise<boolean> {
     const oneDayAgo = new Date();
     oneDayAgo.setHours(oneDayAgo.getHours() - 24);

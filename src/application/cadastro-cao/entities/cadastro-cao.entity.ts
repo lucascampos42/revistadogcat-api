@@ -1,4 +1,4 @@
-import { SexoCao, VideoOption, Raca } from '@prisma/client';
+import { SexoCao, VideoOption, Raca, StatusCadastro } from '@prisma/client';
 import { RacaEntity } from '../../raca/entities/raca.entity';
 
 export class CadastroCaoEntity {
@@ -38,6 +38,16 @@ export class CadastroCaoEntity {
   createdAt: Date;
   updatedAt: Date;
   deletedAt?: Date | null;
+
+  // Campos de aprovação
+  status: StatusCadastro;
+  motivoRejeicao?: string | null;
+  aprovadoPor?: string | null;
+  aprovadoEm?: Date | null;
+
+  // Campos de votação
+  totalVotos: number;
+  ativo: boolean;
 
   // Relação
   raca: RacaEntity;
@@ -90,5 +100,25 @@ export class CadastroCaoEntity {
   // Método para verificar se foi deletado
   isDeleted(): boolean {
     return !!this.deletedAt;
+  }
+
+  // Método para verificar se está pendente
+  isPendente(): boolean {
+    return this.status === 'PENDENTE';
+  }
+
+  // Método para verificar se está aprovado
+  isAprovado(): boolean {
+    return this.status === 'APROVADO';
+  }
+
+  // Método para verificar se foi rejeitado
+  isRejeitado(): boolean {
+    return this.status === 'REJEITADO';
+  }
+
+  // Método para verificar se pode participar de votação
+  podeParticiparVotacao(): boolean {
+    return this.status === 'APROVADO' && this.ativo && !this.deletedAt;
   }
 }

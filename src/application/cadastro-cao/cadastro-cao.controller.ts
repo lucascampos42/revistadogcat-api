@@ -32,7 +32,15 @@ import {
   CadastrosCaoListResponseDto,
 } from './dto/list-cadastros-cao.dto';
 import { CadastroCaoResponseDto } from './dto/cadastro-cao-response.dto';
+import {
+  AprovarCadastroDto,
+  AcaoCadastro,
+  AprovarCadastroResponseDto,
+} from './dto/aprovar-cadastro.dto';
 import { FileUploadService } from '../../core/services/file-upload.service';
+import { RolesGuard } from '../../core/guards/roles.guard';
+import { Roles } from '../../core/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @ApiTags('Cadastro de Cães')
 @Controller('cadastro-cao')
@@ -413,5 +421,100 @@ export class CadastroCaoController {
     }
 
     return { urls };
+  }
+
+  @Post(':id/aprovar')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.FUNCIONARIO)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Aprovar ou rejeitar cadastro de cão' })
+  @ApiResponse({
+    status: 200,
+    description: 'Cadastro aprovado/rejeitado com sucesso',
+    type: AprovarCadastroResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Dados inválidos' })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  @ApiResponse({ status: 404, description: 'Cadastro não encontrado' })
+  async aprovarOuRejeitar(
+    @Param('id') id: string,
+    @Body() aprovarCadastroDto: AprovarCadastroDto,
+    @Request() req,
+  ): Promise<AprovarCadastroResponseDto> {
+    const adminId = req.user.userId;
+
+    let resultado: CadastroCaoResponseDto;
+    let mensagem: string;
+
+    if (aprovarCadastroDto.acao === AcaoCadastro.APROVAR) {
+      resultado = await this.cadastroCaoService.aprovarCadastro(id, adminId);
+      mensagem = 'Cadastro aprovado com sucesso';
+    } else {
+      if (!aprovarCadastroDto.motivoRejeicao) {
+        throw new BadRequestException(
+          'Motivo da rejeição é obrigatório ao rejeitar um cadastro',
+        );
+      }
+      resultado = await this.cadastroCaoService.rejeitarCadastro(
+        id,
+        aprovarCadastroDto.motivoRejeicao,
+        adminId,
+      );
+      mensagem = 'Cadastro rejeitado com sucesso';
+    }
+
+    return {
+      cadastroId: resultado.cadastroId,
+      status: resultado.status,
+      mensagem,
+      dataAcao: resultado.aprovadoEm!,
+    };
+  }
+
+  @Get('pendentes/validacao')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.FUNCIONARIO)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Listar cadastros pendentes de validação' })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Limite de resultados (padrão: 50)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de cadastros pendentes',
+    type: [CadastroCaoResponseDto],
+  })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  async listarPendentesValidacao(
+    @Query('limit') limit?: string,
+  ): Promise<CadastroCaoResponseDto[]> {
+    const limitNumber = limit ? parseInt(limit) : 50;
+    return this.cadastroCaoService.findPendentesValidacao(limitNumber);
+  }
+
+  @Get('pendentes/count')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.FUNCIONARIO)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Contar cadastros pendentes de validação' })
+  @ApiResponse({
+    status: 200,
+    description: 'Contagem de cadastros pendentes',
+    schema: {
+      type: 'object',
+      properties: {
+        count: { type: 'number', example: 5 },
+      },
+    },
+  })
+  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  async contarPendentesValidacao(): Promise<{ count: number }> {
+    const count = await this.cadastroCaoService.countPendentesValidacao();
+    return { count };
   }
 }

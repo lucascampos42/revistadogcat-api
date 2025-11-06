@@ -188,8 +188,14 @@ enum VideoOption {
   NONE
 }
 
+enum StatusCadastro {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
 model CadastroCao {
-  cadastroId       String      @id @default(cuid())
+  cadastroId       String          @id @default(cuid())
   userId           String
   nome             String
   sexo             SexoCao
@@ -198,25 +204,31 @@ model CadastroCao {
   fotoLateral      String
   peso             String?
   altura           String?
-  temPedigree      Boolean     @default(false)
+  temPedigree      Boolean         @default(false)
   registroPedigree String?
   pedigreeFrente   String?
   pedigreeVerso    String?
-  temMicrochip     Boolean     @default(false)
+  temMicrochip     Boolean         @default(false)
   numeroMicrochip  String?
   titulos          String?
   caracteristicas  String?
-  videoOption      VideoOption @default(NONE)
+  videoOption      VideoOption     @default(NONE)
   videoUrl         String?
   whatsappContato  String?
   observacoes      String?
-  createdAt        DateTime    @default(now())
-  updatedAt        DateTime    @updatedAt
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
   deletedAt        DateTime?
 
+  // --- Campos de Aprovação ---
+  status           StatusCadastro  @default(PENDENTE)
+  motivoRejeicao   String?
+  aprovadoPor      String?
+  aprovadoEm       DateTime?
+
   // --- Campos de Votação ---
-  totalVotos       Int     @default(0)
-  ativo            Boolean @default(true)
+  totalVotos       Int             @default(0)
+  ativo            Boolean         @default(true)
 
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
 
