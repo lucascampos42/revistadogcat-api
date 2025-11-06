@@ -178,6 +178,23 @@ export class UserController {
     return this.userService.restoreUser(id);
   }
 
+  @Post(':id/unblock')
+  @Roles(Role.ADMIN)
+  @ApiOperation({
+    summary: 'Desbloquear usuário bloqueado por tentativas de login',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Usuário desbloqueado com sucesso',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Usuário não encontrado',
+  })
+  async unblockUser(@Param('id') id: string) {
+    return this.userService.unblockUser(id);
+  }
+
   @Post('avatar-upload')
   @UseInterceptors(FileInterceptor('avatar', multerConfig))
   @ApiOperation({ summary: 'Upload de avatar do usuário' })
