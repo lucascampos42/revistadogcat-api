@@ -25,8 +25,6 @@ async function bootstrap() {
     'http://revistadogcat.com.br',
     'https://www.revistadogcat.com.br',
     'http://www.revistadogcat.com.br',
-    'https://api.revistadogcat.com.br',
-    'http://api.revistadogcat.com.br',
   ];
 
   // Adicionar origens do ambiente se definidas

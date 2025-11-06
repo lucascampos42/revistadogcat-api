@@ -1,15 +1,15 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { MailerService } from '@nestjs-modules/mailer';
 import { ConfigService } from '@nestjs/config';
 import { User } from '@prisma/client';
+import { BrevoMailService } from './brevo-mail.service';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   constructor(
-    private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
+    private readonly brevoMailService: BrevoMailService,
   ) {}
 
   private isEmailEnabled(): boolean {
@@ -17,7 +17,12 @@ export class MailService {
   }
 
   private async sendEmailIfEnabled(
-    emailOptions: any,
+    emailOptions: {
+      to: string;
+      subject: string;
+      html?: string;
+      text?: string;
+    },
     logMessage: string,
   ): Promise<void> {
     if (!this.isEmailEnabled()) {
@@ -26,7 +31,7 @@ export class MailService {
     }
 
     try {
-      await this.mailerService.sendMail(emailOptions);
+      await this.brevoMailService.sendEmail(emailOptions);
       this.logger.log(`✅ ${logMessage}`);
     } catch (error) {
       this.logger.error(
@@ -50,10 +55,13 @@ export class MailService {
       {
         to: email,
         subject: 'Welcome to our app! Confirm your email',
-        template: './confirmation',
-        context: {
-          name: name,
-        },
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #4CAF50;">Bem-vindo, ${name}! 🎉</h1>
+            <p>Obrigado por se cadastrar na Revista DogCat!</p>
+          </div>
+        `,
+        text: `Bem-vindo, ${name}! Obrigado por se cadastrar na Revista DogCat!`,
       },
       `Email de confirmação enviado para: ${email}`,
     );
@@ -70,12 +78,32 @@ export class MailService {
       {
         to: email,
         subject: 'Ative sua conta - Bem-vindo!',
-        template: './activation',
-        context: {
-          name: name,
-          activationUrl: activationUrl,
-          token: activationToken,
-        },
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #4CAF50;">Bem-vindo, ${name}! 🎉</h1>
+
+            <p>Obrigado por se cadastrar na Revista DogCat!</p>
+
+            <p>Para ativar sua conta, clique no botão abaixo:</p>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${activationUrl}"
+                 style="background-color: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Ativar Conta
+              </a>
+            </div>
+
+            <p style="color: #666; font-size: 12px;">
+              Ou copie e cole este link no seu navegador:<br>
+              <a href="${activationUrl}">${activationUrl}</a>
+            </p>
+
+            <p style="color: #666; font-size: 12px;">
+              Este link expira em 24 horas.
+            </p>
+          </div>
+        `,
+        text: `Bem-vindo, ${name}! Para ativar sua conta, acesse: ${activationUrl}`,
       },
       `Email de ativação enviado para: ${email}`,
     );
@@ -96,16 +124,25 @@ export class MailService {
       {
         to: email,
         subject: '🚨 Alerta de Segurança - Login Suspeito Detectado',
-        template: './security-alert',
-        context: {
-          name: name,
-          alertType: 'Login Suspeito',
-          ip: loginDetails.ip,
-          userAgent: loginDetails.userAgent,
-          timestamp: loginDetails.timestamp.toLocaleString('pt-BR'),
-          message:
-            'Detectamos um login suspeito em sua conta. Se não foi você, recomendamos alterar sua senha imediatamente.',
-        },
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #f44336;">🚨 Alerta de Segurança</h1>
+
+            <p>Olá, ${name}!</p>
+
+            <p>Detectamos um login suspeito em sua conta.</p>
+
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #856404;">Detalhes do Login:</h3>
+              <p style="margin: 5px 0;"><strong>IP:</strong> ${loginDetails.ip}</p>
+              <p style="margin: 5px 0;"><strong>Navegador:</strong> ${loginDetails.userAgent}</p>
+              <p style="margin: 5px 0;"><strong>Data/Hora:</strong> ${loginDetails.timestamp.toLocaleString('pt-BR')}</p>
+            </div>
+
+            <p>Se não foi você, recomendamos alterar sua senha imediatamente.</p>
+          </div>
+        `,
+        text: `Alerta de Segurança: Detectamos um login suspeito em sua conta. IP: ${loginDetails.ip}`,
       },
       `Alerta de login suspeito enviado para: ${email}`,
     );
@@ -121,14 +158,22 @@ export class MailService {
       {
         to: email,
         subject: '🚨 Alerta de Segurança - Múltiplas Tentativas de Login',
-        template: './security-alert',
-        context: {
-          name: name,
-          alertType: 'Múltiplas Tentativas de Login',
-          attemptCount: attemptCount,
-          timestamp: new Date().toLocaleString('pt-BR'),
-          message: `Detectamos ${attemptCount} tentativas de login em sua conta. Por segurança, sua conta pode ser temporariamente bloqueada.`,
-        },
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #f44336;">🚨 Alerta de Segurança</h1>
+
+            <p>Olá, ${name}!</p>
+
+            <div style="background-color: #ffebee; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #c62828;">Múltiplas Tentativas de Login</h3>
+              <p>Detectamos <strong>${attemptCount} tentativas</strong> de login em sua conta.</p>
+              <p style="margin: 5px 0;"><strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+            </div>
+
+            <p>Por segurança, sua conta pode ser temporariamente bloqueada.</p>
+          </div>
+        `,
+        text: `Alerta: Detectamos ${attemptCount} tentativas de login em sua conta.`,
       },
       `Alerta de múltiplas tentativas enviado para: ${email}`,
     );
@@ -144,14 +189,23 @@ export class MailService {
       {
         to: email,
         subject: '🔒 Conta Temporariamente Bloqueada',
-        template: './security-alert',
-        context: {
-          name: name,
-          alertType: 'Conta Bloqueada',
-          blockDuration: blockDuration,
-          timestamp: new Date().toLocaleString('pt-BR'),
-          message: `Sua conta foi temporariamente bloqueada devido a múltiplas tentativas de login falhadas. O bloqueio será removido automaticamente em ${blockDuration}.`,
-        },
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #f44336;">🔒 Conta Bloqueada</h1>
+
+            <p>Olá, ${name}!</p>
+
+            <div style="background-color: #ffebee; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #c62828;">Bloqueio Temporário</h3>
+              <p>Sua conta foi temporariamente bloqueada devido a múltiplas tentativas de login falhadas.</p>
+              <p style="margin: 5px 0;"><strong>Duração do bloqueio:</strong> ${blockDuration}</p>
+              <p style="margin: 5px 0;"><strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+            </div>
+
+            <p>O bloqueio será removido automaticamente após o período indicado.</p>
+          </div>
+        `,
+        text: `Sua conta foi temporariamente bloqueada por ${blockDuration}.`,
       },
       `Alerta de conta bloqueada enviado para: ${email}`,
     );
@@ -163,12 +217,32 @@ export class MailService {
     await this.sendEmailIfEnabled(
       {
         to: email,
-        subject: 'Bem-vindo!',
-        template: 'welcome',
-        context: {
-          name,
-          loginUrl: `${frontendUrl}/auth/login`,
-        },
+        subject: '🐶🐱 Bem-vindo à Revista DogCat!',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #4CAF50;">Bem-vindo, ${name}! 🎉</h1>
+
+            <p>É um prazer tê-lo conosco na Revista DogCat!</p>
+
+            <p>Explore nosso conteúdo sobre o mundo pet:</p>
+
+            <ul>
+              <li>📰 Artigos e notícias</li>
+              <li>🐕 Dicas de cuidados com cães</li>
+              <li>🐈 Dicas de cuidados com gatos</li>
+              <li>❤️ Histórias de adoção</li>
+              <li>🏆 Eventos e exposições</li>
+            </ul>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${frontendUrl}/auth/login"
+                 style="background-color: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Acessar Plataforma
+              </a>
+            </div>
+          </div>
+        `,
+        text: `Bem-vindo, ${name}! É um prazer tê-lo conosco na Revista DogCat!`,
       },
       `Email de boas-vindas enviado para: ${email}`,
     );
@@ -184,13 +258,20 @@ export class MailService {
       {
         to: email,
         subject: `🔒 Alerta de Segurança: ${alertType}`,
-        template: './security-alert',
-        context: {
-          name,
-          alertType,
-          details,
-          timestamp: new Date().toLocaleString('pt-BR'),
-        },
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #f44336;">🔒 Alerta de Segurança</h1>
+
+            <p>Olá, ${name}!</p>
+
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #856404;">${alertType}</h3>
+              <p>${JSON.stringify(details)}</p>
+              <p style="margin: 5px 0;"><strong>Data/Hora:</strong> ${new Date().toLocaleString('pt-BR')}</p>
+            </div>
+          </div>
+        `,
+        text: `Alerta de Segurança: ${alertType}`,
       },
       `Alerta de segurança enviado para: ${email}`,
     );
@@ -206,30 +287,61 @@ export class MailService {
     await this.sendEmailIfEnabled(
       {
         to: email,
-        subject: 'Redefinição de Senha',
-        template: './password-reset',
-        context: {
-          name,
-          resetUrl,
-          token: resetToken,
-        },
+        subject: '🔑 Redefinição de Senha',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #2196F3;">Redefinir Senha</h1>
+
+            <p>Olá, ${name}!</p>
+
+            <p>Recebemos uma solicitação para redefinir sua senha.</p>
+
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p style="margin: 0; color: #856404;">
+                ⚠️ Se você não solicitou esta alteração, ignore este email.
+              </p>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}"
+                 style="background-color: #2196F3; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Redefinir Senha
+              </a>
+            </div>
+
+            <p style="color: #666; font-size: 12px;">
+              Ou copie e cole este link no seu navegador:<br>
+              <a href="${resetUrl}">${resetUrl}</a>
+            </p>
+
+            <p style="color: #666; font-size: 12px;">
+              Este link expira em 1 hora.
+            </p>
+          </div>
+        `,
+        text: `Redefinir senha: ${resetUrl}`,
       },
       `Email de redefinição de senha enviado para: ${email}`,
     );
+
+    // Log da URL em desenvolvimento
+    if (process.env.NODE_ENV === 'development' && !this.isEmailEnabled()) {
+      this.logger.log(`🔗 URL de reset: ${resetUrl}`);
+    }
   }
 
   async sendEmail(
     to: string,
     subject: string,
-    template: string,
-    context: any,
+    html: string,
+    text?: string,
   ): Promise<void> {
     await this.sendEmailIfEnabled(
       {
         to,
         subject,
-        template,
-        context,
+        html,
+        text,
       },
       `Email genérico enviado para: ${to}`,
     );

@@ -1,5 +1,9 @@
 import { defineConfig } from 'prisma/config';
 import path from 'node:path';
+import * as dotenv from 'dotenv';
+
+// Carrega as variáveis de ambiente do arquivo .env
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 export default defineConfig({
   // Configuração do schema
