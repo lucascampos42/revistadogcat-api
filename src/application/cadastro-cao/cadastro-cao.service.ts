@@ -33,6 +33,7 @@ export class CadastroCaoService {
     fotoLateral: Express.Multer.File | undefined,
     pedigreeFrente?: Express.Multer.File,
     pedigreeVerso?: Express.Multer.File,
+    video?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     let proprietarioFinalId: string;
 
@@ -91,58 +92,24 @@ export class CadastroCaoService {
       );
     }
 
-    const fotoPerfilUrl = (
-      await this.fileUploadService.processUploadedFile(
-        fotoPerfil,
-        'dogProfile',
-      )
-    ).url;
-    const fotoLateralUrl = (
-      await this.fileUploadService.processUploadedFile(
-        fotoLateral,
-        'dogLateral',
-      )
-    ).url;
-
-    let pedigreeFrenteUrl: string | undefined;
-    let pedigreeVersoUrl: string | undefined;
-
-    if (createCadastroCaoDto.temPedigree) {
-      if (!pedigreeFrente && !pedigreeVerso) {
-        throw new BadRequestException(
-          'Pelo menos uma foto do pedigree (frente ou verso) é obrigatória.',
-        );
-      }
-
-      if (pedigreeFrente) {
-        pedigreeFrenteUrl = (
-          await this.fileUploadService.processUploadedFile(
-            pedigreeFrente,
-            'dogPedigree',
-          )
-        ).url;
-      }
-
-      if (pedigreeVerso) {
-        pedigreeVersoUrl = (
-          await this.fileUploadService.processUploadedFile(
-            pedigreeVerso,
-            'dogPedigree',
-          )
-        ).url;
-      }
-    }
-
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
       {
         ...createCadastroCaoDto,
-        fotoPerfil: fotoPerfilUrl,
-        fotoLateral: fotoLateralUrl,
-        pedigreeFrente: pedigreeFrenteUrl,
-        pedigreeVerso: pedigreeVersoUrl,
+        fotoPerfil: 'placeholder.jpg',
+        fotoLateral: 'placeholder.jpg',
       },
     );
+
+    this.processMediaInBackground(
+      cadastro.cadastroId,
+      fotoPerfil,
+      fotoLateral,
+      pedigreeFrente,
+      pedigreeVerso,
+      video,
+    );
+
     return this.mapToResponseDto(cadastro);
   }
 
@@ -371,6 +338,49 @@ export class CadastroCaoService {
     );
 
     return this.mapToResponseDto(cadastroAprovado);
+  }
+
+  private async processMediaInBackground(
+    cadastroId: string,
+    fotoPerfil: Express.Multer.File,
+    fotoLateral: Express.Multer.File,
+    pedigreeFrente?: Express.Multer.File,
+    pedigreeVerso?: Express.Multer.File,
+    video?: Express.Multer.File,
+  ): Promise<void> {
+    const [
+      fotoPerfilUrl,
+      fotoLateralUrl,
+      pedigreeFrenteUrl,
+      pedigreeVersoUrl,
+      videoUrl,
+    ] = await Promise.all([
+      this.fileUploadService.processUploadedFile(fotoPerfil, 'dogProfile'),
+      this.fileUploadService.processUploadedFile(fotoLateral, 'dogLateral'),
+      pedigreeFrente
+        ? this.fileUploadService.processUploadedFile(
+            pedigreeFrente,
+            'dogPedigree',
+          )
+        : Promise.resolve(undefined),
+      pedigreeVerso
+        ? this.fileUploadService.processUploadedFile(
+            pedigreeVerso,
+            'dogPedigree',
+          )
+        : Promise.resolve(undefined),
+      video
+        ? this.fileUploadService.processUploadedFile(video, 'dogVideo')
+        : Promise.resolve(undefined),
+    ]);
+
+    await this.cadastroCaoRepository.update(cadastroId, {
+      fotoPerfil: fotoPerfilUrl?.url,
+      fotoLateral: fotoLateralUrl?.url,
+      pedigreeFrente: pedigreeFrenteUrl?.url,
+      pedigreeVerso: pedigreeVersoUrl?.url,
+      videoUrl: videoUrl?.url,
+    });
   }
 
   /**

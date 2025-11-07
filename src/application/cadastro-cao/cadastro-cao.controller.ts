@@ -65,6 +65,7 @@ export class CadastroCaoController {
       { name: 'fotoLateral', maxCount: 1 },
       { name: 'pedigreeFrente', maxCount: 1 },
       { name: 'pedigreeVerso', maxCount: 1 },
+      { name: 'video', maxCount: 1 },
     ]),
   )
   @ApiBody({
@@ -87,6 +88,7 @@ export class CadastroCaoController {
       fotoLateral?: Express.Multer.File[];
       pedigreeFrente?: Express.Multer.File[];
       pedigreeVerso?: Express.Multer.File[];
+      video?: Express.Multer.File[];
     },
   ): Promise<CadastroCaoResponseDto> {
     return this.cadastroCaoService.create(
@@ -96,6 +98,7 @@ export class CadastroCaoController {
       files.fotoLateral?.[0],
       files.pedigreeFrente?.[0],
       files.pedigreeVerso?.[0],
+      files.video?.[0],
     );
   }
 
