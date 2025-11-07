@@ -44,6 +44,7 @@ import { FileUploadService } from '../../core/services/file-upload.service';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { IsPublic } from 'src/core/decorators/is-public.decorator';
 
 @ApiTags('Cadastro de Cães')
 @Controller('cadastro-cao')
@@ -99,6 +100,7 @@ export class CadastroCaoController {
   }
 
   @Get()
+  @IsPublic()
   @ApiOperation({ summary: 'Listar cadastros de cães com filtros e paginação' })
   @ApiResponse({
     status: 200,
@@ -163,6 +165,7 @@ export class CadastroCaoController {
   }
 
   @Get('raca/:raca')
+  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães por raça' })
   @ApiResponse({
     status: 200,
@@ -183,6 +186,7 @@ export class CadastroCaoController {
   }
 
   @Get('sexo/:sexo')
+  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães por sexo' })
   @ApiResponse({
     status: 200,
@@ -203,6 +207,7 @@ export class CadastroCaoController {
   }
 
   @Get('com-pedigree')
+  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães com pedigree' })
   @ApiResponse({
     status: 200,
@@ -214,6 +219,7 @@ export class CadastroCaoController {
   }
 
   @Get('com-microchip')
+  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães com microchip' })
   @ApiResponse({
     status: 200,
@@ -225,6 +231,7 @@ export class CadastroCaoController {
   }
 
   @Get('com-video')
+  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães com vídeo' })
   @ApiResponse({
     status: 200,
@@ -236,6 +243,7 @@ export class CadastroCaoController {
   }
 
   @Get('recentes')
+  @IsPublic()
   @ApiOperation({ summary: 'Buscar cadastros recentes' })
   @ApiResponse({
     status: 200,
@@ -255,6 +263,7 @@ export class CadastroCaoController {
   }
 
   @Get('usuario/:userId/count')
+  @IsPublic()
   @ApiOperation({ summary: 'Contar cadastros de um usuário' })
   @ApiResponse({
     status: 200,
@@ -269,6 +278,7 @@ export class CadastroCaoController {
   }
 
   @Get(':id')
+  @IsPublic()
   @ApiOperation({ summary: 'Buscar cadastro por ID' })
   @ApiResponse({
     status: 200,

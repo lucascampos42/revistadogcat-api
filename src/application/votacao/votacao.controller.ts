@@ -29,6 +29,7 @@ import {
   VotosListResponseDto,
   EstatisticasVotacaoDto,
 } from '../../core/dto';
+import { IsPublic } from 'src/core/decorators/is-public.decorator';
 
 @ApiTags('Votação')
 @Controller('votacao')
@@ -124,6 +125,7 @@ export class VotacaoController {
   }
 
   @Get('estatisticas')
+  @IsPublic()
   @ApiOperation({
     summary: 'Estatísticas de votação',
     description: 'Obtém estatísticas gerais do sistema de votação',
@@ -138,6 +140,7 @@ export class VotacaoController {
   }
 
   @Get('publico/listar')
+  @IsPublic()
   @ApiOperation({
     summary: 'Listar votos (público)',
     description: 'Lista votos de forma pública com filtros básicos',

@@ -147,4 +147,18 @@ export class AuthController {
     return { message: 'Logout realizado com sucesso.' };
   }
 
+  private getLoginDetails(req: Request): { ip: string; userAgent: string } {
+    const forwardedFor = req.headers['x-forwarded-for'];
+    let ip: string;
+
+    if (typeof forwardedFor === 'string') {
+      ip = forwardedFor.split(',')[0].trim();
+    } else {
+      ip = req.ip || 'unknown';
+    }
+
+    const userAgent = req.headers['user-agent'] || 'unknown';
+
+    return { ip, userAgent };
+  }
 }
