@@ -66,6 +66,10 @@ export class CadastroCaoController {
       { name: 'pedigreeVerso', maxCount: 1 },
     ]),
   )
+  @ApiBody({
+    description: 'Dados do cadastro de cão e arquivos de imagem',
+    type: CreateCadastroCaoDto,
+  })
   @ApiResponse({
     status: 201,
     description: 'Cadastro criado com sucesso',

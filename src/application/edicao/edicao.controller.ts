@@ -42,64 +42,6 @@ import { IsPublic } from '../../core/decorators/is-public.decorator';
 export class EdicaoController {
   constructor(private readonly edicaoService: EdicaoService) {}
 
-  // Helpers
-  private ensureDir(path: string) {
-    if (!existsSync(path)) mkdirSync(path, { recursive: true });
-  }
-
-  /**
-   * Sanitiza o nome do arquivo removendo caracteres perigosos e normalizando acentos
-   * @param filename Nome original do arquivo
-   * @returns Nome sanitizado do arquivo
-   */
-  private static sanitizeFileName(filename: string): string {
-    if (!filename || filename.trim().length === 0) {
-      return '';
-    }
-
-    // Remove espaços no início e fim
-    let sanitized = filename.trim();
-
-    // Normaliza caracteres acentuados (NFD = Normalization Form Decomposed)
-    sanitized = sanitized.normalize('NFD');
-
-    // Remove diacríticos (acentos)
-    sanitized = sanitized.replace(/[\u0300-\u036f]/g, '');
-
-    // Substitui espaços por underscores
-    sanitized = sanitized.replace(/\s+/g, '_');
-
-    // Remove caracteres perigosos, mantendo apenas: letras, números, pontos, hífens, underscores e parênteses
-    sanitized = sanitized.replace(/[^a-zA-Z0-9._\-()]/g, '');
-
-    // Remove múltiplos pontos consecutivos
-    sanitized = sanitized.replace(/\.{2,}/g, '.');
-
-    // Remove múltiplos underscores consecutivos
-    sanitized = sanitized.replace(/_{2,}/g, '_');
-
-    // Remove pontos e underscores no início e fim
-    sanitized = sanitized.replace(/^[._]+|[._]+$/g, '');
-
-    // Garante que o arquivo tenha pelo menos um caractere válido antes da extensão
-    if (sanitized.length === 0) {
-      return '';
-    }
-
-    // Limita o tamanho do nome (sem extensão) a 100 caracteres
-    const parts = sanitized.split('.');
-    if (parts.length > 1) {
-      const extension = parts.pop();
-      const nameWithoutExt = parts.join('.');
-      if (nameWithoutExt.length > 100) {
-        sanitized = nameWithoutExt.substring(0, 100) + '.' + extension;
-      }
-    } else if (sanitized.length > 100) {
-      sanitized = sanitized.substring(0, 100);
-    }
-
-    return sanitized;
-  }
 
   @Get()
   @IsPublic()
@@ -279,7 +221,6 @@ export class EdicaoController {
     files: { pdf?: Express.Multer.File[]; capa?: Express.Multer.File[] },
     @Body() dto: CreateEdicaoDto,
   ): Promise<EdicaoResponseDto> {
-    // Validação rigorosa do PDF
     const pdf = files?.pdf?.[0];
     if (!pdf) {
       throw new BadRequestException('Arquivo PDF é obrigatório');
@@ -290,18 +231,15 @@ export class EdicaoController {
     }
 
     if (pdf.size < 1024) {
-      // Menor que 1KB é suspeito
       throw new BadRequestException(
         'Arquivo PDF muito pequeno, pode estar corrompido',
       );
     }
 
     if (pdf.size > 50 * 1024 * 1024) {
-      // 50MB
       throw new BadRequestException('Arquivo PDF excede o limite de 50MB');
     }
 
-    // Validação rigorosa da capa (se fornecida)
     const capa = files.capa?.[0];
     if (capa) {
       const allowedImageTypes = [
@@ -317,19 +255,16 @@ export class EdicaoController {
       }
 
       if (capa.size < 100) {
-        // Menor que 100 bytes é suspeito
         throw new BadRequestException(
           'Arquivo de capa muito pequeno, pode estar corrompido',
         );
       }
 
       if (capa.size > 5 * 1024 * 1024) {
-        // 5MB
         throw new BadRequestException('Imagem de capa excede o limite de 5MB');
       }
     }
 
-    // Validação adicional de segurança para o DTO
     if (dto.id && dto.id.includes('..')) {
       throw new BadRequestException('ID contém caracteres não permitidos');
     }
@@ -352,7 +287,6 @@ export class EdicaoController {
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({ status: 403, description: 'Acesso negado' })
   async delete(@Param('id') id: string): Promise<void> {
-    // Validações de segurança para o ID
     if (!id || id.trim().length === 0) {
       throw new BadRequestException('ID da edição é obrigatório');
     }
