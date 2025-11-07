@@ -571,6 +571,7 @@ export class ArtigoController {
     return this.artigoService.findComentariosByArtigoId(id);
   }
 
+  @ApiTags('Comentários')
   @Post(':id/comentarios')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

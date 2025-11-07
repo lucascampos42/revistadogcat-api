@@ -62,6 +62,7 @@ export class RacaController {
   }
 
   @Get(':id')
+  @IsPublic()
   @ApiOperation({ summary: 'Buscar uma raça por ID' })
   @ApiResponse({ status: 200, description: 'Raça encontrada.' })
   @ApiResponse({ status: 404, description: 'Raça não encontrada.' })

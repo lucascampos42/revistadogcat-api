@@ -42,7 +42,6 @@ import { IsPublic } from '../../core/decorators/is-public.decorator';
 export class EdicaoController {
   constructor(private readonly edicaoService: EdicaoService) {}
 
-
   @Get()
   @IsPublic()
   @ApiOperation({ summary: 'Listar edições' })
