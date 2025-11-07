@@ -57,7 +57,6 @@ export class RacaController {
     description: 'Buscar por nome da raça',
   })
   findAll(@Query('ativo') ativo?: string, @Query('search') search?: string) {
-    // Convert string query param to boolean
     const ativoBool = ativo === undefined ? undefined : ativo === 'true';
     return this.racaService.findAll(ativoBool, search);
   }

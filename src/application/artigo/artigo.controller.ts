@@ -58,9 +58,6 @@ import { Request, Response } from 'express';
 export class ArtigoController {
   constructor(private readonly artigoService: ArtigoService) {}
 
-  /**
-   * Processa upload de imagem e retorna a URL
-   */
   private async processImageUpload(
     file?: Express.Multer.File,
   ): Promise<string | null> {
@@ -69,12 +66,10 @@ export class ArtigoController {
     }
 
     try {
-      // Gerar nome único para o arquivo AVIF
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
       const avifFilename = `artigo-${uniqueSuffix}.avif`;
       const avifPath = join(process.cwd(), 'uploads', 'artigos', avifFilename);
 
-      // Converter imagem para AVIF usando Sharp
       await sharp(file.path)
         .avif({
           quality: 80,
@@ -82,7 +77,6 @@ export class ArtigoController {
         })
         .toFile(avifPath);
 
-      // Remover arquivo original após conversão
       await fs.unlink(file.path);
 
       return `/uploads/artigos/${avifFilename}`;
@@ -160,10 +154,8 @@ export class ArtigoController {
     @Body() createArtigoDto: CreateArtigoWithImageDto,
     @UploadedFile() imagemCapa?: Express.Multer.File,
   ): Promise<ArtigoResponseDto> {
-    // Processar upload da imagem se fornecida
     const imagemCapaUrl = await this.processImageUpload(imagemCapa);
 
-    // Converter conteúdo de string para objeto JSON
     let conteudoJson;
     try {
       conteudoJson =
@@ -174,7 +166,6 @@ export class ArtigoController {
       throw new BadRequestException('Conteúdo deve ser um JSON válido');
     }
 
-    // Criar DTO para o serviço
     const artigoData: CreateArtigoDto = {
       ...createArtigoDto,
       conteudo: conteudoJson,
@@ -260,6 +251,7 @@ export class ArtigoController {
   }
 
   @IsPublic()
+  @ApiExcludeEndpoint()
   @Get('imagem/:filename')
   seeUploadedFile(@Param('filename') filename, @Res() res: Response) {
     return res.sendFile(filename, { root: 'uploads/artigos' });
@@ -353,10 +345,8 @@ export class ArtigoController {
     @Body() updateArtigoDto: UpdateArtigoWithImageDto,
     @UploadedFile() imagemCapa?: Express.Multer.File,
   ): Promise<ArtigoResponseDto> {
-    // Processar upload da imagem se fornecida
     const imagemCapaUrl = await this.processImageUpload(imagemCapa);
 
-    // Converter conteúdo de string para objeto JSON se fornecido
     let conteudoJson;
     if (updateArtigoDto.conteudo) {
       try {
@@ -369,7 +359,6 @@ export class ArtigoController {
       }
     }
 
-    // Criar DTO para o serviço
     const artigoData: UpdateArtigoDto = {
       ...updateArtigoDto,
       ...(conteudoJson && { conteudo: conteudoJson }),
@@ -537,8 +526,7 @@ export class ArtigoController {
     return this.artigoService.obterEstatisticasVisualizacoes(id, daysNumber);
   }
 
-  // --- Endpoints legados (manter compatibilidade) ---
-
+  @ApiExcludeEndpoint()
   @Post(':id/curtir')
   @ApiOperation({ summary: 'Curtir artigo (DEPRECATED: use /curtida/toggle)' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
@@ -552,6 +540,7 @@ export class ArtigoController {
     return this.artigoService.curtir(id);
   }
 
+  @ApiExcludeEndpoint()
   @Post(':id/descurtir')
   @ApiOperation({
     summary: 'Descurtir artigo (DEPRECATED: use /curtida/toggle)',
@@ -567,8 +556,7 @@ export class ArtigoController {
     return this.artigoService.descurtir(id);
   }
 
-  // --- Comentários ---
-
+  @ApiTags('Comentários')
   @Get(':id/comentarios')
   @ApiOperation({ summary: 'Listar comentários de um artigo' })
   @ApiParam({ name: 'id', description: 'ID do artigo' })
@@ -599,13 +587,14 @@ export class ArtigoController {
     @Body() createComentarioDto: CreateComentarioDto,
     @Req() req: Request & { user: { userId: string } },
   ): Promise<ComentarioResponseDto> {
-    const autorId = req.user.userId; // Extraído do token JWT
+    const autorId = req.user.userId;
     return this.artigoService.addComentario(artigoId, {
       ...createComentarioDto,
       autorId,
     });
   }
 
+  @ApiTags('Comentários')
   @Patch('comentarios/:comentarioId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -631,6 +620,7 @@ export class ArtigoController {
     );
   }
 
+  @ApiTags('Comentários')
   @Delete('comentarios/:comentarioId')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
