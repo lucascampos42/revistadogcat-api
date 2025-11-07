@@ -40,6 +40,11 @@ describe('AuthRepository', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    // Campos de votos
+    votosDisponiveisComum: 0,
+    votosUtilizadosComum: 0,
+    votosDisponiveisSuper: 0,
+    votosUtilizadosSuper: 0,
   };
 
   beforeEach(async () => {
@@ -87,6 +92,11 @@ describe('AuthRepository', () => {
         loginAttempts: 0,
         lastFailedLogin: null,
         deletedAt: null,
+        // Campos de votos
+        votosDisponiveisComum: 0,
+        votosUtilizadosComum: 0,
+        votosDisponiveisSuper: 0,
+        votosUtilizadosSuper: 0,
       };
 
       mockPrismaService.user.create.mockResolvedValue(mockUser);
@@ -121,6 +131,11 @@ describe('AuthRepository', () => {
         loginAttempts: 0,
         lastFailedLogin: null,
         deletedAt: null,
+        // Campos de votos
+        votosDisponiveisComum: 0,
+        votosUtilizadosComum: 0,
+        votosDisponiveisSuper: 0,
+        votosUtilizadosSuper: 0,
       };
 
       const error = new Error('Database error');

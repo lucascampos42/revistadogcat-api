@@ -76,6 +76,7 @@ describe('UserService', () => {
         lastLogin: null,
         tokenVersion: 1,
         refreshToken: null,
+        refreshTokenExpiresAt: null,
         passwordResetToken: null,
         passwordResetExpires: null,
         blocked: false,
@@ -85,6 +86,10 @@ describe('UserService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
+        votosDisponiveisComum: 0,
+        votosUtilizadosComum: 0,
+        votosDisponiveisSuper: 0,
+        votosUtilizadosSuper: 0,
       };
 
       mockUserRepository.create.mockResolvedValue(expectedUser);
@@ -113,6 +118,7 @@ describe('UserService', () => {
           lastLogin: null,
           tokenVersion: 1,
           refreshToken: null,
+          refreshTokenExpiresAt: null,
           passwordResetToken: null,
           passwordResetExpires: null,
           blocked: false,
@@ -122,6 +128,10 @@ describe('UserService', () => {
           cpf: null,
           telefone: null,
           avatarUrl: null,
+          votosDisponiveisComum: 0,
+          votosUtilizadosComum: 0,
+          votosDisponiveisSuper: 0,
+          votosUtilizadosSuper: 0,
         },
         {
           userId: '2',
@@ -137,6 +147,7 @@ describe('UserService', () => {
           lastLogin: null,
           tokenVersion: 1,
           refreshToken: null,
+          refreshTokenExpiresAt: null,
           passwordResetToken: null,
           passwordResetExpires: null,
           blocked: false,
@@ -146,11 +157,15 @@ describe('UserService', () => {
           cpf: null,
           telefone: null,
           avatarUrl: null,
+          votosDisponiveisComum: 0,
+          votosUtilizadosComum: 0,
+          votosDisponiveisSuper: 0,
+          votosUtilizadosSuper: 0,
         },
       ];
       mockUserRepository.findAllPaged.mockResolvedValue(users);
 
-      const result = await service.findAllPaged({});
+      const result = await service.findAllPaged({ page: 1, limit: 10 });
       expect(result).toEqual(users);
       expect(mockUserRepository.findAllPaged).toHaveBeenCalled();
     });
@@ -172,6 +187,7 @@ describe('UserService', () => {
         lastLogin: null,
         tokenVersion: 1,
         refreshToken: null,
+        refreshTokenExpiresAt: null,
         passwordResetToken: null,
         passwordResetExpires: null,
         blocked: false,
@@ -181,6 +197,11 @@ describe('UserService', () => {
         cpf: null,
         telefone: null,
         avatarUrl: null,
+        // Campos de votos
+        votosDisponiveisComum: 0,
+        votosUtilizadosComum: 0,
+        votosDisponiveisSuper: 0,
+        votosUtilizadosSuper: 0,
       };
       mockUserRepository.findById.mockResolvedValue(user);
 
@@ -207,6 +228,7 @@ describe('UserService', () => {
         lastLogin: null,
         tokenVersion: 1,
         refreshToken: null,
+        refreshTokenExpiresAt: null,
         passwordResetToken: null,
         passwordResetExpires: null,
         blocked: false,
@@ -216,6 +238,11 @@ describe('UserService', () => {
         cpf: null,
         telefone: null,
         avatarUrl: null,
+        // Campos de votos
+        votosDisponiveisComum: 0,
+        votosUtilizadosComum: 0,
+        votosDisponiveisSuper: 0,
+        votosUtilizadosSuper: 0,
       };
       const updatedUser: User = { ...user, name: 'User One Updated' };
       mockUserRepository.update.mockResolvedValue(updatedUser);
@@ -249,6 +276,7 @@ describe('UserService', () => {
         lastLogin: null,
         tokenVersion: 1,
         refreshToken: null,
+        refreshTokenExpiresAt: null,
         passwordResetToken: null,
         passwordResetExpires: null,
         blocked: false,
@@ -258,6 +286,11 @@ describe('UserService', () => {
         cpf: null,
         telefone: null,
         avatarUrl: null,
+        // Campos de votos
+        votosDisponiveisComum: 0,
+        votosUtilizadosComum: 0,
+        votosDisponiveisSuper: 0,
+        votosUtilizadosSuper: 0,
       };
       const deletedUser: User = { ...user, deletedAt: new Date() };
       mockUserRepository.remove.mockResolvedValue(deletedUser);

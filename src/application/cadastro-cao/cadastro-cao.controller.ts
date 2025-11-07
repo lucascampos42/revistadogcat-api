@@ -414,6 +414,7 @@ export class CadastroCaoController {
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   @ApiResponse({ status: 403, description: 'Sem permissão' })
   async contarPendentesValidacao(): Promise<{ count: number }> {
+    const count = await this.cadastroCaoService.countPendentesValidacao();
     return { count };
   }
 

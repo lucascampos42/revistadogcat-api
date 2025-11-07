@@ -282,4 +282,8 @@ export class UserService {
   async systemUpdate(id: string, data: Partial<User>): Promise<User> {
     return this.userRepository.update(id, data);
   }
+  // Método simples para criação de usuário via serviço (utilizado por testes e cenários administrativos)
+  async create(data: import('../auth/dto/create-auth.dto').CreateUserDto): Promise<User> {
+    return this.userRepository.create(data);
+  }
 }

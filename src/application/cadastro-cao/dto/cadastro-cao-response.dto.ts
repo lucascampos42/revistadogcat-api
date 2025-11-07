@@ -14,6 +14,9 @@ export class CadastroCaoResponseDto {
   @ApiPropertyOptional({ description: 'Raça do cão' })
   raca?: string;
 
+  @ApiPropertyOptional({ description: 'Raça sugerida (quando não há racaId)' })
+  racaSugerida?: string;
+
   @ApiProperty({ description: 'Sexo do cão', enum: SexoCao })
   sexo: SexoCao;
 
