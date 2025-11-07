@@ -21,9 +21,9 @@ interface VotoComRelacoes {
     nome: string;
     totalVotos: number;
     createdAt: Date;
-    raca: {
+    raca?: {
       nome: string;
-    };
+    } | null;
     user: {
       name: string;
       email: string;

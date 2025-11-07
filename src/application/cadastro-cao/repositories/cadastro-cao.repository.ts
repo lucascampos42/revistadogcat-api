@@ -12,15 +12,31 @@ export class CadastroCaoRepository {
 
   async create(
     userId: string,
-    data: CreateCadastroCaoDto,
+    data: CreateCadastroCaoDto & {
+      fotoPerfil: string;
+      fotoLateral: string;
+      pedigreeFrente?: string;
+      pedigreeVerso?: string;
+    },
   ): Promise<CadastroCaoEntity> {
-    const { proprietarioId, ...restOfData } = data;
+    const {
+      proprietarioId,
+      fotoPerfil,
+      fotoLateral,
+      pedigreeFrente,
+      pedigreeVerso,
+      ...restOfData
+    } = data;
 
     const cadastro = await this.prisma.cadastroCao.create({
       data: {
         ...restOfData,
         userId: userId,
         dataNascimento: new Date(data.dataNascimento),
+        fotoPerfil,
+        fotoLateral,
+        pedigreeFrente: pedigreeFrente || null,
+        pedigreeVerso: pedigreeVerso || null,
       },
       include: { raca: true },
     });

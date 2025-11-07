@@ -19,9 +19,9 @@ interface VotoComRelacoes {
   cadastro: {
     cadastroId: string;
     nome: string;
-    raca: {
+    raca?: {
       nome: string;
-    };
+    } | null;
     user: {
       name: string;
       email: string;

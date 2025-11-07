@@ -29,8 +29,8 @@ export class CadastroCaoService {
   async create(
     requesterId: string,
     createCadastroCaoDto: CreateCadastroCaoDto,
-    fotoPerfil: Express.Multer.File,
-    fotoLateral: Express.Multer.File,
+    fotoPerfil: Express.Multer.File | undefined,
+    fotoLateral: Express.Multer.File | undefined,
     pedigreeFrente?: Express.Multer.File,
     pedigreeVerso?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
@@ -79,11 +79,29 @@ export class CadastroCaoService {
 
     this.validateConditionalData(createCadastroCaoDto);
 
+    // Garantir que as fotos obrigatórias foram enviadas
+    if (!fotoPerfil) {
+      throw new BadRequestException(
+        'Foto de perfil do cão (fotoPerfil) é obrigatória.',
+      );
+    }
+    if (!fotoLateral) {
+      throw new BadRequestException(
+        'Foto lateral do cão (fotoLateral) é obrigatória.',
+      );
+    }
+
     const fotoPerfilUrl = (
-      await this.fileUploadService.processUploadedFile(fotoPerfil, 'dogs')
+      await this.fileUploadService.processUploadedFile(
+        fotoPerfil,
+        'dogProfile',
+      )
     ).url;
     const fotoLateralUrl = (
-      await this.fileUploadService.processUploadedFile(fotoLateral, 'dogs')
+      await this.fileUploadService.processUploadedFile(
+        fotoLateral,
+        'dogLateral',
+      )
     ).url;
 
     let pedigreeFrenteUrl: string | undefined;
@@ -100,7 +118,7 @@ export class CadastroCaoService {
         pedigreeFrenteUrl = (
           await this.fileUploadService.processUploadedFile(
             pedigreeFrente,
-            'pedigree',
+            'dogPedigree',
           )
         ).url;
       }
@@ -109,7 +127,7 @@ export class CadastroCaoService {
         pedigreeVersoUrl = (
           await this.fileUploadService.processUploadedFile(
             pedigreeVerso,
-            'pedigree',
+            'dogPedigree',
           )
         ).url;
       }
@@ -394,15 +412,24 @@ export class CadastroCaoService {
     return this.cadastroCaoRepository.countPendentesValidacao();
   }
 
-      return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
-    }
+  /**
+   * Lista cadastros pendentes de validação
+   */
+  async findPendentesValidacao(
+    limit: number = 50,
+  ): Promise<CadastroCaoResponseDto[]> {
+    const cadastros =
+      await this.cadastroCaoRepository.findPendentesValidacao(limit);
+    return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
+  }
 
-    /**
-     * Lista cadastros com raças pendentes de aprovação
-     */
-    async findPendentesRaca(
-      limit: number = 50,
-    ): Promise<CadastroCaoResponseDto[]> {
-      const cadastros = await this.cadastroCaoRepository.findPendentesRaca(limit);
-      return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
-    }}
+  /**
+   * Lista cadastros com raças pendentes de aprovação
+   */
+  async findPendentesRaca(
+    limit: number = 50,
+  ): Promise<CadastroCaoResponseDto[]> {
+    const cadastros = await this.cadastroCaoRepository.findPendentesRaca(limit);
+    return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
+  }
+}

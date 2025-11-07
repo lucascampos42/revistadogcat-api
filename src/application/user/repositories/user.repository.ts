@@ -58,7 +58,6 @@ export class UserRepository implements IUserRepository {
   async findByIdentification(identification: string): Promise<User | null> {
     const user = await this.findForAuthByIdentification(identification);
     if (user) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...result } = user;
       return result as User;
     }
@@ -72,16 +71,23 @@ export class UserRepository implements IUserRepository {
     const isCpf = /^\d{11}$/.test(identification.replace(/\D/g, ''));
 
     if (isEmail) {
-      return this.prisma.user.findUnique({ where: { email: identification } });
+      return this.prisma.user.findUnique({
+        where: { email: identification },
+        include: this._include,
+      });
     }
 
     if (isCpf) {
       return this.prisma.user.findUnique({
         where: { cpf: identification.replace(/\D/g, '') },
+        include: this._include,
       });
     }
 
-    return this.prisma.user.findFirst({ where: { userName: identification } });
+    return this.prisma.user.findFirst({
+      where: { userName: identification },
+      include: this._include,
+    });
   }
 
   async findByPasswordResetToken(token: string): Promise<User | null> {

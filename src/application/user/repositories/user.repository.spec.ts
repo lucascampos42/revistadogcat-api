@@ -44,6 +44,11 @@ describe('UserRepository', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
+    // Campos de votos
+    votosDisponiveisComum: 0,
+    votosUtilizadosComum: 0,
+    votosDisponiveisSuper: 0,
+    votosUtilizadosSuper: 0,
   };
 
   beforeEach(async () => {
@@ -90,6 +95,7 @@ describe('UserRepository', () => {
           role: 'USUARIO',
           active: false,
         },
+        include: { enderecos: true },
       });
       expect(result).toEqual(mockUser);
     });
@@ -116,7 +122,9 @@ describe('UserRepository', () => {
 
       const result = await repository.findAll();
 
-      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith();
+      expect(mockPrismaService.user.findMany).toHaveBeenCalledWith({
+        include: { enderecos: true },
+      });
       expect(result).toEqual(users);
     });
 
