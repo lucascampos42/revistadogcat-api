@@ -47,28 +47,49 @@ import { Role } from '@prisma/client';
 import { IsPublic } from 'src/core/decorators/is-public.decorator';
 
 @ApiTags('Cadastro de Cães')
+import { S3Service } from 'src/core/services/s3.service';
+
 @Controller('cadastro-cao')
 export class CadastroCaoController {
   constructor(
     private readonly cadastroCaoService: CadastroCaoService,
-    private readonly fileUploadService: FileUploadService,
+    private readonly s3Service: S3Service,
   ) {}
+
+  @Post('iniciar-upload')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Iniciar upload de arquivo para o S3' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        fileName: { type: 'string' },
+        fileType: { type: 'string' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'URL de upload gerada com sucesso',
+  })
+  async iniciarUpload(
+    @Body() body: { fileName: string; fileType: string },
+  ): Promise<{ uploadUrl: string }> {
+    const uploadUrl = await this.s3Service.getPresignedUrl(
+      body.fileName,
+      body.fileType,
+    );
+    return { uploadUrl };
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar novo cadastro de cão' })
-  @ApiConsumes('multipart/form-data')
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'fotoPerfil', maxCount: 1 },
-      { name: 'fotoLateral', maxCount: 1 },
-      { name: 'pedigreeFrente', maxCount: 1 },
-      { name: 'pedigreeVerso', maxCount: 1 },
-    ]),
-  )
+  @ApiConsumes('application/json')
   @ApiBody({
-    description: 'Dados do cadastro de cão e arquivos de imagem',
+    description: 'Dados do cadastro de cão',
     type: CreateCadastroCaoDto,
   })
   @ApiResponse({
@@ -81,21 +102,10 @@ export class CadastroCaoController {
   async create(
     @Request() req,
     @Body() createCadastroCaoDto: CreateCadastroCaoDto,
-    @UploadedFiles()
-    files: {
-      fotoPerfil?: Express.Multer.File[];
-      fotoLateral?: Express.Multer.File[];
-      pedigreeFrente?: Express.Multer.File[];
-      pedigreeVerso?: Express.Multer.File[];
-    },
   ): Promise<CadastroCaoResponseDto> {
     return this.cadastroCaoService.create(
       req.user.userId,
       createCadastroCaoDto,
-      files.fotoPerfil?.[0],
-      files.fotoLateral?.[0],
-      files.pedigreeFrente?.[0],
-      files.pedigreeVerso?.[0],
     );
   }
 

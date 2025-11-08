@@ -29,20 +29,8 @@ export class CadastroCaoService {
   async create(
     requesterId: string,
     createCadastroCaoDto: CreateCadastroCaoDto,
-    fotoPerfil: Express.Multer.File | undefined,
-    fotoLateral: Express.Multer.File | undefined,
-    pedigreeFrente?: Express.Multer.File,
-    pedigreeVerso?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     let proprietarioFinalId: string;
-
-    if (!fotoPerfil) {
-      throw new BadRequestException('A foto de perfil é obrigatória.');
-    }
-
-    if (!fotoLateral) {
-      throw new BadRequestException('A foto lateral é obrigatória.');
-    }
 
     if (createCadastroCaoDto.proprietarioId) {
       const proprietario = await this.userService.findUserEntityById(
@@ -79,70 +67,11 @@ export class CadastroCaoService {
 
     this.validateConditionalData(createCadastroCaoDto);
 
-    // Garantir que as fotos obrigatórias foram enviadas
-    if (!fotoPerfil) {
-      throw new BadRequestException(
-        'Foto de perfil do cão (fotoPerfil) é obrigatória.',
-      );
-    }
-    if (!fotoLateral) {
-      throw new BadRequestException(
-        'Foto lateral do cão (fotoLateral) é obrigatória.',
-      );
-    }
-
-    const fotoPerfilUrl = (
-      await this.fileUploadService.processUploadedFile(
-        fotoPerfil,
-        'dogProfile',
-      )
-    ).url;
-    const fotoLateralUrl = (
-      await this.fileUploadService.processUploadedFile(
-        fotoLateral,
-        'dogLateral',
-      )
-    ).url;
-
-    let pedigreeFrenteUrl: string | undefined;
-    let pedigreeVersoUrl: string | undefined;
-
-    if (createCadastroCaoDto.temPedigree) {
-      if (!pedigreeFrente && !pedigreeVerso) {
-        throw new BadRequestException(
-          'Pelo menos uma foto do pedigree (frente ou verso) é obrigatória.',
-        );
-      }
-
-      if (pedigreeFrente) {
-        pedigreeFrenteUrl = (
-          await this.fileUploadService.processUploadedFile(
-            pedigreeFrente,
-            'dogPedigree',
-          )
-        ).url;
-      }
-
-      if (pedigreeVerso) {
-        pedigreeVersoUrl = (
-          await this.fileUploadService.processUploadedFile(
-            pedigreeVerso,
-            'dogPedigree',
-          )
-        ).url;
-      }
-    }
-
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
-      {
-        ...createCadastroCaoDto,
-        fotoPerfil: fotoPerfilUrl,
-        fotoLateral: fotoLateralUrl,
-        pedigreeFrente: pedigreeFrenteUrl,
-        pedigreeVerso: pedigreeVersoUrl,
-      },
+      createCadastroCaoDto,
     );
+
     return this.mapToResponseDto(cadastro);
   }
 
