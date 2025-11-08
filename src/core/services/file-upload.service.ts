@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+﻿import { Injectable, BadRequestException } from '@nestjs/common';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { Request } from 'express';
@@ -29,7 +29,7 @@ export interface UploadedFileResult {
 @Injectable()
 export class FileUploadService {
   /**
-   * Configurações predefinidas para diferentes tipos de upload
+   * ConfiguraÃ§Ãµes predefinidas para diferentes tipos de upload
    */
   private readonly uploadConfigs = {
     avatar: {
@@ -77,7 +77,7 @@ export class FileUploadService {
       maxFileSize: 10 * 1024 * 1024, // 10MB
       fileNamePrefix: 'pedigree',
     },
-    dogVideo: {
+        dogVideo: {
       destination: 'uploads/dogs/videos',
       allowedMimeTypes: [
         'video/mp4',
@@ -85,10 +85,9 @@ export class FileUploadService {
         'video/avi',
         'video/quicktime',
       ],
-      maxFileSize: 50 * 1024 * 1024, // 50MB
+      maxFileSize: 200 * 1024 * 1024, // 200MB
       fileNamePrefix: 'dog-video',
-    },
-    magazinePdf: {
+    },magazinePdf: {
       destination: 'uploads/revista',
       allowedMimeTypes: ['application/pdf'],
       maxFileSize: 50 * 1024 * 1024, // 50MB
@@ -104,7 +103,7 @@ export class FileUploadService {
   };
 
   /**
-   * Cria configuração do multer para um tipo específico de upload
+   * Cria configuraÃ§Ã£o do multer para um tipo especÃ­fico de upload
    */
   createMulterConfig(uploadType: keyof typeof this.uploadConfigs) {
     const config = this.uploadConfigs[uploadType];
@@ -135,7 +134,7 @@ export class FileUploadService {
           const allowedTypes = config.allowedMimeTypes.join(', ');
           cb(
             new BadRequestException(
-              `Tipo de arquivo não suportado. Tipos permitidos: ${allowedTypes}`,
+              `Tipo de arquivo nÃ£o suportado. Tipos permitidos: ${allowedTypes}`,
             ),
             false,
           );
@@ -148,7 +147,7 @@ export class FileUploadService {
   }
 
   /**
-   * Processa arquivo após upload (redimensionamento de imagens, etc.)
+   * Processa arquivo apÃ³s upload (redimensionamento de imagens, etc.)
    */
   async processUploadedFile(
     file: Express.Multer.File,
@@ -159,11 +158,11 @@ export class FileUploadService {
     // Validar se o arquivo foi salvo corretamente
     if (!file.path) {
       throw new BadRequestException(
-        'Erro no upload: caminho do arquivo não encontrado',
+        'Erro no upload: caminho do arquivo nÃ£o encontrado',
       );
     }
 
-    // Se é uma imagem e tem configuração de redimensionamento
+    // Se Ã© uma imagem e tem configuraÃ§Ã£o de redimensionamento
     if (
       'imageResize' in config &&
       config.imageResize &&
@@ -219,7 +218,7 @@ export class FileUploadService {
   }
 
   /**
-   * Garante que o diretório existe, criando-o se necessário
+   * Garante que o diretÃ³rio existe, criando-o se necessÃ¡rio
    */
   private ensureDirectoryExists(dirPath: string): void {
     if (!existsSync(dirPath)) {
@@ -228,7 +227,7 @@ export class FileUploadService {
   }
 
   /**
-   * Valida múltiplos arquivos
+   * Valida mÃºltiplos arquivos
    */
   validateMultipleFiles(
     files: Express.Multer.File[],
@@ -239,20 +238,20 @@ export class FileUploadService {
     for (const file of files) {
       if (!config.allowedMimeTypes.includes(file.mimetype)) {
         throw new BadRequestException(
-          `Arquivo ${file.originalname} tem tipo não suportado: ${file.mimetype}`,
+          `Arquivo ${file.originalname} tem tipo nÃ£o suportado: ${file.mimetype}`,
         );
       }
 
       if (file.size > config.maxFileSize) {
         throw new BadRequestException(
-          `Arquivo ${file.originalname} excede o tamanho máximo permitido`,
+          `Arquivo ${file.originalname} excede o tamanho mÃ¡ximo permitido`,
         );
       }
     }
   }
 
   /**
-   * Obtém configuração para um tipo de upload
+   * ObtÃ©m configuraÃ§Ã£o para um tipo de upload
    */
   getUploadConfig(
     uploadType: keyof typeof this.uploadConfigs,
@@ -261,7 +260,7 @@ export class FileUploadService {
   }
 
   /**
-   * Lista todos os tipos de upload disponíveis
+   * Lista todos os tipos de upload disponÃ­veis
    */
   getAvailableUploadTypes(): string[] {
     return Object.keys(this.uploadConfigs);
@@ -276,7 +275,7 @@ export class FileUploadService {
         if (err) {
           return reject(
             new BadRequestException(
-              'Não foi possível ler os metadados do vídeo.',
+              'NÃ£o foi possÃ­vel ler os metadados do vÃ­deo.',
             ),
           );
         }
@@ -285,7 +284,7 @@ export class FileUploadService {
         if (duration && duration > maxDuration) {
           return reject(
             new BadRequestException(
-              `O vídeo excede a duração máxima de ${maxDuration} segundos.`,
+              `O vÃ­deo excede a duraÃ§Ã£o mÃ¡xima de ${maxDuration} segundos.`,
             ),
           );
         }
@@ -295,3 +294,7 @@ export class FileUploadService {
     });
   }
 }
+
+
+
+

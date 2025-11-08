@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Get,
   Post,
@@ -11,13 +11,15 @@ import {
   Request,
   UseInterceptors,
   UploadedFiles,
+  UploadedFile,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
-  FilesInterceptor,
+  FileInterceptor,
 } from '@nestjs/platform-express';
+import { dogVideoMulterConfig } from '../../core/config/dog-video.multer.config';
 import {
   ApiTags,
   ApiOperation,
@@ -46,7 +48,7 @@ import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 
-@ApiTags('Cadastro de Cães')
+@ApiTags('Cadastro de CÃ£es')
 @Controller('cadastro-cao')
 export class CadastroCaoController {
   private readonly logger = new Logger(CadastroCaoController.name);
@@ -58,7 +60,7 @@ export class CadastroCaoController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Criar novo cadastro de cão' })
+  @ApiOperation({ summary: 'Criar novo cadastro de cÃ£o' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileFieldsInterceptor([
@@ -66,7 +68,6 @@ export class CadastroCaoController {
       { name: 'fotoLateral', maxCount: 1 },
       { name: 'pedigreeFrente', maxCount: 1 },
       { name: 'pedigreeVerso', maxCount: 1 },
-      { name: 'video', maxCount: 1 },
     ]),
   )
   @ApiResponse({
@@ -74,8 +75,8 @@ export class CadastroCaoController {
     description: 'Cadastro criado com sucesso',
     type: CadastroCaoResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 400, description: 'Dados invÃ¡lidos' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
   async create(
     @Request() req,
     @UploadedFiles()
@@ -84,7 +85,6 @@ export class CadastroCaoController {
       fotoLateral?: Express.Multer.File[];
       pedigreeFrente?: Express.Multer.File[];
       pedigreeVerso?: Express.Multer.File[];
-      video?: Express.Multer.File[];
     },
   ): Promise<CadastroCaoResponseDto> {
     this.logger.log(`Content-Type: ${req.headers['content-type']}`);
@@ -96,12 +96,38 @@ export class CadastroCaoController {
       files.fotoLateral?.[0],
       files.pedigreeFrente?.[0],
       files.pedigreeVerso?.[0],
-      files.video?.[0],
+    );
+  }
+
+  @Post(':id/video/upload')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Enviar arquivo de vÃ­deo do cadastro' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('video', dogVideoMulterConfig))
+  @ApiResponse({
+    status: 200,
+    description: 'VÃ­deo anexado com sucesso',
+    type: CadastroCaoResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Dados invÃ¡lidos' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissÃ£o para editar este cadastro' })
+  @ApiResponse({ status: 404, description: 'Cadastro nÃ£o encontrado' })
+  async uploadVideo(
+    @Param('id') id: string,
+    @Request() req,
+    @UploadedFile() video?: Express.Multer.File,
+  ): Promise<CadastroCaoResponseDto> {
+    return this.cadastroCaoService.updateVideoByUpload(
+      id,
+      req.user.userId,
+      video,
     );
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar cadastros de cães com filtros e paginação' })
+  @ApiOperation({ summary: 'Listar cadastros de cÃ£es com filtros e paginaÃ§Ã£o' })
   @ApiResponse({
     status: 200,
     description: 'Lista de cadastros retornada com sucesso',
@@ -110,19 +136,19 @@ export class CadastroCaoController {
   @ApiQuery({
     name: 'page',
     required: false,
-    description: 'Número da página (padrão: 1)',
+    description: 'NÃºmero da pÃ¡gina (padrÃ£o: 1)',
   })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Itens por página (padrão: 10, máx: 50)',
+    description: 'Itens por pÃ¡gina (padrÃ£o: 10, mÃ¡x: 50)',
   })
   @ApiQuery({
     name: 'search',
     required: false,
-    description: 'Buscar por nome do cão ou proprietário',
+    description: 'Buscar por nome do cÃ£o ou proprietÃ¡rio',
   })
-  @ApiQuery({ name: 'raca', required: false, description: 'Filtrar por raça' })
+  @ApiQuery({ name: 'raca', required: false, description: 'Filtrar por raÃ§a' })
   @ApiQuery({ name: 'sexo', required: false, description: 'Filtrar por sexo' })
   @ApiQuery({
     name: 'cidade',
@@ -137,7 +163,7 @@ export class CadastroCaoController {
   @ApiQuery({
     name: 'sortBy',
     required: false,
-    description: 'Campo para ordenação',
+    description: 'Campo para ordenaÃ§Ã£o',
   })
   @ApiQuery({
     name: 'sortOrder',
@@ -153,28 +179,28 @@ export class CadastroCaoController {
   @Get('/meus-cadastros')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar cadastros do usuário autenticado' })
+  @ApiOperation({ summary: 'Listar cadastros do usuÃ¡rio autenticado' })
   @ApiResponse({
     status: 200,
     description: 'Lista de cadastros retornada com sucesso',
     type: [CadastroCaoResponseDto],
   })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
   async findByUser(@Request() req: any): Promise<CadastroCaoResponseDto[]> {
     return this.cadastroCaoService.findByUser(req.user.userId);
   }
 
   @Get('raca/:raca')
-  @ApiOperation({ summary: 'Buscar cães por raça' })
+  @ApiOperation({ summary: 'Buscar cÃ£es por raÃ§a' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de cães da raça especificada',
+    description: 'Lista de cÃ£es da raÃ§a especificada',
     type: [CadastroCaoResponseDto],
   })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Limite de resultados (padrão: 10)',
+    description: 'Limite de resultados (padrÃ£o: 10)',
   })
   async findByRaca(
     @Param('raca') raca: string,
@@ -185,16 +211,16 @@ export class CadastroCaoController {
   }
 
   @Get('sexo/:sexo')
-  @ApiOperation({ summary: 'Buscar cães por sexo' })
+  @ApiOperation({ summary: 'Buscar cÃ£es por sexo' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de cães do sexo especificado',
+    description: 'Lista de cÃ£es do sexo especificado',
     type: [CadastroCaoResponseDto],
   })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Limite de resultados (padrão: 10)',
+    description: 'Limite de resultados (padrÃ£o: 10)',
   })
   async findBySexo(
     @Param('sexo') sexo: string,
@@ -205,10 +231,10 @@ export class CadastroCaoController {
   }
 
   @Get('com-pedigree')
-  @ApiOperation({ summary: 'Buscar cães com pedigree' })
+  @ApiOperation({ summary: 'Buscar cÃ£es com pedigree' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de cães com pedigree',
+    description: 'Lista de cÃ£es com pedigree',
     type: [CadastroCaoResponseDto],
   })
   async findComPedigree(): Promise<CadastroCaoResponseDto[]> {
@@ -216,10 +242,10 @@ export class CadastroCaoController {
   }
 
   @Get('com-microchip')
-  @ApiOperation({ summary: 'Buscar cães com microchip' })
+  @ApiOperation({ summary: 'Buscar cÃ£es com microchip' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de cães com microchip',
+    description: 'Lista de cÃ£es com microchip',
     type: [CadastroCaoResponseDto],
   })
   async findComMicrochip(): Promise<CadastroCaoResponseDto[]> {
@@ -227,10 +253,10 @@ export class CadastroCaoController {
   }
 
   @Get('com-video')
-  @ApiOperation({ summary: 'Buscar cães com vídeo' })
+  @ApiOperation({ summary: 'Buscar cÃ£es com vÃ­deo' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de cães com vídeo',
+    description: 'Lista de cÃ£es com vÃ­deo',
     type: [CadastroCaoResponseDto],
   })
   async findComVideo(): Promise<CadastroCaoResponseDto[]> {
@@ -247,7 +273,7 @@ export class CadastroCaoController {
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Limite de resultados (padrão: 5)',
+    description: 'Limite de resultados (padrÃ£o: 5)',
   })
   async findRecentCadastros(
     @Query('limit') limit?: string,
@@ -257,10 +283,10 @@ export class CadastroCaoController {
   }
 
   @Get('usuario/:userId/count')
-  @ApiOperation({ summary: 'Contar cadastros de um usuário' })
+  @ApiOperation({ summary: 'Contar cadastros de um usuÃ¡rio' })
   @ApiResponse({
     status: 200,
-    description: 'Número de cadastros do usuário',
+    description: 'NÃºmero de cadastros do usuÃ¡rio',
     schema: { type: 'object', properties: { count: { type: 'number' } } },
   })
   async getUserCadastrosCount(
@@ -277,7 +303,7 @@ export class CadastroCaoController {
     description: 'Cadastro encontrado',
     type: CadastroCaoResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'Cadastro não encontrado' })
+  @ApiResponse({ status: 404, description: 'Cadastro nÃ£o encontrado' })
   async findOne(@Param('id') id: string): Promise<CadastroCaoResponseDto> {
     return this.cadastroCaoService.findOne(id);
   }
@@ -285,64 +311,85 @@ export class CadastroCaoController {
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Atualizar cadastro de cão' })
+  @ApiOperation({ summary: 'Atualizar cadastro de cÃ£o' })
   @ApiResponse({
     status: 200,
     description: 'Cadastro atualizado com sucesso',
     type: CadastroCaoResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiResponse({ status: 400, description: 'Dados invÃ¡lidos' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
   @ApiResponse({
     status: 403,
-    description: 'Sem permissão para editar este cadastro',
+    description: 'Sem permissÃ£o para editar este cadastro',
   })
-  @ApiResponse({ status: 404, description: 'Cadastro não encontrado' })
+  @ApiResponse({ status: 404, description: 'Cadastro nÃ£o encontrado' })
   async update(
     @Param('id') id: string,
     @Request() req,
     @Body() updateCadastroCaoDto: UpdateCadastroCaoDto,
   ): Promise<CadastroCaoResponseDto> {
-    return this.cadastroCaoService.update(
-      id,
-      req.user.userId,
-      updateCadastroCaoDto,
-    );
+    return this.cadastroCaoService.updateVideoOption(id, req.user.userId, updateCadastroCaoDto);
+  }
+
+  @Patch(':id/video')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Atualizar opÃ§Ã£o de vÃ­deo do cadastro (URL/WHATSAPP)' })
+  @ApiResponse({
+    status: 200,
+    description: 'OpÃ§Ã£o de vÃ­deo atualizada com sucesso',
+    type: CadastroCaoResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Dados invÃ¡lidos' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissÃ£o para editar este cadastro' })
+  @ApiResponse({ status: 404, description: 'Cadastro nÃ£o encontrado' })
+  async updateVideo(
+    @Param('id') id: string,
+    @Request() req,
+    @Body() updateCadastroCaoDto: UpdateCadastroCaoDto,
+  ): Promise<CadastroCaoResponseDto> {
+    // Regras:
+    // - videoOption = URL requer videoUrl
+    // - videoOption = WHATSAPP nÃ£o requer whatsappContato
+    // - NÃ£o aceita upload de arquivo neste endpoint
+    return this.cadastroCaoService.updateVideoOption(id, req.user.userId, updateCadastroCaoDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Excluir cadastro de cão' })
-  @ApiResponse({ status: 200, description: 'Cadastro excluído com sucesso' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
+  @ApiOperation({ summary: 'Excluir cadastro de cÃ£o' })
+  @ApiResponse({ status: 200, description: 'Cadastro excluÃ­do com sucesso' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
   @ApiResponse({
     status: 403,
-    description: 'Sem permissão para excluir este cadastro',
+    description: 'Sem permissÃ£o para excluir este cadastro',
   })
-  @ApiResponse({ status: 404, description: 'Cadastro não encontrado' })
+  @ApiResponse({ status: 404, description: 'Cadastro nÃ£o encontrado' })
   async remove(
     @Param('id') id: string,
     @Request() req,
   ): Promise<{ message: string }> {
     await this.cadastroCaoService.remove(id, req.user.userId);
-    return { message: 'Cadastro excluído com sucesso' };
+    return { message: 'Cadastro excluÃ­do com sucesso' };
   }
 
   @Post(':id/aprovar')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.FUNCIONARIO)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Aprovar ou rejeitar cadastro de cão' })
+  @ApiOperation({ summary: 'Aprovar ou rejeitar cadastro de cÃ£o' })
   @ApiResponse({
     status: 200,
     description: 'Cadastro aprovado/rejeitado com sucesso',
     type: AprovarCadastroResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Dados inválidos' })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão' })
-  @ApiResponse({ status: 404, description: 'Cadastro não encontrado' })
+  @ApiResponse({ status: 400, description: 'Dados invÃ¡lidos' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissÃ£o' })
+  @ApiResponse({ status: 404, description: 'Cadastro nÃ£o encontrado' })
   async aprovarOuRejeitar(
     @Param('id') id: string,
     @Body() aprovarCadastroDto: AprovarCadastroDto,
@@ -359,7 +406,7 @@ export class CadastroCaoController {
     } else {
       if (!aprovarCadastroDto.motivoRejeicao) {
         throw new BadRequestException(
-          'Motivo da rejeição é obrigatório ao rejeitar um cadastro',
+          'Motivo da rejeiÃ§Ã£o Ã© obrigatÃ³rio ao rejeitar um cadastro',
         );
       }
       resultado = await this.cadastroCaoService.rejeitarCadastro(
@@ -382,19 +429,19 @@ export class CadastroCaoController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.FUNCIONARIO)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Listar cadastros pendentes de validação' })
+  @ApiOperation({ summary: 'Listar cadastros pendentes de validaÃ§Ã£o' })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Limite de resultados (padrão: 50)',
+    description: 'Limite de resultados (padrÃ£o: 50)',
   })
   @ApiResponse({
     status: 200,
     description: 'Lista de cadastros pendentes',
     type: [CadastroCaoResponseDto],
   })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissÃ£o' })
   async listarPendentesValidacao(
     @Query('limit') limit?: string,
   ): Promise<CadastroCaoResponseDto[]> {
@@ -406,7 +453,7 @@ export class CadastroCaoController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.FUNCIONARIO)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Contar cadastros pendentes de validação' })
+  @ApiOperation({ summary: 'Contar cadastros pendentes de validaÃ§Ã£o' })
   @ApiResponse({
     status: 200,
     description: 'Contagem de cadastros pendentes',
@@ -417,8 +464,8 @@ export class CadastroCaoController {
       },
     },
   })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissÃ£o' })
   async contarPendentesValidacao(): Promise<{ count: number }> {
     const count = await this.cadastroCaoService.countPendentesValidacao();
     return { count };
@@ -429,20 +476,20 @@ export class CadastroCaoController {
   @Roles(Role.ADMIN, Role.FUNCIONARIO)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Listar cadastros com raças pendentes de aprovação',
+    summary: 'Listar cadastros com raÃ§as pendentes de aprovaÃ§Ã£o',
   })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Limite de resultados (padrão: 50)',
+    description: 'Limite de resultados (padrÃ£o: 50)',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de cadastros com raças pendentes',
+    description: 'Lista de cadastros com raÃ§as pendentes',
     type: [CadastroCaoResponseDto],
   })
-  @ApiResponse({ status: 401, description: 'Não autorizado' })
-  @ApiResponse({ status: 403, description: 'Sem permissão' })
+  @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
+  @ApiResponse({ status: 403, description: 'Sem permissÃ£o' })
   async listarPendentesRaca(
     @Query('limit') limit?: string,
   ): Promise<CadastroCaoResponseDto[]> {
@@ -450,3 +497,5 @@ export class CadastroCaoController {
     return this.cadastroCaoService.findPendentesRaca(limitNumber);
   }
 }
+
+
