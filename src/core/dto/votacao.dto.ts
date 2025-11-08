@@ -140,7 +140,10 @@ export class KardexVotoDto {
   @ApiProperty({ enum: AcaoKardex, description: 'Ação realizada' })
   acao: AcaoKardex;
 
-  @ApiPropertyOptional({ enum: VotoTipo, description: 'Tipo do voto relacionado à ação' })
+  @ApiPropertyOptional({
+    enum: VotoTipo,
+    description: 'Tipo do voto relacionado à ação',
+  })
   tipo?: VotoTipo | null;
 
   @ApiProperty({ description: 'Data da ação' })

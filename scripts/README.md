@@ -11,11 +11,13 @@ Scripts utilitários para gerenciar usuários da API Revista DogCat.
 Verifica o status de um usuário e corrige problemas automaticamente.
 
 **Uso:**
+
 ```bash
 npm run user:check admin@admin.com
 ```
 
 **O que faz:**
+
 - ✅ Mostra todas as informações do usuário
 - ✅ Detecta se está bloqueado
 - ✅ Desbloqueia automaticamente se estiver bloqueado
@@ -24,6 +26,7 @@ npm run user:check admin@admin.com
 - ✅ Mostra data de criação e último erro
 
 **Exemplo de saída:**
+
 ```
 🔍 Verificando usuário: admin@admin.com
 
@@ -51,17 +54,20 @@ Criado em:    08/10/2025, 20:13:35
 Reseta a senha de um usuário e desbloqueia a conta.
 
 **Uso:**
+
 ```bash
 npm run user:reset admin@admin.com NovaSenha123
 ```
 
 **O que faz:**
+
 - ✅ Define uma nova senha
 - ✅ Desbloqueia a conta automaticamente
 - ✅ Reseta tentativas de login
 - ✅ Limpa data de bloqueio
 
 **Exemplo de saída:**
+
 ```
 🔑 Resetando senha para: admin@admin.com
 
@@ -76,17 +82,20 @@ npm run user:reset admin@admin.com NovaSenha123
 Lista todos os usuários do sistema com seus status.
 
 **Uso:**
+
 ```bash
 npm run user:list
 ```
 
 **O que mostra:**
+
 - ✅ Status (Ativo, Bloqueado, Inativo)
 - ✅ Email
 - ✅ Role (papel)
 - ✅ Tentativas de login
 
 **Exemplo de saída:**
+
 ```
 📋 Listando todos os usuários:
 
@@ -168,11 +177,11 @@ npm run user:list
 
 ## 📊 Status Possíveis
 
-| Ícone | Status | Descrição |
-|-------|--------|-----------|
-| ✅ | Ativo | Usuário normal, pode fazer login |
-| 🔒 | Bloqueado | Excedeu tentativas de login (20) |
-| ❌ | Inativo | Conta desativada manualmente |
+| Ícone | Status    | Descrição                        |
+| ----- | --------- | -------------------------------- |
+| ✅    | Ativo     | Usuário normal, pode fazer login |
+| 🔒    | Bloqueado | Excedeu tentativas de login (20) |
+| ❌    | Inativo   | Conta desativada manualmente     |
 
 ---
 
@@ -195,17 +204,20 @@ npm run user:list
 ### Desbloqueio Manual
 
 **Opção 1: Script (Recomendado)**
+
 ```bash
 npm run user:check usuario@example.com
 ```
 
 **Opção 2: API (Admin)**
+
 ```bash
 POST /users/{userId}/unblock
 Authorization: Bearer {admin-token}
 ```
 
 **Opção 3: Frontend**
+
 - Login como Admin
 - Painel Admin → Usuários
 - Editar usuário bloqueado
@@ -220,6 +232,7 @@ Authorization: Bearer {admin-token}
 ⚠️ **IMPORTANTE:** Após resetar com senha padrão, o usuário deve alterá-la!
 
 Senhas padrão comuns:
+
 - `Senha123` - Para testes e desenvolvimento
 - `Admin123` - Para contas admin (trocar imediatamente)
 
@@ -298,10 +311,10 @@ Execute periodicamente para limpar bloqueios expirados:
 ```bash
 # Criar script de manutenção
 npx prisma db execute --sql "
-UPDATE User 
-SET blocked = false, 
-    blockedUntil = NULL 
-WHERE blocked = true 
+UPDATE User
+SET blocked = false,
+    blockedUntil = NULL
+WHERE blocked = true
   AND blockedUntil < NOW()
 "
 ```
@@ -330,11 +343,13 @@ npm run user:list | grep "Tentativas: 20"
 ## 📞 Suporte
 
 **Problemas com scripts?**
+
 - Verifique se está na pasta correta: `revistadogcat-api/`
 - Verifique se o `.env` está configurado
 - Verifique se o banco está acessível
 
 **Problemas com bloqueio?**
+
 - Use `npm run user:check` primeiro
 - Verifique o campo `blockedUntil`
 - Use `npm run user:reset` se necessário

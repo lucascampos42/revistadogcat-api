@@ -3,7 +3,6 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
-  Inject,
 } from '@nestjs/common';
 import { CadastroCaoRepository } from './repositories/cadastro-cao.repository';
 import { CreateCadastroCaoDto } from './dto/create-cadastro-cao.dto';
@@ -78,9 +77,42 @@ export class CadastroCaoService {
       );
     }
 
+    const normalizeBoolean = (val: any): boolean | undefined => {
+      if (val === undefined || val === null || val === '') return undefined;
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'string') {
+        const v = val.trim().toLowerCase();
+        if (v === 'true') return true;
+        if (v === 'false') return false;
+      }
+      return Boolean(val);
+    };
+
+    createCadastroCaoDto.temPedigree = normalizeBoolean(
+      createCadastroCaoDto.temPedigree,
+    );
+    createCadastroCaoDto.temMicrochip = normalizeBoolean(
+      createCadastroCaoDto.temMicrochip,
+    );
+
+    if (video) {
+      createCadastroCaoDto.videoOption = VideoOption.UPLOAD;
+      createCadastroCaoDto.videoUrl = undefined;
+      createCadastroCaoDto.whatsappContato = undefined;
+    } else if (createCadastroCaoDto.videoUrl) {
+      createCadastroCaoDto.videoOption = VideoOption.URL;
+      createCadastroCaoDto.whatsappContato = undefined;
+    } else if (createCadastroCaoDto.whatsappContato) {
+      createCadastroCaoDto.videoOption = VideoOption.WHATSAPP;
+      createCadastroCaoDto.videoUrl = undefined;
+    } else {
+      createCadastroCaoDto.videoOption = VideoOption.NONE;
+      createCadastroCaoDto.videoUrl = undefined;
+      createCadastroCaoDto.whatsappContato = undefined;
+    }
+
     this.validateConditionalData(createCadastroCaoDto);
 
-    // Garantir que as fotos obrigatórias foram enviadas
     if (!fotoPerfil) {
       throw new BadRequestException(
         'Foto de perfil do cão (fotoPerfil) é obrigatória.',
@@ -260,13 +292,10 @@ export class CadastroCaoService {
     }
 
     if (data.videoOption) {
-      if (
-        data.videoOption === VideoOption.UPLOAD ||
-        data.videoOption === VideoOption.URL
-      ) {
+      if (data.videoOption === VideoOption.URL) {
         if (!data.videoUrl) {
           throw new BadRequestException(
-            'URL do vídeo é obrigatória para a opção selecionada',
+            'URL do vídeo é obrigatória quando a opção selecionada for URL',
           );
         }
       }
@@ -274,7 +303,7 @@ export class CadastroCaoService {
       if (data.videoOption === VideoOption.WHATSAPP) {
         if (!data.whatsappContato) {
           throw new BadRequestException(
-            'Contato do WhatsApp é obrigatório para a opção selecionada',
+            'Contato do WhatsApp é obrigatório quando a opção selecionada for WHATSAPP',
           );
         }
       }
@@ -319,9 +348,6 @@ export class CadastroCaoService {
     };
   }
 
-  /**
-   * Aprova um cadastro de cão
-   */
   async aprovarCadastro(
     cadastroId: string,
     aprovadoPor: string,
@@ -389,7 +415,10 @@ export class CadastroCaoService {
         status: 'PENDENTE',
       });
     } catch (error) {
-      console.error(`Erro ao processar mídia para o cadastro ${cadastroId}:`, error);
+      console.error(
+        `Erro ao processar mídia para o cadastro ${cadastroId}:`,
+        error,
+      );
       await this.cadastroCaoRepository.update(cadastroId, {
         status: 'REJEITADO',
         motivoRejeicao: 'Erro no processamento de mídia.',
@@ -397,9 +426,6 @@ export class CadastroCaoService {
     }
   }
 
-  /**
-   * Rejeita um cadastro de cão
-   */
   async rejeitarCadastro(
     cadastroId: string,
     motivoRejeicao: string,
@@ -429,16 +455,10 @@ export class CadastroCaoService {
     return this.mapToResponseDto(cadastroRejeitado);
   }
 
-  /**
-   * Conta cadastros pendentes de validação
-   */
   async countPendentesValidacao(): Promise<number> {
     return this.cadastroCaoRepository.countPendentesValidacao();
   }
 
-  /**
-   * Lista cadastros pendentes de validação
-   */
   async findPendentesValidacao(
     limit: number = 50,
   ): Promise<CadastroCaoResponseDto[]> {
@@ -447,9 +467,6 @@ export class CadastroCaoService {
     return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
   }
 
-  /**
-   * Lista cadastros com raças pendentes de aprovação
-   */
   async findPendentesRaca(
     limit: number = 50,
   ): Promise<CadastroCaoResponseDto[]> {

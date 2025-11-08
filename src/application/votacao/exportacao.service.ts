@@ -56,8 +56,14 @@ export class ExportacaoService {
     }
 
     if (params.dataFinal) {
-      if (where.createdAt && typeof where.createdAt === 'object' && 'gte' in where.createdAt) {
-        (where.createdAt as Prisma.DateTimeFilter).lte = new Date(params.dataFinal);
+      if (
+        where.createdAt &&
+        typeof where.createdAt === 'object' &&
+        'gte' in where.createdAt
+      ) {
+        (where.createdAt as Prisma.DateTimeFilter).lte = new Date(
+          params.dataFinal,
+        );
       } else {
         where.createdAt = { lte: new Date(params.dataFinal) };
       }
@@ -114,8 +120,14 @@ export class ExportacaoService {
     }
 
     if (filtros.dataFim) {
-      if (where.createdAt && typeof where.createdAt === 'object' && 'gte' in where.createdAt) {
-        (where.createdAt as Prisma.DateTimeFilter).lte = new Date(filtros.dataFim);
+      if (
+        where.createdAt &&
+        typeof where.createdAt === 'object' &&
+        'gte' in where.createdAt
+      ) {
+        (where.createdAt as Prisma.DateTimeFilter).lte = new Date(
+          filtros.dataFim,
+        );
       } else {
         where.createdAt = { lte: new Date(filtros.dataFim) };
       }
@@ -191,11 +203,19 @@ export class ExportacaoService {
 
   private gerarCSV(headers: string[], linhas: string[][]): string {
     return [headers, ...linhas]
-      .map((linha) => linha.map((campo) => `"${String(campo).replace(/"/g, '""')}"`).join(','))
+      .map((linha) =>
+        linha
+          .map((campo) => `"${String(campo).replace(/"/g, '""')}"`)
+          .join(','),
+      )
       .join('\n');
   }
 
-  private formatarCSV(headers: string[], linhas: string[][], nomeArquivo: string): CSVResult {
+  private formatarCSV(
+    headers: string[],
+    linhas: string[][],
+    nomeArquivo: string,
+  ): CSVResult {
     const csv = this.gerarCSV(headers, linhas);
     const timestamp = new Date().toISOString().split('T')[0];
 

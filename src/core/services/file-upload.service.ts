@@ -41,7 +41,13 @@ export class FileUploadService {
     },
     articleImage: {
       destination: 'uploads/artigos',
-      allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/avif'],
+      allowedMimeTypes: [
+        'image/jpeg',
+        'image/jpg',
+        'image/png',
+        'image/webp',
+        'image/avif',
+      ],
       maxFileSize: 5 * 1024 * 1024, // 5MB
       fileNamePrefix: 'artigo',
     },
@@ -269,7 +275,9 @@ export class FileUploadService {
       ffmpeg.ffprobe(filePath, (err, metadata) => {
         if (err) {
           return reject(
-            new BadRequestException('Não foi possível ler os metadados do vídeo.'),
+            new BadRequestException(
+              'Não foi possível ler os metadados do vídeo.',
+            ),
           );
         }
 

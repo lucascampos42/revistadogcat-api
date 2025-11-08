@@ -37,7 +37,6 @@ export class ArtigoViewRepository {
     return count > 0;
   }
 
- 
   async countUniqueViews(artigoId: string): Promise<number> {
     const result = await this.prisma.artigoView.groupBy({
       by: ['fingerprint'],

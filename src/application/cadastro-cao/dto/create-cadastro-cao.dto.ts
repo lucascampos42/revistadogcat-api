@@ -55,18 +55,6 @@ export class CreateCadastroCaoDto {
   @IsDateString()
   dataNascimento: string;
 
-  // @ApiProperty({ description: 'URL da foto de perfil do cão' })
-  // @IsString()
-  // @IsNotEmpty()
-  // @IsUrl()
-  // fotoPerfil: string;
-
-  // @ApiProperty({ description: 'URL da foto lateral do cão' })
-  // @IsString()
-  // @IsNotEmpty()
-  // @IsUrl()
-  // fotoLateral: string;
-
   @ApiPropertyOptional({ description: 'Peso do cão', example: '25kg' })
   @IsOptional()
   @IsString()
@@ -87,18 +75,6 @@ export class CreateCadastroCaoDto {
   @IsNotEmpty()
   @IsString()
   registroPedigree?: string;
-
-  // @ApiPropertyOptional({ description: 'URL do arquivo do pedigree (frente)' })
-  // @ValidateIf((o) => o.temPedigree === true)
-  // @IsNotEmpty()
-  // @IsUrl()
-  // pedigreeFrente?: string;
-
-  // @ApiPropertyOptional({ description: 'URL do arquivo do pedigree (verso)' })
-  // @ValidateIf((o) => o.temPedigree === true)
-  // @IsNotEmpty()
-  // @IsUrl()
-  // pedigreeVerso?: string;
 
   @ApiPropertyOptional({
     description: 'Se o cão tem microchip',
@@ -129,11 +105,10 @@ export class CreateCadastroCaoDto {
   @IsEnum(VideoOption)
   videoOption?: VideoOption;
 
-  @ApiPropertyOptional({ description: 'URL do vídeo' })
-  @ValidateIf(
-    (o) =>
-      o.videoOption === VideoOption.UPLOAD || o.videoOption === VideoOption.URL,
-  )
+  @ApiPropertyOptional({
+    description: 'URL do vídeo (YouTube ou outra plataforma)',
+  })
+  @ValidateIf((o) => o.videoOption === VideoOption.URL)
   @IsOptional()
   @IsUrl()
   videoUrl?: string;

@@ -11,24 +11,24 @@ Este documento detalha o fluxo de criação de um novo cadastro de cão, utiliza
 
 ## Rota de Criação de Cadastro
 
--   **Endpoint:** `POST /cadastro-cao`
--   **Autenticação:** Obrigatória (Bearer Token)
--   **Content-Type:** `multipart/form-data`
+- **Endpoint:** `POST /cadastro-cao`
+- **Autenticação:** Obrigatória (Bearer Token)
+- **Content-Type:** `multipart/form-data`
 
 ### Campos do Formulário (`multipart/form-data`)
 
-| Campo             | Tipo      | Obrigatório? | Descrição                                                                                                  |
-| ----------------- | --------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
-| `nome`            | `string`  | **Sim**      | Nome do cão.                                                                                               |
-| `sexo`            | `Enum`    | **Sim**      | Sexo do cão. Valores permitidos: `MACHO`, `FEMEA`.                                                         |
-| `dataNascimento`  | `string`  | **Sim**      | Data de nascimento do cão, no formato `YYYY-MM-DD`.                                                        |
-| `fotoPerfil`      | `file`    | **Sim**      | Arquivo de imagem para a foto de perfil.                                                                   |
-| `fotoLateral`     | `file`    | **Sim**      | Arquivo de imagem para a foto lateral.                                                                     |
-| `racaId`          | `string`  | Condicional  | ID de uma raça já existente. Obrigatório se `racaSugerida` não for preenchido.                             |
-| `racaSugerida`    | `string`  | Condicional  | Nome de uma nova raça a ser sugerida. Obrigatório se `racaId` não for preenchido.                          |
-| `proprietarioId`  | `string`  | Opcional     | ID do usuário proprietário. Se não for fornecido, o cão será associado ao usuário que fez a requisição.   |
-| `video`           | `file`    | Opcional     | Arquivo de vídeo do cão (limite de 30 segundos).                                                           |
-| `...`             | `...`     | `...`        | Todos os outros campos (`peso`, `altura`, `temPedigree`, etc.) também são enviados como parte do formulário. |
+| Campo            | Tipo     | Obrigatório? | Descrição                                                                                                    |
+| ---------------- | -------- | ------------ | ------------------------------------------------------------------------------------------------------------ |
+| `nome`           | `string` | **Sim**      | Nome do cão.                                                                                                 |
+| `sexo`           | `Enum`   | **Sim**      | Sexo do cão. Valores permitidos: `MACHO`, `FEMEA`.                                                           |
+| `dataNascimento` | `string` | **Sim**      | Data de nascimento do cão, no formato `YYYY-MM-DD`.                                                          |
+| `fotoPerfil`     | `file`   | **Sim**      | Arquivo de imagem para a foto de perfil.                                                                     |
+| `fotoLateral`    | `file`   | **Sim**      | Arquivo de imagem para a foto lateral.                                                                       |
+| `racaId`         | `string` | Condicional  | ID de uma raça já existente. Obrigatório se `racaSugerida` não for preenchido.                               |
+| `racaSugerida`   | `string` | Condicional  | Nome de uma nova raça a ser sugerida. Obrigatório se `racaId` não for preenchido.                            |
+| `proprietarioId` | `string` | Opcional     | ID do usuário proprietário. Se não for fornecido, o cão será associado ao usuário que fez a requisição.      |
+| `video`          | `file`   | Opcional     | Arquivo de vídeo do cão (limite de 30 segundos).                                                             |
+| `...`            | `...`    | `...`        | Todos os outros campos (`peso`, `altura`, `temPedigree`, etc.) também são enviados como parte do formulário. |
 
 ### Exibindo o Progresso do Upload no Frontend
 
@@ -41,7 +41,9 @@ formData.append('fotoPerfil', fileInput.files[0]);
 // ... anexe todos os outros campos
 
 const onUploadProgress = (progressEvent) => {
-  const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+  const percentCompleted = Math.round(
+    (progressEvent.loaded * 100) / progressEvent.total,
+  );
   console.log(`Upload: ${percentCompleted}%`);
 };
 
@@ -61,7 +63,7 @@ O backend responderá com o objeto do cão cadastrado, mas com o `status: 'PROCE
   "nome": "Rex",
   "status": "PROCESSANDO",
   "fotoPerfil": "placeholder.jpg",
-  "fotoLateral": "placeholder.jpg",
+  "fotoLateral": "placeholder.jpg"
   // ...outros dados
 }
 ```

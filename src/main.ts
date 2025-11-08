@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { join } from 'path';
@@ -14,10 +14,8 @@ async function bootstrap() {
   });
   const port = process.env.PORT ?? 3000;
 
-  // Ativar o filtro de exceções global
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  // Configurar CORS - apenas origens específicas permitidas
   const allowedOrigins = [
     'http://localhost:4200',
     'http://localhost:4201',
@@ -27,22 +25,18 @@ async function bootstrap() {
     'http://www.revistadogcat.com.br',
   ];
 
-  // Adicionar origens do ambiente se definidas
   if (process.env.FRONTEND_URL) {
     allowedOrigins.push(process.env.FRONTEND_URL);
   }
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Permitir requisições sem origin (ex: mobile apps, Postman, testes)
       if (!origin) return callback(null, true);
 
-      // Verificar se a origem está na lista permitida
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
 
-      // Verificar se é um subdomínio do revistadogcat.com.br
       if (origin.endsWith('.revistadogcat.com.br')) {
         Logger.log(`CORS permitiu subdomínio: ${origin}`);
         return callback(null, true);
@@ -67,7 +61,15 @@ async function bootstrap() {
     preflightContinue: false,
   });
 
-  // Criar diretórios de uploads se não existirem
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidUnknownValues: false,
+      transformOptions: { enableImplicitConversion: true },
+    }),
+  );
+
   const uploadDirectories = [
     'uploads/avatars',
     'uploads/artigos',
@@ -85,12 +87,10 @@ async function bootstrap() {
     }
   });
 
-  // Configurar arquivos estáticos
   app.useStaticAssets(join(__dirname, '..', 'uploads'), {
     prefix: '/uploads/',
   });
 
-  // Configurar Swagger/OpenAPI
   const config = new DocumentBuilder()
     .setTitle('NestJS Boilerplate')
     .setDescription('The NestJS Boilerplate API description')
@@ -99,7 +99,6 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  // Add Scalar middleware
   app.use(
     '/reference',
     apiReference({

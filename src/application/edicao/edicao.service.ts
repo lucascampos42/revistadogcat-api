@@ -88,13 +88,13 @@ export class EdicaoService {
         this.logger.log(`Gerando capa automaticamente para edição ${edicaoId}`);
         const capaDir = join(process.cwd(), 'uploads/revista/capas');
         const capaFilename = `capa-${edicaoId}`;
-        
+
         capaUrl = await this.pdfProcessorService.extractFirstPageAsImage(
           pdf.path,
           capaDir,
           capaFilename,
         );
-        
+
         this.logger.log(`Capa gerada automaticamente: ${capaUrl}`);
       }
 
@@ -111,7 +111,7 @@ export class EdicaoService {
       return this.toResponseDto(created);
     } catch (error) {
       this.logger.error(`Erro ao criar edição: ${error.message}`, error.stack);
-      
+
       // Em caso de erro, remove arquivos que possam ter sido criados
       try {
         await this.pdfProcessorService.removeFile(pdf.path);
@@ -119,12 +119,14 @@ export class EdicaoService {
           await this.pdfProcessorService.removeFile(capa.path);
         }
       } catch (cleanupError) {
-        this.logger.warn(`Erro na limpeza de arquivos: ${cleanupError.message}`);
+        this.logger.warn(
+          `Erro na limpeza de arquivos: ${cleanupError.message}`,
+        );
       }
-      
+
       throw new BadRequestException(`Falha ao criar edição: ${error.message}`);
-     }
-   }
+    }
+  }
 
   /**
    * Exclui uma edição permanentemente, removendo registro do banco e arquivos associados
@@ -160,13 +162,19 @@ export class EdicaoService {
 
       this.logger.log(`Edição ${id} excluída com sucesso`);
     } catch (error) {
-      this.logger.error(`Erro ao excluir edição ${id}: ${error.message}`, error.stack);
-      
+      this.logger.error(
+        `Erro ao excluir edição ${id}: ${error.message}`,
+        error.stack,
+      );
+
       // Se falhou após remover do banco, tenta reverter (mas pode não ser possível)
-      if (error.code !== 'P2025') { // P2025 = registro não encontrado no Prisma
-        throw new BadRequestException(`Falha ao excluir edição: ${error.message}`);
+      if (error.code !== 'P2025') {
+        // P2025 = registro não encontrado no Prisma
+        throw new BadRequestException(
+          `Falha ao excluir edição: ${error.message}`,
+        );
       }
-      
+
       throw new NotFoundException('Edição não encontrada');
     }
   }

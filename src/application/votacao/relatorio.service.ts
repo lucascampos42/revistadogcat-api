@@ -122,7 +122,10 @@ export class RelatorioService {
     return relatorio;
   }
 
-  private async obterDadosBase(dataInicio?: Date, dataFim?: Date): Promise<DadosBase> {
+  private async obterDadosBase(
+    dataInicio?: Date,
+    dataFim?: Date,
+  ): Promise<DadosBase> {
     const where: Prisma.VotoWhereInput = {};
 
     if (dataInicio) {
@@ -130,7 +133,11 @@ export class RelatorioService {
     }
 
     if (dataFim) {
-      if (where.createdAt && typeof where.createdAt === 'object' && 'gte' in where.createdAt) {
+      if (
+        where.createdAt &&
+        typeof where.createdAt === 'object' &&
+        'gte' in where.createdAt
+      ) {
         (where.createdAt as Prisma.DateTimeFilter).lte = dataFim;
       } else {
         where.createdAt = { lte: dataFim };
@@ -201,25 +208,34 @@ export class RelatorioService {
     const { votos } = dadosBase;
 
     // Distribuição por role
-    const distribuicaoPorRole = votos.reduce((acc: Record<string, number>, voto) => {
-      const role = voto.user?.role || 'INDEFINIDO';
-      acc[role] = (acc[role] || 0) + 1;
-      return acc;
-    }, {});
+    const distribuicaoPorRole = votos.reduce(
+      (acc: Record<string, number>, voto) => {
+        const role = voto.user?.role || 'INDEFINIDO';
+        acc[role] = (acc[role] || 0) + 1;
+        return acc;
+      },
+      {},
+    );
 
     // Distribuição por raça
-    const distribuicaoPorRaca = votos.reduce((acc: Record<string, number>, voto) => {
-      const raca = voto.cadastro?.raca?.nome || 'Não informado';
-      acc[raca] = (acc[raca] || 0) + 1;
-      return acc;
-    }, {});
+    const distribuicaoPorRaca = votos.reduce(
+      (acc: Record<string, number>, voto) => {
+        const raca = voto.cadastro?.raca?.nome || 'Não informado';
+        acc[raca] = (acc[raca] || 0) + 1;
+        return acc;
+      },
+      {},
+    );
 
     // Atividade por hora do dia
-    const atividadePorHora = votos.reduce((acc: Record<number, number>, voto) => {
-      const hora = new Date(voto.createdAt).getHours();
-      acc[hora] = (acc[hora] || 0) + 1;
-      return acc;
-    }, {});
+    const atividadePorHora = votos.reduce(
+      (acc: Record<number, number>, voto) => {
+        const hora = new Date(voto.createdAt).getHours();
+        acc[hora] = (acc[hora] || 0) + 1;
+        return acc;
+      },
+      {},
+    );
 
     return {
       distribuicaoPorRole,
@@ -228,11 +244,11 @@ export class RelatorioService {
       picos: {
         horaMaisAtiva:
           Object.entries(atividadePorHora).sort(
-            ([, a], [, b]) => (b as number) - (a as number),
+            ([, a], [, b]) => b - a,
           )[0]?.[0] || 'N/A',
         racaMaisVotada:
           Object.entries(distribuicaoPorRaca).sort(
-            ([, a], [, b]) => (b as number) - (a as number),
+            ([, a], [, b]) => b - a,
           )[0]?.[0] || 'N/A',
       },
     };
@@ -250,32 +266,35 @@ export class RelatorioService {
     const { votos } = dadosBase;
 
     // Agrupar votos por cão
-    const votosPorCao = votos.reduce((acc: Record<string, CaoRanking>, voto) => {
-      const key = voto.cadastroId;
-      if (!acc[key]) {
-        acc[key] = {
-          cadastroId: voto.cadastroId,
-          nome: voto.cadastro?.nome || 'N/A',
-          raca: voto.cadastro?.raca?.nome || 'N/A',
-          dono: voto.cadastro?.user?.name || 'N/A',
-          totalVotos: 0,
-          primeiroVoto: voto.createdAt,
-          ultimoVoto: voto.createdAt,
-          votos: [],
-        };
-      }
-      acc[key].totalVotos++;
-      acc[key].votos.push(voto);
+    const votosPorCao = votos.reduce(
+      (acc: Record<string, CaoRanking>, voto) => {
+        const key = voto.cadastroId;
+        if (!acc[key]) {
+          acc[key] = {
+            cadastroId: voto.cadastroId,
+            nome: voto.cadastro?.nome || 'N/A',
+            raca: voto.cadastro?.raca?.nome || 'N/A',
+            dono: voto.cadastro?.user?.name || 'N/A',
+            totalVotos: 0,
+            primeiroVoto: voto.createdAt,
+            ultimoVoto: voto.createdAt,
+            votos: [],
+          };
+        }
+        acc[key].totalVotos++;
+        acc[key].votos.push(voto);
 
-      if (voto.createdAt < acc[key].primeiroVoto) {
-        acc[key].primeiroVoto = voto.createdAt;
-      }
-      if (voto.createdAt > acc[key].ultimoVoto) {
-        acc[key].ultimoVoto = voto.createdAt;
-      }
+        if (voto.createdAt < acc[key].primeiroVoto) {
+          acc[key].primeiroVoto = voto.createdAt;
+        }
+        if (voto.createdAt > acc[key].ultimoVoto) {
+          acc[key].ultimoVoto = voto.createdAt;
+        }
 
-      return acc;
-    }, {});
+        return acc;
+      },
+      {},
+    );
 
     // Ordenar e calcular posições
     const ranking: CaoRankingCompleto[] = Object.values(votosPorCao)
@@ -299,10 +318,8 @@ export class RelatorioService {
         mediaPontuacao:
           ranking.length > 0
             ? (
-                ranking.reduce(
-                  (sum: number, cao) => sum + cao.totalVotos,
-                  0,
-                ) / ranking.length
+                ranking.reduce((sum: number, cao) => sum + cao.totalVotos, 0) /
+                ranking.length
               ).toFixed(2)
             : '0',
       },
@@ -313,32 +330,35 @@ export class RelatorioService {
     const { votos } = dadosBase;
 
     // Agrupar por usuário
-    const votosPorUsuario = votos.reduce((acc: Record<string, UsuarioAnalise>, voto) => {
-      const key = voto.userId;
-      if (!acc[key]) {
-        acc[key] = {
-          userId: voto.userId,
-          nome: voto.user?.name || 'N/A',
-          email: voto.user?.email || 'N/A',
-          role: voto.user?.role || 'N/A',
-          totalVotos: 0,
-          caesVotados: new Set(),
-          primeiroVoto: voto.createdAt,
-          ultimoVoto: voto.createdAt,
-        };
-      }
-      acc[key].totalVotos++;
-      acc[key].caesVotados.add(voto.cadastroId);
+    const votosPorUsuario = votos.reduce(
+      (acc: Record<string, UsuarioAnalise>, voto) => {
+        const key = voto.userId;
+        if (!acc[key]) {
+          acc[key] = {
+            userId: voto.userId,
+            nome: voto.user?.name || 'N/A',
+            email: voto.user?.email || 'N/A',
+            role: voto.user?.role || 'N/A',
+            totalVotos: 0,
+            caesVotados: new Set(),
+            primeiroVoto: voto.createdAt,
+            ultimoVoto: voto.createdAt,
+          };
+        }
+        acc[key].totalVotos++;
+        acc[key].caesVotados.add(voto.cadastroId);
 
-      if (voto.createdAt < acc[key].primeiroVoto) {
-        acc[key].primeiroVoto = voto.createdAt;
-      }
-      if (voto.createdAt > acc[key].ultimoVoto) {
-        acc[key].ultimoVoto = voto.createdAt;
-      }
+        if (voto.createdAt < acc[key].primeiroVoto) {
+          acc[key].primeiroVoto = voto.createdAt;
+        }
+        if (voto.createdAt > acc[key].ultimoVoto) {
+          acc[key].ultimoVoto = voto.createdAt;
+        }
 
-      return acc;
-    }, {});
+        return acc;
+      },
+      {},
+    );
 
     // Converter e analisar
     const usuarios = Object.values(votosPorUsuario).map((usuario) => ({
@@ -350,9 +370,7 @@ export class RelatorioService {
           : '0',
     }));
 
-    const usuariosAtivos = usuarios.sort(
-      (a, b) => b.totalVotos - a.totalVotos,
-    );
+    const usuariosAtivos = usuarios.sort((a, b) => b.totalVotos - a.totalVotos);
 
     return {
       totalUsuarios: usuarios.length,
@@ -458,9 +476,7 @@ export class RelatorioService {
       return acc;
     }, {});
 
-    const votosOrdenados = Object.values(votosPorCao).sort(
-      (a, b) => b - a,
-    );
+    const votosOrdenados = Object.values(votosPorCao).sort((a, b) => b - a);
     const top3Votos: number = votosOrdenados
       .slice(0, 3)
       .reduce((sum: number, votos: number) => sum + votos, 0);
@@ -502,12 +518,10 @@ export class RelatorioService {
     }, {});
 
     const caoMaisVotado = Object.entries(votosPorCao).sort(
-      ([, a], [, b]) => (b as number) - (a as number),
+      ([, a], [, b]) => b - a,
     )[0];
 
-    const cao = votos.find(
-      (v) => v.cadastroId === caoMaisVotado[0],
-    )?.cadastro;
+    const cao = votos.find((v) => v.cadastroId === caoMaisVotado[0])?.cadastro;
 
     return `${cao?.nome || 'Cão'} lidera com ${caoMaisVotado[1]} votos`;
   }
@@ -540,7 +554,9 @@ export class RelatorioService {
       : '0';
   }
 
-  private analisarDistribuicaoTemporal(votos: VotoComRelacoes[]): Record<string, number> {
+  private analisarDistribuicaoTemporal(
+    votos: VotoComRelacoes[],
+  ): Record<string, number> {
     const distribuicao = votos.reduce((acc: Record<string, number>, voto) => {
       const hora = new Date(voto.createdAt).getHours();
       const periodo =
