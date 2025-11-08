@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
@@ -48,6 +49,7 @@ import { Role } from '@prisma/client';
 @ApiTags('Cadastro de Cães')
 @Controller('cadastro-cao')
 export class CadastroCaoController {
+  private readonly logger = new Logger(CadastroCaoController.name);
   constructor(
     private readonly cadastroCaoService: CadastroCaoService,
     private readonly fileUploadService: FileUploadService,
@@ -76,7 +78,6 @@ export class CadastroCaoController {
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   async create(
     @Request() req,
-    @Body() createCadastroCaoDto: CreateCadastroCaoDto,
     @UploadedFiles()
     files: {
       fotoPerfil?: Express.Multer.File[];
@@ -86,6 +87,8 @@ export class CadastroCaoController {
       video?: Express.Multer.File[];
     },
   ): Promise<CadastroCaoResponseDto> {
+    this.logger.log(`Content-Type: ${req.headers['content-type']}`);
+    const createCadastroCaoDto: CreateCadastroCaoDto = req.body;
     return this.cadastroCaoService.create(
       req.user.userId,
       createCadastroCaoDto,
