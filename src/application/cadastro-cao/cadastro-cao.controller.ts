@@ -46,9 +46,9 @@ import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
 import { IsPublic } from 'src/core/decorators/is-public.decorator';
 
-@ApiTags('Cadastro de Cães')
 import { S3Service } from 'src/core/services/s3.service';
 
+@ApiTags('Cadastro de Cães')
 @Controller('cadastro-cao')
 export class CadastroCaoController {
   constructor(

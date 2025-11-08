@@ -30,6 +30,7 @@ import {
   ApiBody,
   ApiParam,
   ApiQuery,
+  ApiExcludeEndpoint,
 } from '@nestjs/swagger';
 import { ArtigoService } from './artigo.service';
 import { CreateArtigoDto } from './dto/create-artigo.dto';

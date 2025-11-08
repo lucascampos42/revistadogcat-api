@@ -4,7 +4,6 @@ import { extname, join } from 'path';
 import { Request } from 'express';
 import { existsSync, mkdirSync } from 'fs';
 import * as sharp from 'sharp';
-import * as ffmpeg from 'fluent-ffmpeg';
 
 export interface FileUploadConfig {
   destination: string;
