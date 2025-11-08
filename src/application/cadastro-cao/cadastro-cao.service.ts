@@ -29,21 +29,8 @@ export class CadastroCaoService {
   async create(
     requesterId: string,
     createCadastroCaoDto: CreateCadastroCaoDto,
-    fotoPerfil: Express.Multer.File | undefined,
-    fotoLateral: Express.Multer.File | undefined,
-    pedigreeFrente?: Express.Multer.File,
-    pedigreeVerso?: Express.Multer.File,
-    video?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     let proprietarioFinalId: string;
-
-    if (!fotoPerfil) {
-      throw new BadRequestException('A foto de perfil é obrigatória.');
-    }
-
-    if (!fotoLateral) {
-      throw new BadRequestException('A foto lateral é obrigatória.');
-    }
 
     if (createCadastroCaoDto.proprietarioId) {
       const proprietario = await this.userService.findUserEntityById(
@@ -80,34 +67,9 @@ export class CadastroCaoService {
 
     this.validateConditionalData(createCadastroCaoDto);
 
-    // Garantir que as fotos obrigatórias foram enviadas
-    if (!fotoPerfil) {
-      throw new BadRequestException(
-        'Foto de perfil do cão (fotoPerfil) é obrigatória.',
-      );
-    }
-    if (!fotoLateral) {
-      throw new BadRequestException(
-        'Foto lateral do cão (fotoLateral) é obrigatória.',
-      );
-    }
-
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
-      {
-        ...createCadastroCaoDto,
-        fotoPerfil: 'placeholder.jpg',
-        fotoLateral: 'placeholder.jpg',
-      },
-    );
-
-    this.processMediaInBackground(
-      cadastro.cadastroId,
-      fotoPerfil,
-      fotoLateral,
-      pedigreeFrente,
-      pedigreeVerso,
-      video,
+      createCadastroCaoDto,
     );
 
     return this.mapToResponseDto(cadastro);
@@ -338,49 +300,6 @@ export class CadastroCaoService {
     );
 
     return this.mapToResponseDto(cadastroAprovado);
-  }
-
-  private async processMediaInBackground(
-    cadastroId: string,
-    fotoPerfil: Express.Multer.File,
-    fotoLateral: Express.Multer.File,
-    pedigreeFrente?: Express.Multer.File,
-    pedigreeVerso?: Express.Multer.File,
-    video?: Express.Multer.File,
-  ): Promise<void> {
-    const [
-      fotoPerfilUrl,
-      fotoLateralUrl,
-      pedigreeFrenteUrl,
-      pedigreeVersoUrl,
-      videoUrl,
-    ] = await Promise.all([
-      this.fileUploadService.processUploadedFile(fotoPerfil, 'dogProfile'),
-      this.fileUploadService.processUploadedFile(fotoLateral, 'dogLateral'),
-      pedigreeFrente
-        ? this.fileUploadService.processUploadedFile(
-            pedigreeFrente,
-            'dogPedigree',
-          )
-        : Promise.resolve(undefined),
-      pedigreeVerso
-        ? this.fileUploadService.processUploadedFile(
-            pedigreeVerso,
-            'dogPedigree',
-          )
-        : Promise.resolve(undefined),
-      video
-        ? this.fileUploadService.processUploadedFile(video, 'dogVideo')
-        : Promise.resolve(undefined),
-    ]);
-
-    await this.cadastroCaoRepository.update(cadastroId, {
-      fotoPerfil: fotoPerfilUrl?.url,
-      fotoLateral: fotoLateralUrl?.url,
-      pedigreeFrente: pedigreeFrenteUrl?.url,
-      pedigreeVerso: pedigreeVersoUrl?.url,
-      videoUrl: videoUrl?.url,
-    });
   }
 
   /**

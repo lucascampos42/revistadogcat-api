@@ -18,6 +18,7 @@ import type { JwtSignOptions } from '@nestjs/jwt';
 import { RacaModule } from './application/raca/raca.module';
 import { EdicaoModule } from './application/edicao/edicao.module';
 import { VotacaoModule } from './application/votacao/votacao.module';
+import { FileUploadModule } from './core/services/file-upload.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { VotacaoModule } from './application/votacao/votacao.module';
     EdicaoModule,
     VotacaoModule,
     MailModule,
+    FileUploadModule,
   ],
   controllers: [],
   providers: [

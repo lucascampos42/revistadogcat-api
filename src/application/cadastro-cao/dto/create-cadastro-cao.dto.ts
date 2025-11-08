@@ -55,17 +55,27 @@ export class CreateCadastroCaoDto {
   @IsDateString()
   dataNascimento: string;
 
-  // @ApiProperty({ description: 'URL da foto de perfil do cão' })
-  // @IsString()
-  // @IsNotEmpty()
-  // @IsUrl()
-  // fotoPerfil: string;
+  @ApiProperty({ description: 'URL da foto de perfil do cão' })
+  @IsString()
+  @IsNotEmpty()
+  @IsUrl()
+  fotoPerfil: string;
 
-  // @ApiProperty({ description: 'URL da foto lateral do cão' })
-  // @IsString()
-  // @IsNotEmpty()
-  // @IsUrl()
-  // fotoLateral: string;
+  @ApiProperty({ description: 'URL da foto lateral do cão' })
+  @IsString()
+  @IsNotEmpty()
+  @IsUrl()
+  fotoLateral: string;
+
+  @ApiPropertyOptional({ description: 'URL do arquivo do pedigree (frente)' })
+  @IsOptional()
+  @IsUrl()
+  pedigreeFrente?: string;
+
+  @ApiPropertyOptional({ description: 'URL do arquivo do pedigree (verso)' })
+  @IsOptional()
+  @IsUrl()
+  pedigreeVerso?: string;
 
   @ApiPropertyOptional({ description: 'Peso do cão', example: '25kg' })
   @IsOptional()
