@@ -44,54 +44,29 @@ import { FileUploadService } from '../../core/services/file-upload.service';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
-import { IsPublic } from 'src/core/decorators/is-public.decorator';
-
-import { S3Service } from 'src/core/services/s3.service';
 
 @ApiTags('Cadastro de Cães')
 @Controller('cadastro-cao')
 export class CadastroCaoController {
   constructor(
     private readonly cadastroCaoService: CadastroCaoService,
-    private readonly s3Service: S3Service,
+    private readonly fileUploadService: FileUploadService,
   ) {}
-
-  @Post('iniciar-upload')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Iniciar upload de arquivo para o S3' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        fileName: { type: 'string' },
-        fileType: { type: 'string' },
-      },
-    },
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'URL de upload gerada com sucesso',
-  })
-  async iniciarUpload(
-    @Body() body: { fileName: string; fileType: string },
-  ): Promise<{ uploadUrl: string }> {
-    const uploadUrl = await this.s3Service.getPresignedUrl(
-      body.fileName,
-      body.fileType,
-    );
-    return { uploadUrl };
-  }
 
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Criar novo cadastro de cão' })
-  @ApiConsumes('application/json')
-  @ApiBody({
-    description: 'Dados do cadastro de cão',
-    type: CreateCadastroCaoDto,
-  })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'fotoPerfil', maxCount: 1 },
+      { name: 'fotoLateral', maxCount: 1 },
+      { name: 'pedigreeFrente', maxCount: 1 },
+      { name: 'pedigreeVerso', maxCount: 1 },
+      { name: 'video', maxCount: 1 },
+    ]),
+  )
   @ApiResponse({
     status: 201,
     description: 'Cadastro criado com sucesso',
@@ -102,15 +77,27 @@ export class CadastroCaoController {
   async create(
     @Request() req,
     @Body() createCadastroCaoDto: CreateCadastroCaoDto,
+    @UploadedFiles()
+    files: {
+      fotoPerfil?: Express.Multer.File[];
+      fotoLateral?: Express.Multer.File[];
+      pedigreeFrente?: Express.Multer.File[];
+      pedigreeVerso?: Express.Multer.File[];
+      video?: Express.Multer.File[];
+    },
   ): Promise<CadastroCaoResponseDto> {
     return this.cadastroCaoService.create(
       req.user.userId,
       createCadastroCaoDto,
+      files.fotoPerfil?.[0],
+      files.fotoLateral?.[0],
+      files.pedigreeFrente?.[0],
+      files.pedigreeVerso?.[0],
+      files.video?.[0],
     );
   }
 
   @Get()
-  @IsPublic()
   @ApiOperation({ summary: 'Listar cadastros de cães com filtros e paginação' })
   @ApiResponse({
     status: 200,
@@ -175,7 +162,6 @@ export class CadastroCaoController {
   }
 
   @Get('raca/:raca')
-  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães por raça' })
   @ApiResponse({
     status: 200,
@@ -196,7 +182,6 @@ export class CadastroCaoController {
   }
 
   @Get('sexo/:sexo')
-  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães por sexo' })
   @ApiResponse({
     status: 200,
@@ -217,7 +202,6 @@ export class CadastroCaoController {
   }
 
   @Get('com-pedigree')
-  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães com pedigree' })
   @ApiResponse({
     status: 200,
@@ -229,7 +213,6 @@ export class CadastroCaoController {
   }
 
   @Get('com-microchip')
-  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães com microchip' })
   @ApiResponse({
     status: 200,
@@ -241,7 +224,6 @@ export class CadastroCaoController {
   }
 
   @Get('com-video')
-  @IsPublic()
   @ApiOperation({ summary: 'Buscar cães com vídeo' })
   @ApiResponse({
     status: 200,
@@ -253,7 +235,6 @@ export class CadastroCaoController {
   }
 
   @Get('recentes')
-  @IsPublic()
   @ApiOperation({ summary: 'Buscar cadastros recentes' })
   @ApiResponse({
     status: 200,
@@ -273,7 +254,6 @@ export class CadastroCaoController {
   }
 
   @Get('usuario/:userId/count')
-  @IsPublic()
   @ApiOperation({ summary: 'Contar cadastros de um usuário' })
   @ApiResponse({
     status: 200,
@@ -288,7 +268,6 @@ export class CadastroCaoController {
   }
 
   @Get(':id')
-  @IsPublic()
   @ApiOperation({ summary: 'Buscar cadastro por ID' })
   @ApiResponse({
     status: 200,

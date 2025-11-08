@@ -57,12 +57,12 @@ export class RacaController {
     description: 'Buscar por nome da raça',
   })
   findAll(@Query('ativo') ativo?: string, @Query('search') search?: string) {
+    // Convert string query param to boolean
     const ativoBool = ativo === undefined ? undefined : ativo === 'true';
     return this.racaService.findAll(ativoBool, search);
   }
 
   @Get(':id')
-  @IsPublic()
   @ApiOperation({ summary: 'Buscar uma raça por ID' })
   @ApiResponse({ status: 200, description: 'Raça encontrada.' })
   @ApiResponse({ status: 404, description: 'Raça não encontrada.' })

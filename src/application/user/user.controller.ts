@@ -10,7 +10,6 @@ import {
   UseInterceptors,
   UploadedFile,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -32,16 +31,14 @@ import { UploadAvatarDto } from './dto/upload-avatar.dto';
 import { multerConfig } from '../../core/config/multer.config';
 import { AuthRequest } from '../auth/models/AuthRequest';
 import { FullUserDto } from './dto/full-user.dto';
-import { JwtAuthGuard } from 'src/core/guards/jwt-auth.guard';
-import { IsPublic } from 'src/core/decorators/is-public.decorator';
 
 @ApiTags('Usuários')
+@ApiBearerAuth()
 @Controller('users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post('register-third-party')
-  @IsPublic()
   @ApiOperation({ summary: 'Criar usuário para terceiro (simplificado)' })
   @ApiResponse({
     status: 201,
@@ -78,8 +75,6 @@ export class UserController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Listar usuários com paginação e filtros' })
   @ApiResponse({
@@ -124,8 +119,6 @@ export class UserController {
   }
 
   @Get('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obter perfil do usuário autenticado' })
   @ApiResponse({
     status: 200,
@@ -137,8 +130,6 @@ export class UserController {
   }
 
   @Patch('me')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar perfil do usuário autenticado' })
   updateMyProfile(
     @Body() updateUserDto: UpdateUserDto,
@@ -148,16 +139,12 @@ export class UserController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Buscar usuário por ID' })
   findOne(@Param('id') id: string, @Req() req: AuthRequest) {
     return this.userService.findOneById(id, req.user);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: 'Atualizar dados do usuário' })
   update(
     @Param('id') id: string,
@@ -168,8 +155,6 @@ export class UserController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Excluir usuário (soft delete)' })
   remove(@Param('id') id: string) {
@@ -177,8 +162,6 @@ export class UserController {
   }
 
   @Patch(':id/role')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Atualizar role do usuário (apenas Admin)' })
   async updateUserRole(
@@ -189,8 +172,6 @@ export class UserController {
   }
 
   @Post(':id/restore')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Restaurar usuário excluído' })
   async restoreUser(@Param('id') id: string, @Body() _dto: RestoreUserDto) {
@@ -198,8 +179,6 @@ export class UserController {
   }
 
   @Post(':id/unblock')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @ApiOperation({
     summary: 'Desbloquear usuário bloqueado por tentativas de login',
@@ -217,8 +196,6 @@ export class UserController {
   }
 
   @Post('avatar-upload')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @UseInterceptors(FileInterceptor('avatar', multerConfig))
   @ApiOperation({ summary: 'Upload de avatar do usuário' })
   @ApiConsumes('multipart/form-data')

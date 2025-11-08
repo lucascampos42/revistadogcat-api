@@ -29,10 +29,7 @@
     "user:list": "ts-node scripts/check-user.ts list"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.927.0",
-    "@aws-sdk/s3-request-presigner": "^3.927.0",
     "@getbrevo/brevo": "^3.0.1",
-    "@nestjs/cli": "^11.0.10",
     "@nestjs/common": "^11.1.5",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.5",
@@ -44,8 +41,6 @@
     "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.19.0",
     "@scalar/nestjs-api-reference": "^0.5.12",
-    "@types/fluent-ffmpeg": "^2.1.28",
-    "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "dotenv": "^17.2.1",
@@ -54,22 +49,23 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pdf2pic": "^3.2.0",
-    "prisma": "^6.19.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "sharp": "^0.34.3",
-    "typescript": "^5.7.3"
+    "sharp": "^0.34.3"
   },
   "devDependencies": {
     "@compodoc/compodoc": "^1.1.25",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
+    "@nestjs/cli": "^11.0.10",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
     "@swc/cli": "^0.6.0",
     "@swc/core": "^1.10.7",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
+    "@types/fluent-ffmpeg": "^2.1.28",
+    "@types/multer": "^2.0.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.10.7",
     "@types/passport-jwt": "^4.0.1",
@@ -84,12 +80,14 @@
     "globals": "^16.0.0",
     "jest": "^30.2.0",
     "prettier": "^3.4.2",
+    "prisma": "^6.19.0",
     "source-map-support": "^0.5.21",
     "supertest": "^7.0.0",
     "ts-jest": "^29.4.0",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
   }
 }

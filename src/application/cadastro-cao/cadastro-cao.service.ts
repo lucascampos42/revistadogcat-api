@@ -14,7 +14,7 @@ import {
 } from './dto/list-cadastros-cao.dto';
 import { CadastroCaoResponseDto } from './dto/cadastro-cao-response.dto';
 import { CadastroCaoEntity } from './entities/cadastro-cao.entity';
-import { VideoOption } from '@prisma/client';
+import { VideoOption, StatusCadastro } from '@prisma/client';
 import { UserService } from '../user/user.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 
@@ -29,8 +29,21 @@ export class CadastroCaoService {
   async create(
     requesterId: string,
     createCadastroCaoDto: CreateCadastroCaoDto,
+    fotoPerfil: Express.Multer.File | undefined,
+    fotoLateral: Express.Multer.File | undefined,
+    pedigreeFrente?: Express.Multer.File,
+    pedigreeVerso?: Express.Multer.File,
+    video?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     let proprietarioFinalId: string;
+
+    if (!fotoPerfil) {
+      throw new BadRequestException('A foto de perfil é obrigatória.');
+    }
+
+    if (!fotoLateral) {
+      throw new BadRequestException('A foto lateral é obrigatória.');
+    }
 
     if (createCadastroCaoDto.proprietarioId) {
       const proprietario = await this.userService.findUserEntityById(
@@ -67,9 +80,39 @@ export class CadastroCaoService {
 
     this.validateConditionalData(createCadastroCaoDto);
 
+    // Garantir que as fotos obrigatórias foram enviadas
+    if (!fotoPerfil) {
+      throw new BadRequestException(
+        'Foto de perfil do cão (fotoPerfil) é obrigatória.',
+      );
+    }
+    if (!fotoLateral) {
+      throw new BadRequestException(
+        'Foto lateral do cão (fotoLateral) é obrigatória.',
+      );
+    }
+
+    if (video) {
+      await this.fileUploadService.validateVideoDuration(video.path, 30);
+    }
+
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
-      createCadastroCaoDto,
+      {
+        ...createCadastroCaoDto,
+        fotoPerfil: 'placeholder.jpg',
+        fotoLateral: 'placeholder.jpg',
+      },
+      StatusCadastro.PROCESSANDO,
+    );
+
+    this.processMediaInBackground(
+      cadastro.cadastroId,
+      fotoPerfil,
+      fotoLateral,
+      pedigreeFrente,
+      pedigreeVerso,
+      video,
     );
 
     return this.mapToResponseDto(cadastro);
@@ -300,6 +343,58 @@ export class CadastroCaoService {
     );
 
     return this.mapToResponseDto(cadastroAprovado);
+  }
+
+  private async processMediaInBackground(
+    cadastroId: string,
+    fotoPerfil: Express.Multer.File,
+    fotoLateral: Express.Multer.File,
+    pedigreeFrente?: Express.Multer.File,
+    pedigreeVerso?: Express.Multer.File,
+    video?: Express.Multer.File,
+  ): Promise<void> {
+    try {
+      const [
+        fotoPerfilUrl,
+        fotoLateralUrl,
+        pedigreeFrenteUrl,
+        pedigreeVersoUrl,
+        videoUrl,
+      ] = await Promise.all([
+        this.fileUploadService.processUploadedFile(fotoPerfil, 'dogProfile'),
+        this.fileUploadService.processUploadedFile(fotoLateral, 'dogLateral'),
+        pedigreeFrente
+          ? this.fileUploadService.processUploadedFile(
+              pedigreeFrente,
+              'dogPedigree',
+            )
+          : Promise.resolve(undefined),
+        pedigreeVerso
+          ? this.fileUploadService.processUploadedFile(
+              pedigreeVerso,
+              'dogPedigree',
+            )
+          : Promise.resolve(undefined),
+        video
+          ? this.fileUploadService.processUploadedFile(video, 'dogVideo')
+          : Promise.resolve(undefined),
+      ]);
+
+      await this.cadastroCaoRepository.update(cadastroId, {
+        fotoPerfil: fotoPerfilUrl?.url,
+        fotoLateral: fotoLateralUrl?.url,
+        pedigreeFrente: pedigreeFrenteUrl?.url,
+        pedigreeVerso: pedigreeVersoUrl?.url,
+        videoUrl: videoUrl?.url,
+        status: 'PENDENTE',
+      });
+    } catch (error) {
+      console.error(`Erro ao processar mídia para o cadastro ${cadastroId}:`, error);
+      await this.cadastroCaoRepository.update(cadastroId, {
+        status: 'REJEITADO',
+        motivoRejeicao: 'Erro no processamento de mídia.',
+      });
+    }
   }
 
   /**
