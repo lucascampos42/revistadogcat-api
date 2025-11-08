@@ -12,6 +12,7 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import {
   FileFieldsInterceptor,
@@ -48,6 +49,7 @@ import { Role } from '@prisma/client';
 @ApiTags('Cadastro de Cães')
 @Controller('cadastro-cao')
 export class CadastroCaoController {
+  private readonly logger = new Logger(CadastroCaoController.name);
   constructor(
     private readonly cadastroCaoService: CadastroCaoService,
     private readonly fileUploadService: FileUploadService,
@@ -64,6 +66,7 @@ export class CadastroCaoController {
       { name: 'fotoLateral', maxCount: 1 },
       { name: 'pedigreeFrente', maxCount: 1 },
       { name: 'pedigreeVerso', maxCount: 1 },
+      { name: 'video', maxCount: 1 },
     ]),
   )
   @ApiResponse({
@@ -75,15 +78,17 @@ export class CadastroCaoController {
   @ApiResponse({ status: 401, description: 'Não autorizado' })
   async create(
     @Request() req,
-    @Body() createCadastroCaoDto: CreateCadastroCaoDto,
     @UploadedFiles()
     files: {
       fotoPerfil?: Express.Multer.File[];
       fotoLateral?: Express.Multer.File[];
       pedigreeFrente?: Express.Multer.File[];
       pedigreeVerso?: Express.Multer.File[];
+      video?: Express.Multer.File[];
     },
   ): Promise<CadastroCaoResponseDto> {
+    this.logger.log(`Content-Type: ${req.headers['content-type']}`);
+    const createCadastroCaoDto: CreateCadastroCaoDto = req.body;
     return this.cadastroCaoService.create(
       req.user.userId,
       createCadastroCaoDto,
@@ -91,6 +96,7 @@ export class CadastroCaoController {
       files.fotoLateral?.[0],
       files.pedigreeFrente?.[0],
       files.pedigreeVerso?.[0],
+      files.video?.[0],
     );
   }
 

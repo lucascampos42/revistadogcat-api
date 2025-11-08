@@ -189,6 +189,7 @@ enum VideoOption {
 }
 
 enum StatusCadastro {
+  PROCESSANDO
   PENDENTE
   APROVADO
   REJEITADO

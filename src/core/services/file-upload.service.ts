@@ -4,6 +4,7 @@ import { extname, join } from 'path';
 import { Request } from 'express';
 import { existsSync, mkdirSync } from 'fs';
 import * as sharp from 'sharp';
+import * as ffmpeg from 'fluent-ffmpeg';
 
 export interface FileUploadConfig {
   destination: string;
@@ -258,5 +259,31 @@ export class FileUploadService {
    */
   getAvailableUploadTypes(): string[] {
     return Object.keys(this.uploadConfigs);
+  }
+
+  async validateVideoDuration(
+    filePath: string,
+    maxDuration: number,
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      ffmpeg.ffprobe(filePath, (err, metadata) => {
+        if (err) {
+          return reject(
+            new BadRequestException('Não foi possível ler os metadados do vídeo.'),
+          );
+        }
+
+        const duration = metadata.format.duration;
+        if (duration && duration > maxDuration) {
+          return reject(
+            new BadRequestException(
+              `O vídeo excede a duração máxima de ${maxDuration} segundos.`,
+            ),
+          );
+        }
+
+        resolve();
+      });
+    });
   }
 }

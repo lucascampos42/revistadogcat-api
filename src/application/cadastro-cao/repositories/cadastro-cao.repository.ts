@@ -4,7 +4,7 @@ import { CadastroCaoEntity } from '../entities/cadastro-cao.entity';
 import { CreateCadastroCaoDto } from '../dto/create-cadastro-cao.dto';
 import { UpdateCadastroCaoDto } from '../dto/update-cadastro-cao.dto';
 import { ListCadastrosCaoDto } from '../dto/list-cadastros-cao.dto';
-import { VideoOption, Prisma } from '@prisma/client';
+import { VideoOption, Prisma, StatusCadastro } from '@prisma/client';
 
 @Injectable()
 export class CadastroCaoRepository {
@@ -18,6 +18,7 @@ export class CadastroCaoRepository {
       pedigreeFrente?: string;
       pedigreeVerso?: string;
     },
+    status: StatusCadastro,
   ): Promise<CadastroCaoEntity> {
     const {
       proprietarioId,
@@ -37,6 +38,7 @@ export class CadastroCaoRepository {
         fotoLateral,
         pedigreeFrente: pedigreeFrente || null,
         pedigreeVerso: pedigreeVerso || null,
+        status,
       },
       include: { raca: true },
     });
