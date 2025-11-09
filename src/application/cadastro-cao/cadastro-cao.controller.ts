@@ -112,7 +112,10 @@ export class CadastroCaoController {
   })
   @ApiResponse({ status: 400, description: 'Dados invÃ¡lidos' })
   @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
-  @ApiResponse({ status: 403, description: 'Sem permissÃ£o para editar este cadastro' })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissÃ£o para editar este cadastro',
+  })
   @ApiResponse({ status: 404, description: 'Cadastro nÃ£o encontrado' })
   async uploadVideo(
     @Param('id') id: string,
@@ -127,7 +130,9 @@ export class CadastroCaoController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Listar cadastros de cÃ£es com filtros e paginaÃ§Ã£o' })
+  @ApiOperation({
+    summary: 'Listar cadastros de cÃ£es com filtros e paginaÃ§Ã£o',
+  })
   @ApiResponse({
     status: 200,
     description: 'Lista de cadastros retornada com sucesso',
@@ -329,13 +334,19 @@ export class CadastroCaoController {
     @Request() req,
     @Body() updateCadastroCaoDto: UpdateCadastroCaoDto,
   ): Promise<CadastroCaoResponseDto> {
-    return this.cadastroCaoService.updateVideoOption(id, req.user.userId, updateCadastroCaoDto);
+    return this.cadastroCaoService.updateVideoOption(
+      id,
+      req.user.userId,
+      updateCadastroCaoDto,
+    );
   }
 
   @Patch(':id/video')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Atualizar opÃ§Ã£o de vÃ­deo do cadastro (URL/WHATSAPP)' })
+  @ApiOperation({
+    summary: 'Atualizar opÃ§Ã£o de vÃ­deo do cadastro (URL/WHATSAPP)',
+  })
   @ApiResponse({
     status: 200,
     description: 'OpÃ§Ã£o de vÃ­deo atualizada com sucesso',
@@ -343,7 +354,10 @@ export class CadastroCaoController {
   })
   @ApiResponse({ status: 400, description: 'Dados invÃ¡lidos' })
   @ApiResponse({ status: 401, description: 'NÃ£o autorizado' })
-  @ApiResponse({ status: 403, description: 'Sem permissÃ£o para editar este cadastro' })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissÃ£o para editar este cadastro',
+  })
   @ApiResponse({ status: 404, description: 'Cadastro nÃ£o encontrado' })
   async updateVideo(
     @Param('id') id: string,
@@ -354,7 +368,11 @@ export class CadastroCaoController {
     // - videoOption = URL requer videoUrl
     // - videoOption = WHATSAPP nÃ£o requer whatsappContato
     // - NÃ£o aceita upload de arquivo neste endpoint
-    return this.cadastroCaoService.updateVideoOption(id, req.user.userId, updateCadastroCaoDto);
+    return this.cadastroCaoService.updateVideoOption(
+      id,
+      req.user.userId,
+      updateCadastroCaoDto,
+    );
   }
 
   @Delete(':id')
@@ -497,5 +515,3 @@ export class CadastroCaoController {
     return this.cadastroCaoService.findPendentesRaca(limitNumber);
   }
 }
-
-
