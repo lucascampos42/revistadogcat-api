@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/core/prisma/prisma.service';
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
+import { PrismaService } from 'src/core/config/prisma.service';
 
 @Injectable()
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private _calculatePercentageChange(current: number, previous: number): number {
+  private _calculatePercentageChange(
+    current: number,
+    previous: number,
+  ): number {
     if (previous === 0) {
       return current > 0 ? 100 : 0;
     }
@@ -23,60 +26,99 @@ export class DashboardService {
     // Total de Usuários
     const totalUsuarios = await this.prisma.user.count();
     const novosUsuariosMesAtual = await this.prisma.user.count({
-      where: { createdAt: { gte: startOfCurrentMonth, lte: endOfCurrentMonth } },
+      where: {
+        createdAt: { gte: startOfCurrentMonth, lte: endOfCurrentMonth },
+      },
     });
     const novosUsuariosMesAnterior = await this.prisma.user.count({
-      where: { createdAt: { gte: startOfPreviousMonth, lte: endOfPreviousMonth } },
+      where: {
+        createdAt: { gte: startOfPreviousMonth, lte: endOfPreviousMonth },
+      },
     });
-    const porcentagemUsuarios = this._calculatePercentageChange(novosUsuariosMesAtual, novosUsuariosMesAnterior);
+    const porcentagemUsuarios = this._calculatePercentageChange(
+      novosUsuariosMesAtual,
+      novosUsuariosMesAnterior,
+    );
 
     // Artigos Publicados
-    const totalArtigosPublicados = await this.prisma.artigo.count({ where: { status: 'PUBLICADO' } });
+    const totalArtigosPublicados = await this.prisma.artigo.count({
+      where: { status: 'PUBLICADO' },
+    });
     const artigosPublicadosMesAtual = await this.prisma.artigo.count({
-      where: { status: 'PUBLICADO', dataPublicacao: { gte: startOfCurrentMonth, lte: endOfCurrentMonth } },
+      where: {
+        status: 'PUBLICADO',
+        dataPublicacao: { gte: startOfCurrentMonth, lte: endOfCurrentMonth },
+      },
     });
     const artigosPublicadosMesAnterior = await this.prisma.artigo.count({
-      where: { status: 'PUBLICADO', dataPublicacao: { gte: startOfPreviousMonth, lte: endOfPreviousMonth } },
+      where: {
+        status: 'PUBLICADO',
+        dataPublicacao: { gte: startOfPreviousMonth, lte: endOfPreviousMonth },
+      },
     });
-    const porcentagemArtigos = this._calculatePercentageChange(artigosPublicadosMesAtual, artigosPublicadosMesAnterior);
+    const porcentagemArtigos = this._calculatePercentageChange(
+      artigosPublicadosMesAtual,
+      artigosPublicadosMesAnterior,
+    );
 
     // Assinantes Ativos
     const totalAssinantesAtivos = await this.prisma.user.count({
       where: { role: { in: ['ASSINANTE', 'DONO_PET_APROVADO_ASSINANTE'] } },
     });
     const novosAssinantesMesAtual = await this.prisma.user.count({
-        where: {
-            role: { in: ['ASSINANTE', 'DONO_PET_APROVADO_ASSINANTE'] },
-            createdAt: { gte: startOfCurrentMonth, lte: endOfCurrentMonth },
-        },
+      where: {
+        role: { in: ['ASSINANTE', 'DONO_PET_APROVADO_ASSINANTE'] },
+        createdAt: { gte: startOfCurrentMonth, lte: endOfCurrentMonth },
+      },
     });
     const novosAssinantesMesAnterior = await this.prisma.user.count({
-        where: {
-            role: { in: ['ASSINANTE', 'DONO_PET_APROVADO_ASSINANTE'] },
-            createdAt: { gte: startOfPreviousMonth, lte: endOfPreviousMonth },
-        },
+      where: {
+        role: { in: ['ASSINANTE', 'DONO_PET_APROVADO_ASSINANTE'] },
+        createdAt: { gte: startOfPreviousMonth, lte: endOfPreviousMonth },
+      },
     });
-    const porcentagemAssinantes = this._calculatePercentageChange(novosAssinantesMesAtual, novosAssinantesMesAnterior);
+    const porcentagemAssinantes = this._calculatePercentageChange(
+      novosAssinantesMesAtual,
+      novosAssinantesMesAnterior,
+    );
 
     // Visualizações
     const totalVisualizacoes = await this.prisma.artigoView.count();
     const visualizacoesMesAtual = await this.prisma.artigoView.count({
-      where: { createdAt: { gte: startOfCurrentMonth, lte: endOfCurrentMonth } },
+      where: {
+        createdAt: { gte: startOfCurrentMonth, lte: endOfCurrentMonth },
+      },
     });
     const visualizacoesMesAnterior = await this.prisma.artigoView.count({
-      where: { createdAt: { gte: startOfPreviousMonth, lte: endOfPreviousMonth } },
+      where: {
+        createdAt: { gte: startOfPreviousMonth, lte: endOfPreviousMonth },
+      },
     });
-    const porcentagemVisualizacoes = this._calculatePercentageChange(visualizacoesMesAtual, visualizacoesMesAnterior);
+    const porcentagemVisualizacoes = this._calculatePercentageChange(
+      visualizacoesMesAtual,
+      visualizacoesMesAnterior,
+    );
 
     return {
       totalUsuarios: { value: totalUsuarios, percentage: porcentagemUsuarios },
-      artigosPublicados: { value: totalArtigosPublicados, percentage: porcentagemArtigos },
-      assinantesAtivos: { value: totalAssinantesAtivos, percentage: porcentagemAssinantes },
-      visualizacoes: { value: totalVisualizacoes, percentage: porcentagemVisualizacoes },
+      artigosPublicados: {
+        value: totalArtigosPublicados,
+        percentage: porcentagemArtigos,
+      },
+      assinantesAtivos: {
+        value: totalAssinantesAtivos,
+        percentage: porcentagemAssinantes,
+      },
+      visualizacoes: {
+        value: totalVisualizacoes,
+        percentage: porcentagemVisualizacoes,
+      },
     };
   }
 
-  async getMonthlyGrowth(): Promise<{ month: string; year: number; count: number }[]> {
+  async getMonthlyGrowth(): Promise<
+    { month: string; year: number; count: number }[]
+  > {
     const monthlyGrowth: { month: string; year: number; count: number }[] = [];
     const now = new Date();
 
