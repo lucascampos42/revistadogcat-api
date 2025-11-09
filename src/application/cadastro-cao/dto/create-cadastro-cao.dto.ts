@@ -8,6 +8,7 @@ import {
   ValidateIf,
   IsUrl,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SexoCao, VideoOption } from '@prisma/client';
 
@@ -67,6 +68,16 @@ export class CreateCadastroCaoDto {
 
   @ApiPropertyOptional({ description: 'Se o cão tem pedigree', default: false })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const v = value.trim().toLowerCase();
+      if (v === 'true') return true;
+      if (v === 'false') return false;
+    }
+    return Boolean(value);
+  })
   @IsBoolean()
   temPedigree?: boolean;
 
@@ -81,6 +92,16 @@ export class CreateCadastroCaoDto {
     default: false,
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const v = value.trim().toLowerCase();
+      if (v === 'true') return true;
+      if (v === 'false') return false;
+    }
+    return Boolean(value);
+  })
   @IsBoolean()
   temMicrochip?: boolean;
 

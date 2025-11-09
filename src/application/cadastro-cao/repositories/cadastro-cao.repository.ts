@@ -29,9 +29,37 @@ export class CadastroCaoRepository {
       ...restOfData
     } = data;
 
+    const toBoolean = (val: any): boolean | undefined => {
+      if (val === undefined || val === null || val === '') return undefined;
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'string') {
+        const v = val.trim().toLowerCase();
+        if (v === 'true') return true;
+        if (v === 'false') return false;
+      }
+      return Boolean(val);
+    };
+
+    const sanitizedData: any = {
+      ...restOfData,
+      temPedigree: toBoolean((restOfData as any).temPedigree),
+      temMicrochip: toBoolean((restOfData as any).temMicrochip),
+    };
+
+    console.log('[CadastroCaoRepository.create] tipos antes do prisma:', {
+      temPedigree: {
+        value: sanitizedData.temPedigree,
+        typeof: typeof sanitizedData.temPedigree,
+      },
+      temMicrochip: {
+        value: sanitizedData.temMicrochip,
+        typeof: typeof sanitizedData.temMicrochip,
+      },
+    });
+
     const cadastro = await this.prisma.cadastroCao.create({
       data: {
-        ...restOfData,
+        ...sanitizedData,
         userId: userId,
         dataNascimento: new Date(data.dataNascimento),
         fotoPerfil,
@@ -69,17 +97,14 @@ export class CadastroCaoRepository {
       where.sexo = params.sexo;
     }
 
-    // Filtro por status
     if (params.status) {
       where.status = params.status as any;
     }
 
-    // Filtro por ativo/inativo
     if (params.ativo !== undefined) {
       where.ativo = params.ativo === 'true';
     }
 
-    // Filtro apenas cadastros pendentes de validação
     if (params.pendentesValidacao === 'true') {
       where.status = 'PENDENTE';
     }
@@ -186,6 +211,17 @@ export class CadastroCaoRepository {
     cadastroId: string,
     data: UpdateCadastroCaoDto,
   ): Promise<CadastroCaoEntity> {
+    const toBoolean = (val: any): boolean | undefined => {
+      if (val === undefined || val === null || val === '') return undefined;
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'string') {
+        const v = val.trim().toLowerCase();
+        if (v === 'true') return true;
+        if (v === 'false') return false;
+      }
+      return Boolean(val);
+    };
+
     const updateData: any = { ...data };
 
     if (data.dataNascimento) {
@@ -196,6 +232,26 @@ export class CadastroCaoRepository {
       updateData.raca = { connect: { racaId: data.racaId } };
       delete updateData.racaId;
     }
+
+    // Normalização defensiva em updates também (caso o front envie strings)
+    if (updateData.temPedigree !== undefined) {
+      updateData.temPedigree = toBoolean(updateData.temPedigree);
+    }
+    if (updateData.temMicrochip !== undefined) {
+      updateData.temMicrochip = toBoolean(updateData.temMicrochip);
+    }
+
+    // eslint-disable-next-line no-console
+    console.log('[CadastroCaoRepository.update] tipos antes do prisma:', {
+      temPedigree: {
+        value: updateData.temPedigree,
+        typeof: typeof updateData.temPedigree,
+      },
+      temMicrochip: {
+        value: updateData.temMicrochip,
+        typeof: typeof updateData.temMicrochip,
+      },
+    });
 
     const cadastro = await this.prisma.cadastroCao.update({
       where: { cadastroId },
@@ -380,9 +436,6 @@ export class CadastroCaoRepository {
     return new CadastroCaoEntity(cadastro);
   }
 
-  /**
-   * Conta cadastros pendentes de validação
-   */
   async countPendentesValidacao(): Promise<number> {
     return this.prisma.cadastroCao.count({
       where: {
@@ -392,9 +445,6 @@ export class CadastroCaoRepository {
     });
   }
 
-  /**
-   * Lista cadastros pendentes de validação
-   */
   async findPendentesValidacao(
     limit: number = 50,
   ): Promise<CadastroCaoEntity[]> {
@@ -423,9 +473,7 @@ export class CadastroCaoRepository {
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
 
-  /**
-   * Lista cadastros com raças pendentes de aprovação
-   */
+
   async findPendentesRaca(limit: number = 50): Promise<CadastroCaoEntity[]> {
     const cadastros = await this.prisma.cadastroCao.findMany({
       where: {
