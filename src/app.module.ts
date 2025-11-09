@@ -18,9 +18,11 @@ import type { JwtSignOptions } from '@nestjs/jwt';
 import { RacaModule } from './application/raca/raca.module';
 import { EdicaoModule } from './application/edicao/edicao.module';
 import { VotacaoModule } from './application/votacao/votacao.module';
+import { DashboardModule } from './application/dashboard/dashboard.module';
 
 @Module({
   imports: [
+    DashboardModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [mailConfig],
