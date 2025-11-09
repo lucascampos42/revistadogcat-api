@@ -154,4 +154,39 @@ export class DashboardService {
       count: item._count.role,
     }));
   }
+
+  /**
+   * Estatísticas de cadastro de cães
+   * - Crescimento mensal de novos cadastros
+   * - Quantidade de cadastros com status CADASTRO_INCOMPLETO
+   */
+  async getDogsStats(): Promise<{
+    monthlyGrowth: { month: string; year: number; count: number }[];
+    incompleteCount: number;
+  }> {
+    const monthlyGrowth: { month: string; year: number; count: number }[] = [];
+    const now = new Date();
+
+    for (let i = 11; i >= 0; i--) {
+      const date = subMonths(now, i);
+      const start = startOfMonth(date);
+      const end = endOfMonth(date);
+
+      const count = await this.prisma.cadastroCao.count({
+        where: { createdAt: { gte: start, lte: end } },
+      });
+
+      monthlyGrowth.push({
+        month: start.toLocaleString('default', { month: 'long' }),
+        year: start.getFullYear(),
+        count,
+      });
+    }
+
+    const incompleteCount = await this.prisma.cadastroCao.count({
+      where: { status: 'CADASTRO_INCOMPLETO' },
+    });
+
+    return { monthlyGrowth, incompleteCount };
+  }
 }

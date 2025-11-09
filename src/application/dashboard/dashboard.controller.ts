@@ -13,12 +13,14 @@ export class DashboardController {
     const cards = await this.dashboardService.getDashboardCards();
     const monthlyGrowth = await this.dashboardService.getMonthlyGrowth();
     const userDistribution = await this.dashboardService.getUserDistribution();
+    const dogsStats = await this.dashboardService.getDogsStats();
 
     // Padroniza a resposta com o wrapper utilizado pelo frontend
     return ResponseHelper.success({
       cards,
       monthlyGrowth,
       userDistribution,
+      dogsStats,
     });
   }
 }
