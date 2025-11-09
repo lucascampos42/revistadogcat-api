@@ -163,6 +163,9 @@ export class DashboardService {
   async getDogsStats(): Promise<{
     monthlyGrowth: { month: string; year: number; count: number }[];
     incompleteCount: number;
+    totalCount: number;
+    approvedCount: number;
+    rejectedCount: number;
   }> {
     const monthlyGrowth: { month: string; year: number; count: number }[] = [];
     const now = new Date();
@@ -173,7 +176,7 @@ export class DashboardService {
       const end = endOfMonth(date);
 
       const count = await this.prisma.cadastroCao.count({
-        where: { createdAt: { gte: start, lte: end } },
+        where: { createdAt: { gte: start, lte: end }, deletedAt: null },
       });
 
       monthlyGrowth.push({
@@ -183,10 +186,26 @@ export class DashboardService {
       });
     }
 
-    const incompleteCount = await this.prisma.cadastroCao.count({
-      where: { status: 'CADASTRO_INCOMPLETO' },
-    });
+    const [incompleteCount, totalCount, approvedCount, rejectedCount] =
+      await Promise.all([
+        this.prisma.cadastroCao.count({
+          where: { status: 'CADASTRO_INCOMPLETO', deletedAt: null },
+        }),
+        this.prisma.cadastroCao.count({ where: { deletedAt: null } }),
+        this.prisma.cadastroCao.count({
+          where: { status: 'APROVADO', deletedAt: null },
+        }),
+        this.prisma.cadastroCao.count({
+          where: { status: 'REJEITADO', deletedAt: null },
+        }),
+      ]);
 
-    return { monthlyGrowth, incompleteCount };
+    return {
+      monthlyGrowth,
+      incompleteCount,
+      totalCount,
+      approvedCount,
+      rejectedCount,
+    };
   }
 }

@@ -58,9 +58,6 @@ import { Request, Response } from 'express';
 export class ArtigoController {
   constructor(private readonly artigoService: ArtigoService) {}
 
-  /**
-   * Processa upload de imagem e retorna a URL
-   */
   private async processImageUpload(
     file?: Express.Multer.File,
   ): Promise<string | null> {
@@ -69,12 +66,10 @@ export class ArtigoController {
     }
 
     try {
-      // Gerar nome único para o arquivo AVIF
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
       const avifFilename = `artigo-${uniqueSuffix}.avif`;
       const avifPath = join(process.cwd(), 'uploads', 'artigos', avifFilename);
 
-      // Converter imagem para AVIF usando Sharp
       await sharp(file.path)
         .avif({
           quality: 80,
@@ -82,7 +77,6 @@ export class ArtigoController {
         })
         .toFile(avifPath);
 
-      // Remover arquivo original após conversão
       await fs.unlink(file.path);
 
       return `/uploads/artigos/${avifFilename}`;
@@ -160,21 +154,19 @@ export class ArtigoController {
     @Body() createArtigoDto: CreateArtigoWithImageDto,
     @UploadedFile() imagemCapa?: Express.Multer.File,
   ): Promise<ArtigoResponseDto> {
-    // Processar upload da imagem se fornecida
     const imagemCapaUrl = await this.processImageUpload(imagemCapa);
 
-    // Converter conteúdo de string para objeto JSON
-    let conteudoJson;
+    // Evita "unsafe any" ao tipar corretamente o JSON do conteúdo
+    let conteudoJson: unknown;
     try {
       conteudoJson =
         typeof createArtigoDto.conteudo === 'string'
           ? JSON.parse(createArtigoDto.conteudo)
           : createArtigoDto.conteudo;
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Conteúdo deve ser um JSON válido');
     }
 
-    // Criar DTO para o serviço
     const artigoData: CreateArtigoDto = {
       ...createArtigoDto,
       conteudo: conteudoJson,
@@ -212,6 +204,20 @@ export class ArtigoController {
     @Query() listArtigosDto: ListArtigosDto,
   ): Promise<ArtigosListResponseDto> {
     return this.artigoService.findPublicados(listArtigosDto);
+  }
+
+  @Get('publicados/categorias')
+  @IsPublic()
+  @ApiOperation({
+    summary: 'Listar categorias dos artigos publicados (público)',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categorias listadas com sucesso',
+  })
+  async listarCategoriasPublicadas(): Promise<{ data: string[] }> {
+    const categorias = await this.artigoService.listarCategoriasPublicadas();
+    return { data: categorias };
   }
 
   @Get('artigos-homepage')
@@ -283,7 +289,7 @@ export class ArtigoController {
       res.setHeader('Content-Type', contentType);
 
       return res.sendFile(filename, { root: 'uploads/artigos' });
-    } catch (err) {
+    } catch {
       return res
         .status(404)
         .json({ message: 'Imagem não encontrada', filename });
@@ -339,7 +345,7 @@ export class ArtigoController {
         callback(null, true);
       },
       limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
+        fileSize: 5 * 1024 * 1024,
       },
     }),
   )
@@ -378,26 +384,23 @@ export class ArtigoController {
     @Body() updateArtigoDto: UpdateArtigoWithImageDto,
     @UploadedFile() imagemCapa?: Express.Multer.File,
   ): Promise<ArtigoResponseDto> {
-    // Processar upload da imagem se fornecida
     const imagemCapaUrl = await this.processImageUpload(imagemCapa);
 
-    // Converter conteúdo de string para objeto JSON se fornecido
-    let conteudoJson;
+    let conteudoJson: unknown;
     if (updateArtigoDto.conteudo) {
       try {
         conteudoJson =
           typeof updateArtigoDto.conteudo === 'string'
             ? JSON.parse(updateArtigoDto.conteudo)
             : updateArtigoDto.conteudo;
-      } catch (error) {
+      } catch {
         throw new BadRequestException('Conteúdo deve ser um JSON válido');
       }
     }
 
-    // Criar DTO para o serviço
     const artigoData: UpdateArtigoDto = {
       ...updateArtigoDto,
-      ...(conteudoJson && { conteudo: conteudoJson }),
+      ...(conteudoJson !== undefined && { conteudo: conteudoJson as object }),
       ...(imagemCapaUrl && { imagemCapa: imagemCapaUrl }),
     };
 

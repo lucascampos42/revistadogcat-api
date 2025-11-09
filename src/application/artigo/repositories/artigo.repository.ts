@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../core/config/prisma.service';
 import { ArtigoEntity } from '../entities/artigo.entity';
 import { CreateArtigoDto } from '../dto/create-artigo.dto';
@@ -163,10 +163,6 @@ export class ArtigoRepository {
     });
   }
 
-  /**
-   * Define explicitamente o total de curtidas do artigo.
-   * Usado quando o total é calculado pelo repositório de curtidas (toggle) e precisamos sincronizar o contador.
-   */
   async setCurtidas(artigoId: string, total: number): Promise<void> {
     await this.prisma.artigo.update({
       where: { artigoId },
@@ -196,5 +192,18 @@ export class ArtigoRepository {
     });
 
     return artigos.map((artigo) => new ArtigoEntity(artigo));
+  }
+
+  async findCategoriasPublicadas(): Promise<string[]> {
+    const result = await this.prisma.artigo.findMany({
+      where: {
+        deletedAt: null,
+        status: StatusArtigo.PUBLICADO,
+      },
+      select: { categoria: true },
+      distinct: ['categoria'],
+    });
+
+    return result.map((r) => r.categoria as unknown as string);
   }
 }

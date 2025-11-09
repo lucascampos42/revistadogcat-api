@@ -23,7 +23,6 @@ import {
 } from './dto/curtir-artigo.dto';
 import { ArtigoEntity } from './entities/artigo.entity';
 import { ComentarioEntity } from './entities/comentario.entity';
-import { StatusArtigo } from '@prisma/client';
 
 @Injectable()
 export class ArtigoService {
@@ -87,6 +86,10 @@ export class ArtigoService {
     };
   }
 
+  async listarCategoriasPublicadas(): Promise<string[]> {
+    return this.artigoRepository.findCategoriasPublicadas();
+  }
+
   async findOne(
     artigoId: string,
     incrementView: boolean = false,
@@ -104,9 +107,6 @@ export class ArtigoService {
     return this.mapToResponseDto(artigo);
   }
 
-  /**
-   * Registra uma visualização de artigo com controle por fingerprint
-   */
   async registrarVisualizacao(
     artigoId: string,
     viewData: ViewArtigoDto,
@@ -138,9 +138,6 @@ export class ArtigoService {
     };
   }
 
-  /**
-   * Verifica se um fingerprint já visualizou o artigo
-   */
   async verificarVisualizacao(
     artigoId: string,
     fingerprint: string,
@@ -180,9 +177,6 @@ export class ArtigoService {
     await this.artigoRepository.delete(artigoId);
   }
 
-  /**
-   * Toggle curtida em um artigo (adiciona ou remove baseado no fingerprint)
-   */
   async toggleCurtida(
     artigoId: string,
     curtidaData: CurtirArtigoDto,
@@ -212,9 +206,6 @@ export class ArtigoService {
     return await this.artigoCurtidaRepository.hasCurtida(artigoId, fingerprint);
   }
 
-  /**
-   * Obtém estatísticas de curtidas de um artigo
-   */
   async obterEstatisticasCurtidas(artigoId: string, days: number = 30) {
     const artigo = await this.artigoRepository.findById(artigoId);
     if (!artigo) {
@@ -232,8 +223,6 @@ export class ArtigoService {
 
     return await this.artigoViewRepository.getViewStats(artigoId, days);
   }
-
-  // --- Métodos legados (manter compatibilidade) ---
 
   async curtir(artigoId: string): Promise<ArtigoResponseDto> {
     const artigo = await this.artigoRepository.findById(artigoId);
@@ -264,8 +253,6 @@ export class ArtigoService {
     const artigos = await this.artigoRepository.findDestaques(limit);
     return artigos.map((artigo) => this.mapToResponseDto(artigo));
   }
-
-  // --- Comentários ---
 
   async findComentariosByArtigoId(
     artigoId: string,
@@ -334,8 +321,6 @@ export class ArtigoService {
 
     await this.comentarioRepository.delete(comentarioId);
   }
-
-  // --- Mappers ---
 
   private mapToResponseDto(artigo: ArtigoEntity): ArtigoResponseDto {
     if (!artigo.autor) {

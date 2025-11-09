@@ -121,6 +121,8 @@ export class CadastroCaoService {
       'CADASTRO_INCOMPLETO',
     );
 
+    console.log('Novo cadastro criado com status:', cadastro.status);
+
     this.processMediaInBackground(
       cadastro.cadastroId,
       fotoPerfil,
