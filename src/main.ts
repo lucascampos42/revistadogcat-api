@@ -30,21 +30,7 @@ async function bootstrap() {
   }
 
   app.enableCors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      if (origin.endsWith('.revistadogcat.com.br')) {
-        Logger.log(`CORS permitiu subdomínio: ${origin}`);
-        return callback(null, true);
-      }
-
-      Logger.warn(`CORS bloqueou origem não permitida: ${origin}`);
-      return callback(new Error('Não permitido pelo CORS'), false);
-    },
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [

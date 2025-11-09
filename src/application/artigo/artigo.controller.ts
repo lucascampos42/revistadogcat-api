@@ -261,8 +261,33 @@ export class ArtigoController {
 
   @IsPublic()
   @Get('imagem/:filename')
-  seeUploadedFile(@Param('filename') filename, @Res() res: Response) {
-    return res.sendFile(filename, { root: 'uploads/artigos' });
+  async seeUploadedFile(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const filePath = join(process.cwd(), 'uploads', 'artigos', filename);
+      await fs.access(filePath);
+
+      // Define Content-Type explicitamente para evitar bloqueios/ORB em navegadores
+      const ext = extname(filename).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.avif': 'image/avif',
+        '.webp': 'image/webp',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+      };
+      const contentType = mimeMap[ext] || 'application/octet-stream';
+      res.setHeader('Content-Type', contentType);
+
+      return res.sendFile(filename, { root: 'uploads/artigos' });
+    } catch (err) {
+      return res
+        .status(404)
+        .json({ message: 'Imagem não encontrada', filename });
+    }
   }
 
   @Get(':id')
