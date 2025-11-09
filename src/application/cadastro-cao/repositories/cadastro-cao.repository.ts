@@ -375,7 +375,9 @@ export class CadastroCaoRepository {
       include: {
         user: {
           select: {
+            userId: true,
             name: true,
+            email: true,
             enderecos: {
               where: { principal: true },
               select: {
