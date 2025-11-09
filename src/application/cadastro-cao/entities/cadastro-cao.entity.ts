@@ -1,6 +1,13 @@
 import { SexoCao, VideoOption, StatusCadastro } from '@prisma/client';
 import { RacaEntity } from '../../raca/entities/raca.entity';
 
+interface UserInCaoEntity {
+  userId: string;
+  name: string;
+  email: string;
+  telefone?: string | null;
+}
+
 export class CadastroCaoEntity {
   cadastroId: string;
   userId: string;
@@ -35,11 +42,15 @@ export class CadastroCaoEntity {
   totalVotos: number;
   ativo: boolean;
   raca?: RacaEntity | null;
+  user?: UserInCaoEntity | null;
 
   constructor(data: Partial<CadastroCaoEntity>) {
     Object.assign(this, data);
     if (data.raca) {
       this.raca = new RacaEntity(data.raca as any);
+    }
+    if (data.user) {
+      this.user = data.user;
     }
   }
 

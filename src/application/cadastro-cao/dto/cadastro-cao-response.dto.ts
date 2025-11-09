@@ -8,6 +8,15 @@ export class CadastroCaoResponseDto {
   @ApiProperty({ description: 'ID do usuário proprietário do cão' })
   userId: string;
 
+  @ApiPropertyOptional({
+    description: 'Proprietário do cão',
+    type: 'object',
+    properties: {
+      nome: { type: 'string', example: 'Fulano de Tal' },
+    },
+  })
+  proprietario?: { nome: string };
+
   @ApiProperty({ description: 'Nome do cão' })
   nome: string;
 

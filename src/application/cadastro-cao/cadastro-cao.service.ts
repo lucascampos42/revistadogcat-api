@@ -387,6 +387,7 @@ export class CadastroCaoService {
     return {
       cadastroId: cadastro.cadastroId,
       userId: cadastro.userId,
+      proprietario: cadastro.user ? { nome: cadastro.user.name } : undefined,
       nome: cadastro.nome,
       raca: cadastro.raca ? cadastro.raca.nome : undefined,
       racaSugerida: cadastro.racaSugerida || undefined,
