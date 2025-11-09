@@ -8,6 +8,7 @@ import {
   ValidateIf,
   IsUrl,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { SexoCao, VideoOption } from '@prisma/client';
 
@@ -55,18 +56,6 @@ export class CreateCadastroCaoDto {
   @IsDateString()
   dataNascimento: string;
 
-  // @ApiProperty({ description: 'URL da foto de perfil do cão' })
-  // @IsString()
-  // @IsNotEmpty()
-  // @IsUrl()
-  // fotoPerfil: string;
-
-  // @ApiProperty({ description: 'URL da foto lateral do cão' })
-  // @IsString()
-  // @IsNotEmpty()
-  // @IsUrl()
-  // fotoLateral: string;
-
   @ApiPropertyOptional({ description: 'Peso do cão', example: '25kg' })
   @IsOptional()
   @IsString()
@@ -79,6 +68,16 @@ export class CreateCadastroCaoDto {
 
   @ApiPropertyOptional({ description: 'Se o cão tem pedigree', default: false })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const v = value.trim().toLowerCase();
+      if (v === 'true') return true;
+      if (v === 'false') return false;
+    }
+    return Boolean(value);
+  })
   @IsBoolean()
   temPedigree?: boolean;
 
@@ -88,23 +87,21 @@ export class CreateCadastroCaoDto {
   @IsString()
   registroPedigree?: string;
 
-  // @ApiPropertyOptional({ description: 'URL do arquivo do pedigree (frente)' })
-  // @ValidateIf((o) => o.temPedigree === true)
-  // @IsNotEmpty()
-  // @IsUrl()
-  // pedigreeFrente?: string;
-
-  // @ApiPropertyOptional({ description: 'URL do arquivo do pedigree (verso)' })
-  // @ValidateIf((o) => o.temPedigree === true)
-  // @IsNotEmpty()
-  // @IsUrl()
-  // pedigreeVerso?: string;
-
   @ApiPropertyOptional({
     description: 'Se o cão tem microchip',
     default: false,
   })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+      const v = value.trim().toLowerCase();
+      if (v === 'true') return true;
+      if (v === 'false') return false;
+    }
+    return Boolean(value);
+  })
   @IsBoolean()
   temMicrochip?: boolean;
 
@@ -129,11 +126,10 @@ export class CreateCadastroCaoDto {
   @IsEnum(VideoOption)
   videoOption?: VideoOption;
 
-  @ApiPropertyOptional({ description: 'URL do vídeo' })
-  @ValidateIf(
-    (o) =>
-      o.videoOption === VideoOption.UPLOAD || o.videoOption === VideoOption.URL,
-  )
+  @ApiPropertyOptional({
+    description: 'URL do vídeo (YouTube ou outra plataforma)',
+  })
+  @ValidateIf((o) => o.videoOption === VideoOption.URL)
   @IsOptional()
   @IsUrl()
   videoUrl?: string;

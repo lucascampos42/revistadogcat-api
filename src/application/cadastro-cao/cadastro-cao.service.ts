@@ -1,9 +1,8 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
   ForbiddenException,
-  Inject,
 } from '@nestjs/common';
 import { CadastroCaoRepository } from './repositories/cadastro-cao.repository';
 import { CreateCadastroCaoDto } from './dto/create-cadastro-cao.dto';
@@ -33,16 +32,15 @@ export class CadastroCaoService {
     fotoLateral: Express.Multer.File | undefined,
     pedigreeFrente?: Express.Multer.File,
     pedigreeVerso?: Express.Multer.File,
-    video?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     let proprietarioFinalId: string;
 
     if (!fotoPerfil) {
-      throw new BadRequestException('A foto de perfil é obrigatória.');
+      throw new BadRequestException('A foto de perfil Ã© obrigatÃ³ria.');
     }
 
     if (!fotoLateral) {
-      throw new BadRequestException('A foto lateral é obrigatória.');
+      throw new BadRequestException('A foto lateral Ã© obrigatÃ³ria.');
     }
 
     if (createCadastroCaoDto.proprietarioId) {
@@ -51,7 +49,7 @@ export class CadastroCaoService {
       );
       if (!proprietario) {
         throw new BadRequestException(
-          `Proprietário com ID '${createCadastroCaoDto.proprietarioId}' não encontrado.`,
+          `ProprietÃ¡rio com ID '${createCadastroCaoDto.proprietarioId}' nÃ£o encontrado.`,
         );
       }
       proprietarioFinalId = createCadastroCaoDto.proprietarioId;
@@ -61,11 +59,11 @@ export class CadastroCaoService {
 
     const dataNascimento = new Date(createCadastroCaoDto.dataNascimento);
     if (isNaN(dataNascimento.getTime())) {
-      throw new BadRequestException('Data de nascimento inválida');
+      throw new BadRequestException('Data de nascimento invÃ¡lida');
     }
     if (dataNascimento > new Date()) {
       throw new BadRequestException(
-        'Data de nascimento não pode ser no futuro',
+        'Data de nascimento nÃ£o pode ser no futuro',
       );
     }
 
@@ -74,27 +72,48 @@ export class CadastroCaoService {
       (createCadastroCaoDto.racaId && createCadastroCaoDto.racaSugerida)
     ) {
       throw new BadRequestException(
-        'Você deve fornecer ou um `racaId` de uma raça existente ou uma `racaSugerida`, mas não ambos.',
+        'VocÃª deve fornecer ou um `racaId` de uma raÃ§a existente ou uma `racaSugerida`, mas nÃ£o ambos.',
       );
     }
 
+    const normalizeBoolean = (val: any): boolean | undefined => {
+      if (val === undefined || val === null || val === '') return undefined;
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'string') {
+        const v = val.trim().toLowerCase();
+        if (v === 'true') return true;
+        if (v === 'false') return false;
+      }
+      return Boolean(val);
+    };
+
+    createCadastroCaoDto.temPedigree = normalizeBoolean(
+      createCadastroCaoDto.temPedigree,
+    );
+    createCadastroCaoDto.temMicrochip = normalizeBoolean(
+      createCadastroCaoDto.temMicrochip,
+    );
+
+    // Removido suporte a vÃ­deo no cadastro inicial
+    // Cadastro inicial nÃ£o aceita vÃ­deo: forÃ§a NONE e limpa campos
+    createCadastroCaoDto.videoOption = VideoOption.NONE;
+    createCadastroCaoDto.videoUrl = undefined;
+    createCadastroCaoDto.whatsappContato = undefined;
+
     this.validateConditionalData(createCadastroCaoDto);
 
-    // Garantir que as fotos obrigatórias foram enviadas
     if (!fotoPerfil) {
       throw new BadRequestException(
-        'Foto de perfil do cão (fotoPerfil) é obrigatória.',
+        'Foto de perfil do cÃ£o (fotoPerfil) Ã© obrigatÃ³ria.',
       );
     }
     if (!fotoLateral) {
       throw new BadRequestException(
-        'Foto lateral do cão (fotoLateral) é obrigatória.',
+        'Foto lateral do cÃ£o (fotoLateral) Ã© obrigatÃ³ria.',
       );
     }
 
-    if (video) {
-      await this.fileUploadService.validateVideoDuration(video.path, 30);
-    }
+    // NÃ£o validar vÃ­deo na criaÃ§Ã£o
 
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
@@ -112,7 +131,7 @@ export class CadastroCaoService {
       fotoLateral,
       pedigreeFrente,
       pedigreeVerso,
-      video,
+      undefined,
     );
 
     return this.mapToResponseDto(cadastro);
@@ -145,7 +164,7 @@ export class CadastroCaoService {
     const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
 
     if (!cadastro) {
-      throw new NotFoundException('Cadastro de cão não encontrado');
+      throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
     }
 
     return this.mapToResponseDto(cadastro);
@@ -165,12 +184,12 @@ export class CadastroCaoService {
       await this.cadastroCaoRepository.findById(cadastroId);
 
     if (!existingCadastro) {
-      throw new NotFoundException('Cadastro de cão não encontrado');
+      throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
     }
 
     if (existingCadastro.userId !== userId) {
       throw new ForbiddenException(
-        'Você não tem permissão para editar este cadastro',
+        'VocÃª nÃ£o tem permissÃ£o para editar este cadastro',
       );
     }
 
@@ -183,16 +202,107 @@ export class CadastroCaoService {
     return this.mapToResponseDto(cadastro);
   }
 
+  async updateVideoByUpload(
+    cadastroId: string,
+    userId: string,
+    video?: Express.Multer.File,
+  ): Promise<CadastroCaoResponseDto> {
+    const existingCadastro =
+      await this.cadastroCaoRepository.findById(cadastroId);
+
+    if (!existingCadastro) {
+      throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
+    }
+
+    if (existingCadastro.userId !== userId) {
+      throw new ForbiddenException(
+        'VocÃª nÃ£o tem permissÃ£o para editar este cadastro',
+      );
+    }
+
+    if (!video) {
+      throw new BadRequestException('Arquivo de vÃ­deo Ã© obrigatÃ³rio');
+    }
+
+    if (!video.mimetype?.startsWith('video/')) {
+      throw new BadRequestException('Tipo de arquivo invÃ¡lido para vÃ­deo');
+    }
+    // Validação de tamanho máximo (fallback caso Multer não esteja configurado)
+    const uploadCfg = this.fileUploadService.getUploadConfig('dogVideo');
+        if (video.size > uploadCfg.maxFileSize) {
+      const maxMB = Math.floor(uploadCfg.maxFileSize / (1024 * 1024));
+      throw new BadRequestException(`Arquivo de vídeo excede o tamanho máximo permitido de ${maxMB}MB`);
+    }
+
+    // Validação de duração máxima de 30s
+    await this.fileUploadService.validateVideoDuration(video.path, 30);
+
+    const processed = await this.fileUploadService.processUploadedFile(
+      video,
+      'dogVideo',
+    );
+
+    const cadastroAtualizado = await this.cadastroCaoRepository.update(
+      cadastroId,
+      {
+        videoOption: VideoOption.UPLOAD,
+        videoUrl: processed?.url,
+        whatsappContato: undefined,
+        status: StatusCadastro.PENDENTE,
+      },
+    );
+
+    return this.mapToResponseDto(cadastroAtualizado);
+  }
+
+  /**
+   * Atualiza opção de vídeo (URL/WHATSAPP/NONE) com exclusividade e limpeza de campos não relacionados.
+   */
+  async updateVideoOption(
+    cadastroId: string,
+    userId: string,
+    updateCadastroCaoDto: UpdateCadastroCaoDto,
+  ): Promise<CadastroCaoResponseDto> {
+    const existingCadastro = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!existingCadastro) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+    if (existingCadastro.userId !== userId) {
+      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+    }
+
+    if (updateCadastroCaoDto.videoOption === VideoOption.UPLOAD) {
+      throw new BadRequestException('Envio de arquivo não é aceito neste endpoint. Utilize /cadastro-cao/:id/video/upload');
+    }
+
+    // Exclusividade e regras
+    if (updateCadastroCaoDto.videoOption === VideoOption.URL) {
+      if (!updateCadastroCaoDto.videoUrl) {
+        throw new BadRequestException('videoUrl é obrigatório quando videoOption=URL');
+      }
+      updateCadastroCaoDto.whatsappContato = undefined;
+    } else if (updateCadastroCaoDto.videoOption === VideoOption.WHATSAPP) {
+      updateCadastroCaoDto.videoUrl = undefined;
+    } else if (updateCadastroCaoDto.videoOption === VideoOption.NONE) {
+      updateCadastroCaoDto.videoUrl = undefined;
+      updateCadastroCaoDto.whatsappContato = undefined;
+    }
+
+    this.validateConditionalData(updateCadastroCaoDto);
+
+    const cadastro = await this.cadastroCaoRepository.update(cadastroId, updateCadastroCaoDto);
+    return this.mapToResponseDto(cadastro);
+  }
   async remove(cadastroId: string, userId: string): Promise<void> {
     const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
 
     if (!cadastro) {
-      throw new NotFoundException('Cadastro de cão não encontrado');
+      throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
     }
 
     if (cadastro.userId !== userId) {
       throw new ForbiddenException(
-        'Você não tem permissão para excluir este cadastro',
+        'VocÃª nÃ£o tem permissÃ£o para excluir este cadastro',
       );
     }
 
@@ -246,7 +356,7 @@ export class CadastroCaoService {
     if (data.temPedigree === true) {
       if (!data.registroPedigree) {
         throw new BadRequestException(
-          'Registro do pedigree é obrigatório quando o cão tem pedigree',
+          'Registro do pedigree Ã© obrigatÃ³rio quando o cÃ£o tem pedigree',
         );
       }
     }
@@ -254,30 +364,24 @@ export class CadastroCaoService {
     if (data.temMicrochip === true) {
       if (!data.numeroMicrochip) {
         throw new BadRequestException(
-          'Número do microchip é obrigatório quando o cão tem microchip',
+          'NÃºmero do microchip Ã© obrigatÃ³rio quando o cÃ£o tem microchip',
         );
       }
     }
 
     if (data.videoOption) {
-      if (
-        data.videoOption === VideoOption.UPLOAD ||
-        data.videoOption === VideoOption.URL
-      ) {
+      if (data.videoOption === VideoOption.URL) {
         if (!data.videoUrl) {
           throw new BadRequestException(
-            'URL do vídeo é obrigatória para a opção selecionada',
+            'URL do vÃ­deo Ã© obrigatÃ³ria quando a opÃ§Ã£o selecionada for URL',
           );
         }
       }
 
-      if (data.videoOption === VideoOption.WHATSAPP) {
-        if (!data.whatsappContato) {
-          throw new BadRequestException(
-            'Contato do WhatsApp é obrigatório para a opção selecionada',
-          );
-        }
-      }
+      // Quando a opÃ§Ã£o de vÃ­deo for WHATSAPP, nÃ£o exigimos mais o contato.
+      // Basta marcar que o envio serÃ¡ feito por WhatsApp.
+      // ObservaÃ§Ã£o: Se necessÃ¡rio, a UI pode deduzir WHATSAPP quando nÃ£o houver
+      // arquivo de vÃ­deo nem link fornecido na etapa de envio de vÃ­deo.
     }
   }
 
@@ -319,16 +423,13 @@ export class CadastroCaoService {
     };
   }
 
-  /**
-   * Aprova um cadastro de cão
-   */
   async aprovarCadastro(
     cadastroId: string,
     aprovadoPor: string,
   ): Promise<CadastroCaoResponseDto> {
     const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
     if (!cadastro) {
-      throw new NotFoundException('Cadastro de cão não encontrado');
+      throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
     }
 
     if (cadastro.status !== 'PENDENTE') {
@@ -375,9 +476,7 @@ export class CadastroCaoService {
               'dogPedigree',
             )
           : Promise.resolve(undefined),
-        video
-          ? this.fileUploadService.processUploadedFile(video, 'dogVideo')
-          : Promise.resolve(undefined),
+        video ? (async () => { await this.fileUploadService.validateVideoDuration(video.path, 30); return this.fileUploadService.processUploadedFile(video, 'dogVideo'); })() : Promise.resolve(undefined),
       ]);
 
       await this.cadastroCaoRepository.update(cadastroId, {
@@ -389,17 +488,17 @@ export class CadastroCaoService {
         status: 'PENDENTE',
       });
     } catch (error) {
-      console.error(`Erro ao processar mídia para o cadastro ${cadastroId}:`, error);
+      console.error(
+        `Erro ao processar mÃ­dia para o cadastro ${cadastroId}:`,
+        error,
+      );
       await this.cadastroCaoRepository.update(cadastroId, {
         status: 'REJEITADO',
-        motivoRejeicao: 'Erro no processamento de mídia.',
+        motivoRejeicao: 'Erro no processamento de mÃ­dia.',
       });
     }
   }
 
-  /**
-   * Rejeita um cadastro de cão
-   */
   async rejeitarCadastro(
     cadastroId: string,
     motivoRejeicao: string,
@@ -407,7 +506,7 @@ export class CadastroCaoService {
   ): Promise<CadastroCaoResponseDto> {
     const cadastro = await this.cadastroCaoRepository.findById(cadastroId);
     if (!cadastro) {
-      throw new NotFoundException('Cadastro de cão não encontrado');
+      throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
     }
 
     if (cadastro.status !== 'PENDENTE') {
@@ -417,7 +516,7 @@ export class CadastroCaoService {
     }
 
     if (!motivoRejeicao || motivoRejeicao.trim() === '') {
-      throw new BadRequestException('Motivo da rejeição é obrigatório');
+      throw new BadRequestException('Motivo da rejeiÃ§Ã£o Ã© obrigatÃ³rio');
     }
 
     const cadastroRejeitado = await this.cadastroCaoRepository.rejeitarCadastro(
@@ -429,16 +528,10 @@ export class CadastroCaoService {
     return this.mapToResponseDto(cadastroRejeitado);
   }
 
-  /**
-   * Conta cadastros pendentes de validação
-   */
   async countPendentesValidacao(): Promise<number> {
     return this.cadastroCaoRepository.countPendentesValidacao();
   }
 
-  /**
-   * Lista cadastros pendentes de validação
-   */
   async findPendentesValidacao(
     limit: number = 50,
   ): Promise<CadastroCaoResponseDto[]> {
@@ -447,9 +540,6 @@ export class CadastroCaoService {
     return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
   }
 
-  /**
-   * Lista cadastros com raças pendentes de aprovação
-   */
   async findPendentesRaca(
     limit: number = 50,
   ): Promise<CadastroCaoResponseDto[]> {
@@ -457,3 +547,6 @@ export class CadastroCaoService {
     return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
   }
 }
+
+
+

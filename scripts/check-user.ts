@@ -42,11 +42,15 @@ async function checkAndFixUser(email: string) {
     console.log(`Tentativas:   ${user.loginAttempts}`);
 
     if (user.blockedUntil) {
-      console.log(`Bloqueado até: ${user.blockedUntil.toLocaleString('pt-BR')}`);
+      console.log(
+        `Bloqueado até: ${user.blockedUntil.toLocaleString('pt-BR')}`,
+      );
     }
 
     if (user.lastFailedLogin) {
-      console.log(`Última falha:  ${user.lastFailedLogin.toLocaleString('pt-BR')}`);
+      console.log(
+        `Última falha:  ${user.lastFailedLogin.toLocaleString('pt-BR')}`,
+      );
     }
 
     console.log(`Tem senha:    ${user.password ? '✅ Sim' : '❌ Não'}`);
@@ -89,16 +93,19 @@ async function checkAndFixUser(email: string) {
       console.log('🔐 Testando senha...');
       const testPassword = 'Senha123'; // Senha padrão para teste
       const isMatch = await bcrypt.compare(testPassword, user.password);
-      console.log(`Senha "${testPassword}": ${isMatch ? '✅ Correta' : '❌ Incorreta'}`);
+      console.log(
+        `Senha "${testPassword}": ${isMatch ? '✅ Correta' : '❌ Incorreta'}`,
+      );
 
       if (!isMatch) {
         console.log('\n💡 A senha não é "Senha123". Deseja resetar? (y/n)');
-        console.log('   Execute: npm run reset-password admin@admin.com Senha123');
+        console.log(
+          '   Execute: npm run reset-password admin@admin.com Senha123',
+        );
       }
     }
 
     console.log('\n✅ Verificação concluída!\n');
-
   } catch (error) {
     console.error('❌ Erro ao verificar usuário:', error);
   } finally {
@@ -134,7 +141,6 @@ async function resetPassword(email: string, newPassword: string) {
 
     console.log('✅ Senha resetada com sucesso!');
     console.log(`   Nova senha: ${newPassword}\n`);
-
   } catch (error) {
     console.error('❌ Erro ao resetar senha:', error);
   } finally {
@@ -166,12 +172,17 @@ async function listAllUsers() {
 
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     users.forEach((user) => {
-      const status = !user.active ? '❌ Inativo' : user.blocked ? '🔒 Bloqueado' : '✅ Ativo';
-      console.log(`${status} | ${user.email.padEnd(30)} | ${user.role.padEnd(15)} | Tentativas: ${user.loginAttempts}`);
+      const status = !user.active
+        ? '❌ Inativo'
+        : user.blocked
+          ? '🔒 Bloqueado'
+          : '✅ Ativo';
+      console.log(
+        `${status} | ${user.email.padEnd(30)} | ${user.role.padEnd(15)} | Tentativas: ${user.loginAttempts}`,
+      );
     });
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`\nTotal: ${users.length} usuários\n`);
-
   } catch (error) {
     console.error('❌ Erro ao listar usuários:', error);
   } finally {
@@ -189,11 +200,15 @@ const param2 = args[2];
   if (!command) {
     console.log('\n📚 Uso do script:\n');
     console.log('  npx ts-node scripts/check-user.ts check <email>');
-    console.log('  npx ts-node scripts/check-user.ts reset <email> <nova-senha>');
+    console.log(
+      '  npx ts-node scripts/check-user.ts reset <email> <nova-senha>',
+    );
     console.log('  npx ts-node scripts/check-user.ts list');
     console.log('\n📝 Exemplos:\n');
     console.log('  npx ts-node scripts/check-user.ts check admin@admin.com');
-    console.log('  npx ts-node scripts/check-user.ts reset admin@admin.com Senha123');
+    console.log(
+      '  npx ts-node scripts/check-user.ts reset admin@admin.com Senha123',
+    );
     console.log('  npx ts-node scripts/check-user.ts list\n');
     return;
   }
@@ -211,7 +226,9 @@ const param2 = args[2];
     case 'reset':
       if (!param1 || !param2) {
         console.log('❌ Email e senha são obrigatórios!');
-        console.log('   Uso: npx ts-node scripts/check-user.ts reset <email> <senha>');
+        console.log(
+          '   Uso: npx ts-node scripts/check-user.ts reset <email> <senha>',
+        );
         return;
       }
       await resetPassword(param1, param2);

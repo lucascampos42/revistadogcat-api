@@ -28,8 +28,9 @@ import { VotacaoModule } from './application/votacao/votacao.module';
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET || 'default-secret',
-      signOptions: { 
-        expiresIn: (process.env.JWT_ACCESS_TTL || '1h') as JwtSignOptions['expiresIn']
+      signOptions: {
+        expiresIn: (process.env.JWT_ACCESS_TTL ||
+          '1h') as JwtSignOptions['expiresIn'],
       },
     }),
     AuthModule,

@@ -42,12 +42,12 @@ export class ArtigoRepository {
       destaque: data.destaque || false,
       tags: data.tags || [],
     };
-    
+
     const artigo = await this.prisma.artigo.create({
       data: createData,
       include: this.includeAutorAndComentarios,
     });
-    
+
     return new ArtigoEntity(artigo);
   }
 

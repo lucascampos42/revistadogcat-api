@@ -7,35 +7,42 @@ Criado e mantido por [lucascampos42](https://github.com/lucascampos42).
 ## 🚀 Stack Tecnológica
 
 ### Core
+
 - **[NestJS](https://nestjs.com/)** v11 - Framework Node.js progressivo com TypeScript
 - **[Prisma](https://www.prisma.io/)** v6 - ORM de próxima geração com type-safety
 - **[TypeScript](https://www.typescriptlang.org/)** v5 - Superset tipado do JavaScript
 - **[PostgreSQL](https://www.postgresql.org/)** - Banco de dados relacional
 
 ### Autenticação & Segurança
+
 - **[Passport](https://www.passportjs.org/)** - Middleware de autenticação
 - **[JWT](https://jwt.io/)** - JSON Web Tokens para autenticação stateless
 - **[bcrypt](https://www.npmjs.com/package/bcrypt)** - Hash de senhas
 - **[@nestjs/throttler](https://www.npmjs.com/package/@nestjs/throttler)** - Rate limiting
 
 ### Validação & Transformação
+
 - **[class-validator](https://www.npmjs.com/package/class-validator)** - Validação de DTOs
 - **[class-transformer](https://www.npmjs.com/package/class-transformer)** - Transformação de objetos
 
 ### Documentação & API
+
 - **[@nestjs/swagger](https://www.npmjs.com/package/@nestjs/swagger)** - Documentação OpenAPI
 - **[@scalar/nestjs-api-reference](https://www.npmjs.com/package/@scalar/nestjs-api-reference)** - Interface moderna para documentação
 - **[@compodoc/compodoc](https://www.npmjs.com/package/@compodoc/compodoc)** - Documentação do código
 
 ### E-mail & Notificações
+
 - **[@nestjs-modules/mailer](https://www.npmjs.com/package/@nestjs-modules/mailer)** - Sistema de e-mail
 - **[nodemailer](https://www.npmjs.com/package/nodemailer)** - Envio de e-mails
 
 ### Testes
+
 - **[Jest](https://jestjs.io/)** - Framework de testes
 - **[Supertest](https://www.npmjs.com/package/supertest)** - Testes de integração HTTP
 
 ### Desenvolvimento
+
 - **[ESLint](https://eslint.org/)** - Linting de código
 - **[Prettier](https://prettier.io/)** - Formatação de código
 - **[Docker](https://www.docker.com/)** - Containerização (opcional)
@@ -43,58 +50,65 @@ Criado e mantido por [lucascampos42](https://github.com/lucascampos42).
 ## 🛠️ Tecnologias Utilizadas
 
 ### Core Technologies
-*   **Framework:** [NestJS](https://nestjs.com/) - Framework Node.js progressivo para construir aplicações server-side eficientes e escaláveis.
-*   **Linguagem:** [TypeScript](https://www.typescriptlang.org/) - Superset do JavaScript que adiciona tipagem estática.
-*   **Banco de Dados:** [PostgreSQL](https://www.postgresql.org/) - Sistema de gerenciamento de banco de dados relacional.
-*   **ORM:** [Prisma](https://www.prisma.io/) - ORM de próxima geração para Node.js e TypeScript.
+
+- **Framework:** [NestJS](https://nestjs.com/) - Framework Node.js progressivo para construir aplicações server-side eficientes e escaláveis.
+- **Linguagem:** [TypeScript](https://www.typescriptlang.org/) - Superset do JavaScript que adiciona tipagem estática.
+- **Banco de Dados:** [PostgreSQL](https://www.postgresql.org/) - Sistema de gerenciamento de banco de dados relacional.
+- **ORM:** [Prisma](https://www.prisma.io/) - ORM de próxima geração para Node.js e TypeScript.
 
 ### Funcionalidades de Segurança
-*   **Autenticação:** Sistema completo com JWT (login, registro e refresh tokens)
-*   **Autorização:** RBAC com 5 roles específicos para revista de pets
-*   **Notificações de Segurança:** Alertas por e-mail para atividades suspeitas
-*   **Rate Limiting:** Proteção contra ataques de força bruta
-*   **Logs de Auditoria:** Rastreamento completo de ações dos usuários
+
+- **Autenticação:** Sistema completo com JWT (login, registro e refresh tokens)
+- **Autorização:** RBAC com 5 roles específicos para revista de pets
+- **Notificações de Segurança:** Alertas por e-mail para atividades suspeitas
+- **Rate Limiting:** Proteção contra ataques de força bruta
+- **Logs de Auditoria:** Rastreamento completo de ações dos usuários
 
 ### Qualidade e Desenvolvimento
-*   **Validação:** [class-validator](https://github.com/typestack/class-validator) e [class-transformer](https://github.com/typestack/class-transformer)
-*   **Documentação:** [Swagger](https://swagger.io/) com interface Scalar para documentação interativa
-*   **Testes:** [Jest](https://jestjs.io/) com cobertura de testes unitários e de integração
-*   **Linting:** [ESLint](https://eslint.org/) e [Prettier](https://prettier.io/) para qualidade de código
-*   **Containerização:** [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
+
+- **Validação:** [class-validator](https://github.com/typestack/class-validator) e [class-transformer](https://github.com/typestack/class-transformer)
+- **Documentação:** [Swagger](https://swagger.io/) com interface Scalar para documentação interativa
+- **Testes:** [Jest](https://jestjs.io/) com cobertura de testes unitários e de integração
+- **Linting:** [ESLint](https://eslint.org/) e [Prettier](https://prettier.io/) para qualidade de código
+- **Containerização:** [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
 
 ## 📋 Funcionalidades Principais
 
 ### Gestão de Usuários
-*   **Registro e Login:** Sistema completo de autenticação com JWT
-*   **Perfis de Usuário:** Diferentes tipos de usuários (comum, dono de pet, assinante, etc.)
-*   **Verificação de Conta:** Sistema de verificação por e-mail
-*   **Recuperação de Senha:** Reset seguro de senhas
-*   **Bloqueio/Desbloqueio:** Controle administrativo de contas
+
+- **Registro e Login:** Sistema completo de autenticação com JWT
+- **Perfis de Usuário:** Diferentes tipos de usuários (comum, dono de pet, assinante, etc.)
+- **Verificação de Conta:** Sistema de verificação por e-mail
+- **Recuperação de Senha:** Reset seguro de senhas
+- **Bloqueio/Desbloqueio:** Controle administrativo de contas
 
 ### Sistema de Roles Específico para Revista de Pets
-*   **5 Níveis de Acesso:** Desde usuário comum até admin
-*   **Controle Granular:** Permissões específicas por funcionalidade
-*   **Escalabilidade:** Sistema preparado para novos roles
+
+- **5 Níveis de Acesso:** Desde usuário comum até admin
+- **Controle Granular:** Permissões específicas por funcionalidade
+- **Escalabilidade:** Sistema preparado para novos roles
 
 ### Segurança Avançada
-*   **Rate Limiting:** Proteção contra ataques automatizados
-*   **Logs de Auditoria:** Rastreamento completo de ações
-*   **Notificações de Segurança:** Alertas automáticos por e-mail
-*   **Validação Robusta:** DTOs com validação completa
+
+- **Rate Limiting:** Proteção contra ataques automatizados
+- **Logs de Auditoria:** Rastreamento completo de ações
+- **Notificações de Segurança:** Alertas automáticos por e-mail
+- **Validação Robusta:** DTOs com validação completa
 
 ### Ferramentas de Desenvolvimento
-*   **Docker:** Ambiente containerizado completo ([DOCKER.md](./DOCKER.md))
-*   **Cliente de API:** Coleção do [Bruno](https://www.usebruno.com/) para testes
-*   **Documentação Interativa:** Swagger com interface Scalar
-*   **Testes Automatizados:** Cobertura completa com Jest
+
+- **Docker:** Ambiente containerizado completo ([DOCKER.md](./DOCKER.md))
+- **Cliente de API:** Coleção do [Bruno](https://www.usebruno.com/) para testes
+- **Documentação Interativa:** Swagger com interface Scalar
+- **Testes Automatizados:** Cobertura completa com Jest
 
 ## Como Começar
 
 ### Pré-requisitos
 
-*   [Node.js](https://nodejs.org/en/) (v20 ou superior)
-*   [Docker](https://www.docker.com/) (opcional, para rodar com Docker)
-*   [NPM](https://www.npmjs.com/)
+- [Node.js](https://nodejs.org/en/) (v20 ou superior)
+- [Docker](https://www.docker.com/) (opcional, para rodar com Docker)
+- [NPM](https://www.npmjs.com/)
 
 ### Instalação
 
@@ -172,6 +186,7 @@ Para configurar o envio de e-mails:
 ### Segurança
 
 ⚠️ **Importante:**
+
 - Nunca commite arquivos `.env` com dados sensíveis
 - Use senhas fortes para JWT secrets
 - Configure rate limiting adequadamente
@@ -188,6 +203,7 @@ npm run seed
 ```
 
 O usuário administrador será criado com as seguintes credenciais:
+
 - **E-mail:** `admin@admin.com`
 - **Senha:** `12345678`
 - **Role:** `ADMIN`
@@ -276,9 +292,9 @@ O sistema inclui notificações automáticas por e-mail para eventos de seguran�
 
 ### Tipos de Alertas
 
-*   **Login Suspeito:** Detecta logins após longos períodos de inatividade (30+ dias)
-*   **Múltiplas Tentativas de Login:** Alerta a partir da 3ª tentativa de login falhada
-*   **Conta Bloqueada:** Notifica quando a conta é temporariamente bloqueada por excesso de tentativas
+- **Login Suspeito:** Detecta logins após longos períodos de inatividade (30+ dias)
+- **Múltiplas Tentativas de Login:** Alerta a partir da 3ª tentativa de login falhada
+- **Conta Bloqueada:** Notifica quando a conta é temporariamente bloqueada por excesso de tentativas
 
 ### Configuração
 
@@ -429,10 +445,11 @@ O projeto possui uma suíte completa de testes unitários e de integração (e2e
 Antes de executar os testes e2e, certifique-se de:
 
 1. **Configurar banco de dados de teste:**
+
    ```bash
    # Copiar arquivo de configuração de teste
    cp .env.example .env.test
-   
+
    # Editar .env.test com URL do banco de teste
    # DATABASE_URL="postgresql://user:password@localhost:5432/nest_test"
    ```
@@ -479,6 +496,7 @@ src/
 ### Cobertura de Testes
 
 O projeto mantém alta cobertura de testes:
+
 - **Testes Unitários:** Services, Repositories, Guards, Interceptors
 - **Testes E2E:** Endpoints da API, Autenticação, Autorização
 - **Mocks:** Banco de dados, E-mail, Serviços externos
@@ -495,6 +513,7 @@ npm run lint && npm run test:cov && npm run test:e2e
 ### Principais Endpoints da API
 
 #### Autenticação
+
 - **POST** `/auth/login` - Fazer login (retorna tokens + dados do usuário)
 - **POST** `/auth/register` - Registrar novo usuário
 - **POST** `/auth/refresh` - Renovar tokens (retorna tokens + dados do usuário)
@@ -506,6 +525,7 @@ npm run lint && npm run test:cov && npm run test:e2e
 - **POST** `/auth/resend-activation` - Reenviar email de ativação
 
 #### Usuários
+
 - **GET** `/users` - Listar usuários (Admin)
 - **GET** `/users/:id` - Obter usuário por ID
 - **PUT** `/users/:id` - Atualizar usuário
@@ -518,10 +538,12 @@ npm run lint && npm run test:cov && npm run test:e2e
 O projeto gera automaticamente documentação da API usando OpenAPI 3.0 com interface moderna do Scalar.
 
 **Acessar a documentação:**
+
 - **Desenvolvimento:** `http://localhost:3099/docs`
 - **Produção:** `https://seu-dominio.com/docs`
 
 **Características:**
+
 - 📋 Documentação automática de todos os endpoints
 - 🔧 Interface interativa para testar APIs
 - 📝 Schemas de request/response detalhados
@@ -544,6 +566,7 @@ npm run start:all
 ```
 
 **A documentação inclui:**
+
 - 🏗️ Arquitetura e estrutura dos módulos
 - 📊 Gráficos de dependências
 - 📖 Documentação de classes e métodos
@@ -572,6 +595,7 @@ bruno/
 ```
 
 **Para usar:**
+
 1. Instale o [Bruno](https://www.usebruno.com/)
 2. Abra a pasta `bruno/` no Bruno
 3. Configure o ambiente (local/docker)

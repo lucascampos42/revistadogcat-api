@@ -200,9 +200,11 @@ export class VotacaoController {
       votosDisponiveisSuper: usuario.votosDisponiveisSuper,
       votosUtilizadosSuper: usuario.votosUtilizadosSuper,
       votosRestantesComum:
-        (usuario.votosDisponiveisComum || 0) - (usuario.votosUtilizadosComum || 0),
+        (usuario.votosDisponiveisComum || 0) -
+        (usuario.votosUtilizadosComum || 0),
       votosRestantesSuper:
-        (usuario.votosDisponiveisSuper || 0) - (usuario.votosUtilizadosSuper || 0),
+        (usuario.votosDisponiveisSuper || 0) -
+        (usuario.votosUtilizadosSuper || 0),
     };
   }
 
