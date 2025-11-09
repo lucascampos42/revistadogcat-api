@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -94,8 +94,6 @@ export class CadastroCaoService {
       createCadastroCaoDto.temMicrochip,
     );
 
-    // Removido suporte a vÃ­deo no cadastro inicial
-    // Cadastro inicial nÃ£o aceita vÃ­deo: forÃ§a NONE e limpa campos
     createCadastroCaoDto.videoOption = VideoOption.NONE;
     createCadastroCaoDto.videoUrl = undefined;
     createCadastroCaoDto.whatsappContato = undefined;
@@ -113,8 +111,6 @@ export class CadastroCaoService {
       );
     }
 
-    // NÃ£o validar vÃ­deo na criaÃ§Ã£o
-
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
       {
@@ -122,7 +118,7 @@ export class CadastroCaoService {
         fotoPerfil: 'placeholder.jpg',
         fotoLateral: 'placeholder.jpg',
       },
-      StatusCadastro.PROCESSANDO,
+      StatusCadastro.PENDENTE,
     );
 
     this.processMediaInBackground(
