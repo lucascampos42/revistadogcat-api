@@ -79,8 +79,8 @@ export class CadastroCaoResponseDto {
 
   @ApiProperty({
     description: 'Status do cadastro',
-    enum: ['PENDENTE', 'APROVADO', 'REJEITADO'],
-    example: 'PENDENTE',
+    enum: ['APROVADO', 'REJEITADO', 'CADASTRO_INCOMPLETO'],
+    example: 'CADASTRO_INCOMPLETO',
   })
   status: string;
 

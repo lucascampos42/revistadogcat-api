@@ -81,7 +81,9 @@ export class CadastroCaoEntity {
   }
 
   isPendente(): boolean {
-    return this.status === 'PENDENTE';
+    // Mantemos o nome do método por compatibilidade, mas agora
+    // "pendente" significa "cadastro incompleto" segundo a nova regra.
+    return this.status === 'CADASTRO_INCOMPLETO';
   }
 
   isAprovado(): boolean {

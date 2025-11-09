@@ -61,8 +61,8 @@ export class ListCadastrosCaoDto {
 
   @ApiPropertyOptional({
     description: 'Filtrar por status do cadastro',
-    example: 'PENDENTE',
-    enum: ['PENDENTE', 'APROVADO', 'REJEITADO'],
+    example: 'CADASTRO_INCOMPLETO',
+    enum: ['APROVADO', 'REJEITADO', 'CADASTRO_INCOMPLETO'],
   })
   @IsOptional()
   @IsString()
@@ -77,7 +77,7 @@ export class ListCadastrosCaoDto {
   ativo?: string;
 
   @ApiPropertyOptional({
-    description: 'Filtrar apenas cadastros pendentes de validação',
+    description: 'Filtrar apenas cadastros incompletos (antigo "pendentes")',
     example: 'true',
   })
   @IsOptional()

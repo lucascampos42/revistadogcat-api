@@ -189,10 +189,9 @@ enum VideoOption {
 }
 
 enum StatusCadastro {
-  PROCESSANDO
-  PENDENTE
   APROVADO
   REJEITADO
+  CADASTRO_INCOMPLETO
 }
 
 model CadastroCao {
@@ -222,7 +221,7 @@ model CadastroCao {
   deletedAt        DateTime?
 
   // --- Campos de Aprovação ---
-  status           StatusCadastro  @default(PENDENTE)
+  status           StatusCadastro  @default(CADASTRO_INCOMPLETO)
   motivoRejeicao   String?
   aprovadoPor      String?
   aprovadoEm       DateTime?
