@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { AuthGuard } from '@nestjs/passport';
 
 describe('DashboardController (e2e)', () => {
   let app: INestApplication;
@@ -9,7 +10,10 @@ describe('DashboardController (e2e)', () => {
   beforeEach(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+    .overrideGuard(AuthGuard('jwt'))
+    .useValue({ canActivate: () => true })
+    .compile();
 
     app = moduleFixture.createNestApplication();
     await app.init();

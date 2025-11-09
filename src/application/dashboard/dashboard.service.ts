@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../core/prisma/prisma.service';
+import { PrismaService } from 'src/core/prisma/prisma.service';
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 @Injectable()
@@ -76,8 +76,8 @@ export class DashboardService {
     };
   }
 
-  async getMonthlyGrowth() {
-    const monthlyGrowth = [];
+  async getMonthlyGrowth(): Promise<{ month: string; year: number; count: number }[]> {
+    const monthlyGrowth: { month: string; year: number; count: number }[] = [];
     const now = new Date();
 
     for (let i = 11; i >= 0; i--) {
