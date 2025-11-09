@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -13,7 +13,7 @@ import {
 } from './dto/list-cadastros-cao.dto';
 import { CadastroCaoResponseDto } from './dto/cadastro-cao-response.dto';
 import { CadastroCaoEntity } from './entities/cadastro-cao.entity';
-import { VideoOption, StatusCadastro } from '@prisma/client';
+import { VideoOption } from '@prisma/client';
 import { UserService } from '../user/user.service';
 import { FileUploadService } from '../../core/services/file-upload.service';
 
@@ -94,8 +94,6 @@ export class CadastroCaoService {
       createCadastroCaoDto.temMicrochip,
     );
 
-    // Removido suporte a vÃ­deo no cadastro inicial
-    // Cadastro inicial nÃ£o aceita vÃ­deo: forÃ§a NONE e limpa campos
     createCadastroCaoDto.videoOption = VideoOption.NONE;
     createCadastroCaoDto.videoUrl = undefined;
     createCadastroCaoDto.whatsappContato = undefined;
@@ -113,8 +111,6 @@ export class CadastroCaoService {
       );
     }
 
-    // NÃ£o validar vÃ­deo na criaÃ§Ã£o
-
     const cadastro = await this.cadastroCaoRepository.create(
       proprietarioFinalId,
       {
@@ -122,7 +118,7 @@ export class CadastroCaoService {
         fotoPerfil: 'placeholder.jpg',
         fotoLateral: 'placeholder.jpg',
       },
-      StatusCadastro.PROCESSANDO,
+      'CADASTRO_INCOMPLETO',
     );
 
     this.processMediaInBackground(
@@ -248,7 +244,7 @@ export class CadastroCaoService {
         videoOption: VideoOption.UPLOAD,
         videoUrl: processed?.url,
         whatsappContato: undefined,
-        status: StatusCadastro.PENDENTE,
+        status: 'CADASTRO_INCOMPLETO',
       },
     );
 
@@ -391,6 +387,7 @@ export class CadastroCaoService {
     return {
       cadastroId: cadastro.cadastroId,
       userId: cadastro.userId,
+      proprietario: cadastro.user ? { nome: cadastro.user.name } : undefined,
       nome: cadastro.nome,
       raca: cadastro.raca ? cadastro.raca.nome : undefined,
       racaSugerida: cadastro.racaSugerida || undefined,
@@ -432,9 +429,9 @@ export class CadastroCaoService {
       throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
     }
 
-    if (cadastro.status !== 'PENDENTE') {
+    if (cadastro.status !== 'CADASTRO_INCOMPLETO') {
       throw new BadRequestException(
-        'Apenas cadastros pendentes podem ser aprovados',
+        'Apenas cadastros com cadastro incompleto podem ser aprovados',
       );
     }
 
@@ -485,7 +482,7 @@ export class CadastroCaoService {
         pedigreeFrente: pedigreeFrenteUrl?.url,
         pedigreeVerso: pedigreeVersoUrl?.url,
         videoUrl: videoUrl?.url,
-        status: 'PENDENTE',
+        status: 'CADASTRO_INCOMPLETO',
       });
     } catch (error) {
       console.error(
@@ -509,9 +506,9 @@ export class CadastroCaoService {
       throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
     }
 
-    if (cadastro.status !== 'PENDENTE') {
+    if (cadastro.status !== 'CADASTRO_INCOMPLETO') {
       throw new BadRequestException(
-        'Apenas cadastros pendentes podem ser rejeitados',
+        'Apenas cadastros com cadastro incompleto podem ser rejeitados',
       );
     }
 

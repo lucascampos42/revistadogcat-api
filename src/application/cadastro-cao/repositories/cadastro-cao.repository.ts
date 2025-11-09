@@ -4,7 +4,7 @@ import { CadastroCaoEntity } from '../entities/cadastro-cao.entity';
 import { CreateCadastroCaoDto } from '../dto/create-cadastro-cao.dto';
 import { UpdateCadastroCaoDto } from '../dto/update-cadastro-cao.dto';
 import { ListCadastrosCaoDto } from '../dto/list-cadastros-cao.dto';
-import { VideoOption, Prisma, StatusCadastro } from '@prisma/client';
+import { VideoOption, Prisma } from '@prisma/client';
 
 @Injectable()
 export class CadastroCaoRepository {
@@ -18,7 +18,7 @@ export class CadastroCaoRepository {
       pedigreeFrente?: string;
       pedigreeVerso?: string;
     },
-    status: StatusCadastro,
+    status: string,
   ): Promise<CadastroCaoEntity> {
     const {
       proprietarioId,
@@ -106,7 +106,7 @@ export class CadastroCaoRepository {
     }
 
     if (params.pendentesValidacao === 'true') {
-      where.status = 'PENDENTE';
+      where.status = 'CADASTRO_INCOMPLETO';
     }
 
     if (params.cidade || params.estado) {
@@ -375,7 +375,9 @@ export class CadastroCaoRepository {
       include: {
         user: {
           select: {
+            userId: true,
             name: true,
+            email: true,
             enderecos: {
               where: { principal: true },
               select: {
@@ -439,7 +441,7 @@ export class CadastroCaoRepository {
   async countPendentesValidacao(): Promise<number> {
     return this.prisma.cadastroCao.count({
       where: {
-        status: 'PENDENTE',
+        status: 'CADASTRO_INCOMPLETO',
         deletedAt: null,
       },
     });
@@ -450,7 +452,7 @@ export class CadastroCaoRepository {
   ): Promise<CadastroCaoEntity[]> {
     const cadastros = await this.prisma.cadastroCao.findMany({
       where: {
-        status: 'PENDENTE',
+        status: 'CADASTRO_INCOMPLETO',
         deletedAt: null,
       },
       orderBy: {
