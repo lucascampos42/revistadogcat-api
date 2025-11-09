@@ -24,9 +24,15 @@ describe('DashboardController (e2e)', () => {
       .get('/dashboard')
       .expect(200)
       .expect((res) => {
-        expect(res.body).toHaveProperty('cards');
-        expect(res.body).toHaveProperty('monthlyGrowth');
-        expect(res.body).toHaveProperty('userDistribution');
+        expect(res.body).toHaveProperty('statusCode');
+        expect(res.body).toHaveProperty('message');
+        expect(res.body).toHaveProperty('timestamp');
+        expect(res.body).toHaveProperty('data');
+
+        const data = res.body.data;
+        expect(data).toHaveProperty('cards');
+        expect(data).toHaveProperty('monthlyGrowth');
+        expect(data).toHaveProperty('userDistribution');
       });
   });
 });

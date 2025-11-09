@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
-import { PrismaModule } from 'src/core/config/prisma.module';
+import { PrismaModule } from '../../core/config/prisma.module';
 
 @Module({
   imports: [PrismaModule],
