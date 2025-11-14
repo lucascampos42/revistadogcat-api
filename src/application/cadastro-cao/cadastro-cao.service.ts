@@ -204,6 +204,7 @@ export class CadastroCaoService {
     cadastroId: string,
     userId: string,
     video?: Express.Multer.File,
+    overrideOwnership: boolean = false,
   ): Promise<CadastroCaoResponseDto> {
     const existingCadastro =
       await this.cadastroCaoRepository.findById(cadastroId);
@@ -212,7 +213,7 @@ export class CadastroCaoService {
       throw new NotFoundException('Cadastro de cÃ£o nÃ£o encontrado');
     }
 
-    if (existingCadastro.userId !== userId) {
+    if (!overrideOwnership && existingCadastro.userId !== userId) {
       throw new ForbiddenException(
         'VocÃª nÃ£o tem permissÃ£o para editar este cadastro',
       );
@@ -240,6 +241,10 @@ export class CadastroCaoService {
       'dogVideo',
     );
 
+    if (existingCadastro.videoUrl) {
+      await this.fileUploadService.deleteFileByUrl(existingCadastro.videoUrl);
+    }
+
     const cadastroAtualizado = await this.cadastroCaoRepository.update(
       cadastroId,
       {
@@ -251,6 +256,90 @@ export class CadastroCaoService {
     );
 
     return this.mapToResponseDto(cadastroAtualizado);
+  }
+
+  async updateFotoPerfil(
+    cadastroId: string,
+    userId: string,
+    file: Express.Multer.File,
+    overrideOwnership: boolean = false,
+  ): Promise<CadastroCaoResponseDto> {
+    const existing = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!existing) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+    if (!overrideOwnership && existing.userId !== userId) {
+      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+    }
+    const processed = await this.fileUploadService.processUploadedFile(file, 'dogProfile');
+    if (existing.fotoPerfil) {
+      await this.fileUploadService.deleteFileByUrl(existing.fotoPerfil);
+    }
+    const updated = await this.cadastroCaoRepository.update(cadastroId, { fotoPerfil: processed.url, status: 'CADASTRO_INCOMPLETO' });
+    return this.mapToResponseDto(updated);
+  }
+
+  async updateFotoLateral(
+    cadastroId: string,
+    userId: string,
+    file: Express.Multer.File,
+    overrideOwnership: boolean = false,
+  ): Promise<CadastroCaoResponseDto> {
+    const existing = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!existing) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+    if (!overrideOwnership && existing.userId !== userId) {
+      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+    }
+    const processed = await this.fileUploadService.processUploadedFile(file, 'dogLateral');
+    if (existing.fotoLateral) {
+      await this.fileUploadService.deleteFileByUrl(existing.fotoLateral);
+    }
+    const updated = await this.cadastroCaoRepository.update(cadastroId, { fotoLateral: processed.url, status: 'CADASTRO_INCOMPLETO' });
+    return this.mapToResponseDto(updated);
+  }
+
+  async updatePedigreeFrente(
+    cadastroId: string,
+    userId: string,
+    file: Express.Multer.File,
+    overrideOwnership: boolean = false,
+  ): Promise<CadastroCaoResponseDto> {
+    const existing = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!existing) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+    if (!overrideOwnership && existing.userId !== userId) {
+      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+    }
+    const processed = await this.fileUploadService.processUploadedFile(file, 'dogPedigree');
+    if (existing.pedigreeFrente) {
+      await this.fileUploadService.deleteFileByUrl(existing.pedigreeFrente);
+    }
+    const updated = await this.cadastroCaoRepository.update(cadastroId, { pedigreeFrente: processed.url, status: 'CADASTRO_INCOMPLETO' });
+    return this.mapToResponseDto(updated);
+  }
+
+  async updatePedigreeVerso(
+    cadastroId: string,
+    userId: string,
+    file: Express.Multer.File,
+    overrideOwnership: boolean = false,
+  ): Promise<CadastroCaoResponseDto> {
+    const existing = await this.cadastroCaoRepository.findById(cadastroId);
+    if (!existing) {
+      throw new NotFoundException('Cadastro de cão não encontrado');
+    }
+    if (!overrideOwnership && existing.userId !== userId) {
+      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+    }
+    const processed = await this.fileUploadService.processUploadedFile(file, 'dogPedigree');
+    if (existing.pedigreeVerso) {
+      await this.fileUploadService.deleteFileByUrl(existing.pedigreeVerso);
+    }
+    const updated = await this.cadastroCaoRepository.update(cadastroId, { pedigreeVerso: processed.url, status: 'CADASTRO_INCOMPLETO' });
+    return this.mapToResponseDto(updated);
   }
 
   /**
@@ -357,6 +446,11 @@ export class CadastroCaoService {
           'Registro do pedigree Ã© obrigatÃ³rio quando o cÃ£o tem pedigree',
         );
       }
+      if (!data.entidadeEmissoraPedigree) {
+        throw new BadRequestException(
+          'Entidade emissora do pedigree Ã© obrigatÃ³ria quando o cÃ£o tem pedigree',
+        );
+      }
     }
 
     if (data.temMicrochip === true) {
@@ -401,6 +495,7 @@ export class CadastroCaoService {
       altura: cadastro.altura || undefined,
       temPedigree: cadastro.temPedigree,
       registroPedigree: cadastro.registroPedigree || undefined,
+      entidadeEmissoraPedigree: cadastro.entidadeEmissoraPedigree || undefined,
       pedigreeFrente: cadastro.pedigreeFrente || undefined,
       pedigreeVerso: cadastro.pedigreeVerso || undefined,
       temMicrochip: cadastro.temMicrochip,
@@ -546,6 +641,3 @@ export class CadastroCaoService {
     return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
   }
 }
-
-
-

@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Get,
   Post,
@@ -122,11 +122,73 @@ export class CadastroCaoController {
     @Request() req,
     @UploadedFile() video?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
     return this.cadastroCaoService.updateVideoByUpload(
       id,
       req.user.userId,
       video,
+      isAdmin,
     );
+  }
+
+  @Patch(':id/foto-perfil')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('fotoPerfil'))
+  async updateFotoPerfil(
+    @Param('id') id: string,
+    @Request() req,
+    @UploadedFile() foto?: Express.Multer.File,
+  ): Promise<CadastroCaoResponseDto> {
+    if (!foto) throw new BadRequestException('Arquivo obrigatório');
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
+    return this.cadastroCaoService.updateFotoPerfil(id, req.user.userId, foto, isAdmin);
+  }
+
+  @Patch(':id/foto-lateral')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('fotoLateral'))
+  async updateFotoLateral(
+    @Param('id') id: string,
+    @Request() req,
+    @UploadedFile() foto?: Express.Multer.File,
+  ): Promise<CadastroCaoResponseDto> {
+    if (!foto) throw new BadRequestException('Arquivo obrigatório');
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
+    return this.cadastroCaoService.updateFotoLateral(id, req.user.userId, foto, isAdmin);
+  }
+
+  @Patch(':id/pedigree/frente')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('pedigreeFrente'))
+  async updatePedigreeFrente(
+    @Param('id') id: string,
+    @Request() req,
+    @UploadedFile() arquivo?: Express.Multer.File,
+  ): Promise<CadastroCaoResponseDto> {
+    if (!arquivo) throw new BadRequestException('Arquivo obrigatório');
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
+    return this.cadastroCaoService.updatePedigreeFrente(id, req.user.userId, arquivo, isAdmin);
+  }
+
+  @Patch(':id/pedigree/verso')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(FileInterceptor('pedigreeVerso'))
+  async updatePedigreeVerso(
+    @Param('id') id: string,
+    @Request() req,
+    @UploadedFile() arquivo?: Express.Multer.File,
+  ): Promise<CadastroCaoResponseDto> {
+    if (!arquivo) throw new BadRequestException('Arquivo obrigatório');
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
+    return this.cadastroCaoService.updatePedigreeVerso(id, req.user.userId, arquivo, isAdmin);
   }
 
   @Get()

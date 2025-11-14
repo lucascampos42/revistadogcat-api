@@ -22,6 +22,7 @@ export class CadastroCaoEntity {
   altura?: string | null;
   temPedigree: boolean;
   registroPedigree?: string | null;
+  entidadeEmissoraPedigree?: string | null;
   pedigreeFrente?: string | null;
   pedigreeVerso?: string | null;
   temMicrochip: boolean;

@@ -1,4 +1,4 @@
-﻿import { Test, TestingModule } from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { CadastroCaoService } from '../src/application/cadastro-cao/cadastro-cao.service';
 import { CadastroCaoRepository } from '../src/application/cadastro-cao/repositories/cadastro-cao.repository';
 import { FileUploadService } from '../src/core/services/file-upload.service';
@@ -91,7 +91,7 @@ describe('CadastroCaoService - vídeo', () => {
       mockFileUploadService.getUploadConfig.mockReturnValue({ maxFileSize: 200 * 1024 * 1024 });
       mockFileUploadService.validateVideoDuration.mockResolvedValue(undefined);
       mockFileUploadService.processUploadedFile.mockResolvedValue({ url: 'http://cdn/video.mp4' });
-      mockCadastroCaoRepository.update.mockResolvedValue({ ...existingCadastro, videoOption: VideoOption.UPLOAD, videoUrl: 'http://cdn/video.mp4', whatsappContato: null, status: StatusCadastro.PENDENTE });
+      mockCadastroCaoRepository.update.mockResolvedValue({ ...existingCadastro, videoOption: VideoOption.UPLOAD, videoUrl: 'http://cdn/video.mp4', whatsappContato: null, status: StatusCadastro.CADASTRO_INCOMPLETO });
 
       const file = { mimetype: 'video/mp4', size: 1000, path: 'tmp.mp4' } as any;
       const result = await service.updateVideoByUpload('cad1', 'user1', file);
@@ -101,7 +101,7 @@ describe('CadastroCaoService - vídeo', () => {
         videoOption: VideoOption.UPLOAD,
         videoUrl: 'http://cdn/video.mp4',
         whatsappContato: undefined,
-        status: StatusCadastro.PENDENTE,
+        status: StatusCadastro.CADASTRO_INCOMPLETO,
       }));
       expect(result).toEqual(expect.objectContaining({ videoOption: VideoOption.UPLOAD }));
     });
