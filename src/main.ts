@@ -63,17 +63,19 @@ async function bootstrap() {
     'uploads/dogs/profile',
     'uploads/dogs/lateral',
     'uploads/dogs/pedigree',
+    'uploads/revista',
+    'uploads/revista/capas',
   ];
 
   uploadDirectories.forEach((dir) => {
-    const fullPath = join(__dirname, '..', dir);
+    const fullPath = join(process.cwd(), dir);
     if (!existsSync(fullPath)) {
       mkdirSync(fullPath, { recursive: true });
       Logger.log(`Diretório de uploads criado: ${fullPath}`);
     }
   });
 
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
 
