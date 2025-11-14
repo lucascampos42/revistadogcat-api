@@ -10,6 +10,64 @@ import { VideoOption, Prisma } from '@prisma/client';
 export class CadastroCaoRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  private getSelect(includeUser: boolean = false, includeRaca: boolean = true): Prisma.CadastroCaoSelect {
+    const base: Prisma.CadastroCaoSelect = {
+      cadastroId: true,
+      userId: true,
+      nome: true,
+      racaId: true,
+      racaSugerida: true,
+      sexo: true,
+      dataNascimento: true,
+      fotoPerfil: true,
+      fotoLateral: true,
+      peso: true,
+      altura: true,
+      temPedigree: true,
+      registroPedigree: true,
+      pedigreeFrente: true,
+      pedigreeVerso: true,
+      temMicrochip: true,
+      numeroMicrochip: true,
+      titulos: true,
+      caracteristicas: true,
+      videoOption: true,
+      videoUrl: true,
+      whatsappContato: true,
+      observacoes: true,
+      createdAt: true,
+      updatedAt: true,
+      deletedAt: true,
+      status: true,
+      motivoRejeicao: true,
+      aprovadoPor: true,
+      aprovadoEm: true,
+      ativo: true,
+      totalVotos: true,
+    };
+    const withRelations: Prisma.CadastroCaoSelect = {
+      ...base,
+      ...(includeUser
+        ? {
+            user: {
+              select: {
+                userId: true,
+                name: true,
+                email: true,
+                telefone: true,
+                enderecos: {
+                  where: { principal: true },
+                  select: { cidade: true, estado: true },
+                },
+              },
+            },
+          }
+        : {}),
+      ...(includeRaca ? { raca: true } : {}),
+    };
+    return withRelations;
+  }
+
   async create(
     userId: string,
     data: CreateCadastroCaoDto & {
@@ -68,7 +126,7 @@ export class CadastroCaoRepository {
         pedigreeVerso: pedigreeVerso || null,
         status,
       },
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return new CadastroCaoEntity(cadastro);
@@ -135,7 +193,40 @@ export class CadastroCaoRepository {
         orderBy,
         skip,
         take: limit,
-        include: {
+        select: {
+          cadastroId: true,
+          userId: true,
+          nome: true,
+          racaId: true,
+          racaSugerida: true,
+          sexo: true,
+          dataNascimento: true,
+          fotoPerfil: true,
+          fotoLateral: true,
+          peso: true,
+          altura: true,
+          temPedigree: true,
+          registroPedigree: true,
+          // entidadeEmissoraPedigree INTENCIONALMENTE omitida para compatibilidade com DB sem coluna
+          pedigreeFrente: true,
+          pedigreeVerso: true,
+          temMicrochip: true,
+          numeroMicrochip: true,
+          titulos: true,
+          caracteristicas: true,
+          videoOption: true,
+          videoUrl: true,
+          whatsappContato: true,
+          observacoes: true,
+          createdAt: true,
+          updatedAt: true,
+          deletedAt: true,
+          status: true,
+          motivoRejeicao: true,
+          aprovadoPor: true,
+          aprovadoEm: true,
+          ativo: true,
+          totalVotos: true,
           user: {
             select: {
               userId: true,
@@ -169,24 +260,7 @@ export class CadastroCaoRepository {
         cadastroId,
         deletedAt: null,
       },
-      include: {
-        user: {
-          select: {
-            userId: true,
-            name: true,
-            email: true,
-            telefone: true,
-            enderecos: {
-              where: { principal: true },
-              select: {
-                cidade: true,
-                estado: true,
-              },
-            },
-          },
-        },
-        raca: true,
-      },
+      select: this.getSelect(true, true),
     });
 
     return cadastro ? new CadastroCaoEntity(cadastro) : null;
@@ -201,7 +275,7 @@ export class CadastroCaoRepository {
       orderBy: {
         createdAt: 'desc',
       },
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
@@ -256,7 +330,7 @@ export class CadastroCaoRepository {
     const cadastro = await this.prisma.cadastroCao.update({
       where: { cadastroId },
       data: updateData,
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return new CadastroCaoEntity(cadastro);
@@ -282,7 +356,7 @@ export class CadastroCaoRepository {
         createdAt: 'desc',
       },
       take: limit,
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
@@ -301,7 +375,7 @@ export class CadastroCaoRepository {
         createdAt: 'desc',
       },
       take: limit,
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
@@ -316,7 +390,7 @@ export class CadastroCaoRepository {
       orderBy: {
         createdAt: 'desc',
       },
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
@@ -331,7 +405,7 @@ export class CadastroCaoRepository {
       orderBy: {
         createdAt: 'desc',
       },
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
@@ -348,7 +422,7 @@ export class CadastroCaoRepository {
       orderBy: {
         createdAt: 'desc',
       },
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
@@ -372,23 +446,7 @@ export class CadastroCaoRepository {
         createdAt: 'desc',
       },
       take: limit,
-      include: {
-        user: {
-          select: {
-            userId: true,
-            name: true,
-            email: true,
-            enderecos: {
-              where: { principal: true },
-              select: {
-                cidade: true,
-                estado: true,
-              },
-            },
-          },
-        },
-        raca: true,
-      },
+      select: this.getSelect(true, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
@@ -409,7 +467,7 @@ export class CadastroCaoRepository {
         aprovadoEm: new Date(),
         motivoRejeicao: null,
       },
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return new CadastroCaoEntity(cadastro);
@@ -432,7 +490,7 @@ export class CadastroCaoRepository {
         aprovadoEm: new Date(),
         ativo: false,
       },
-      include: { raca: true },
+      select: this.getSelect(false, true),
     });
 
     return new CadastroCaoEntity(cadastro);
@@ -459,17 +517,7 @@ export class CadastroCaoRepository {
         createdAt: 'asc',
       },
       take: limit,
-      include: {
-        user: {
-          select: {
-            userId: true,
-            name: true,
-            email: true,
-            telefone: true,
-          },
-        },
-        raca: true,
-      },
+      select: this.getSelect(true, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
@@ -489,17 +537,7 @@ export class CadastroCaoRepository {
         createdAt: 'asc',
       },
       take: limit,
-      include: {
-        user: {
-          select: {
-            userId: true,
-            name: true,
-            email: true,
-            telefone: true,
-          },
-        },
-        raca: true,
-      },
+      select: this.getSelect(true, true),
     });
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));

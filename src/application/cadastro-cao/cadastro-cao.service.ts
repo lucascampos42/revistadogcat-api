@@ -228,9 +228,11 @@ export class CadastroCaoService {
     }
     // Validação de tamanho máximo (fallback caso Multer não esteja configurado)
     const uploadCfg = this.fileUploadService.getUploadConfig('dogVideo');
-        if (video.size > uploadCfg.maxFileSize) {
+    if (video.size > uploadCfg.maxFileSize) {
       const maxMB = Math.floor(uploadCfg.maxFileSize / (1024 * 1024));
-      throw new BadRequestException(`Arquivo de vídeo excede o tamanho máximo permitido de ${maxMB}MB`);
+      throw new BadRequestException(
+        `Arquivo de vídeo excede o tamanho máximo permitido de ${maxMB}MB`,
+      );
     }
 
     // Validação de duração máxima de 30s
@@ -269,13 +271,21 @@ export class CadastroCaoService {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
     if (!overrideOwnership && existing.userId !== userId) {
-      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+      throw new ForbiddenException(
+        'Você não tem permissão para editar este cadastro',
+      );
     }
-    const processed = await this.fileUploadService.processUploadedFile(file, 'dogProfile');
+    const processed = await this.fileUploadService.processUploadedFile(
+      file,
+      'dogProfile',
+    );
     if (existing.fotoPerfil) {
       await this.fileUploadService.deleteFileByUrl(existing.fotoPerfil);
     }
-    const updated = await this.cadastroCaoRepository.update(cadastroId, { fotoPerfil: processed.url, status: 'CADASTRO_INCOMPLETO' });
+    const updated = await this.cadastroCaoRepository.update(cadastroId, {
+      fotoPerfil: processed.url,
+      status: 'CADASTRO_INCOMPLETO',
+    });
     return this.mapToResponseDto(updated);
   }
 
@@ -290,13 +300,21 @@ export class CadastroCaoService {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
     if (!overrideOwnership && existing.userId !== userId) {
-      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+      throw new ForbiddenException(
+        'Você não tem permissão para editar este cadastro',
+      );
     }
-    const processed = await this.fileUploadService.processUploadedFile(file, 'dogLateral');
+    const processed = await this.fileUploadService.processUploadedFile(
+      file,
+      'dogLateral',
+    );
     if (existing.fotoLateral) {
       await this.fileUploadService.deleteFileByUrl(existing.fotoLateral);
     }
-    const updated = await this.cadastroCaoRepository.update(cadastroId, { fotoLateral: processed.url, status: 'CADASTRO_INCOMPLETO' });
+    const updated = await this.cadastroCaoRepository.update(cadastroId, {
+      fotoLateral: processed.url,
+      status: 'CADASTRO_INCOMPLETO',
+    });
     return this.mapToResponseDto(updated);
   }
 
@@ -311,13 +329,21 @@ export class CadastroCaoService {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
     if (!overrideOwnership && existing.userId !== userId) {
-      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+      throw new ForbiddenException(
+        'Você não tem permissão para editar este cadastro',
+      );
     }
-    const processed = await this.fileUploadService.processUploadedFile(file, 'dogPedigree');
+    const processed = await this.fileUploadService.processUploadedFile(
+      file,
+      'dogPedigree',
+    );
     if (existing.pedigreeFrente) {
       await this.fileUploadService.deleteFileByUrl(existing.pedigreeFrente);
     }
-    const updated = await this.cadastroCaoRepository.update(cadastroId, { pedigreeFrente: processed.url, status: 'CADASTRO_INCOMPLETO' });
+    const updated = await this.cadastroCaoRepository.update(cadastroId, {
+      pedigreeFrente: processed.url,
+      status: 'CADASTRO_INCOMPLETO',
+    });
     return this.mapToResponseDto(updated);
   }
 
@@ -332,13 +358,21 @@ export class CadastroCaoService {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
     if (!overrideOwnership && existing.userId !== userId) {
-      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+      throw new ForbiddenException(
+        'Você não tem permissão para editar este cadastro',
+      );
     }
-    const processed = await this.fileUploadService.processUploadedFile(file, 'dogPedigree');
+    const processed = await this.fileUploadService.processUploadedFile(
+      file,
+      'dogPedigree',
+    );
     if (existing.pedigreeVerso) {
       await this.fileUploadService.deleteFileByUrl(existing.pedigreeVerso);
     }
-    const updated = await this.cadastroCaoRepository.update(cadastroId, { pedigreeVerso: processed.url, status: 'CADASTRO_INCOMPLETO' });
+    const updated = await this.cadastroCaoRepository.update(cadastroId, {
+      pedigreeVerso: processed.url,
+      status: 'CADASTRO_INCOMPLETO',
+    });
     return this.mapToResponseDto(updated);
   }
 
@@ -350,22 +384,29 @@ export class CadastroCaoService {
     userId: string,
     updateCadastroCaoDto: UpdateCadastroCaoDto,
   ): Promise<CadastroCaoResponseDto> {
-    const existingCadastro = await this.cadastroCaoRepository.findById(cadastroId);
+    const existingCadastro =
+      await this.cadastroCaoRepository.findById(cadastroId);
     if (!existingCadastro) {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
     if (existingCadastro.userId !== userId) {
-      throw new ForbiddenException('Você não tem permissão para editar este cadastro');
+      throw new ForbiddenException(
+        'Você não tem permissão para editar este cadastro',
+      );
     }
 
     if (updateCadastroCaoDto.videoOption === VideoOption.UPLOAD) {
-      throw new BadRequestException('Envio de arquivo não é aceito neste endpoint. Utilize /cadastro-cao/:id/video/upload');
+      throw new BadRequestException(
+        'Envio de arquivo não é aceito neste endpoint. Utilize /cadastro-cao/:id/video/upload',
+      );
     }
 
     // Exclusividade e regras
     if (updateCadastroCaoDto.videoOption === VideoOption.URL) {
       if (!updateCadastroCaoDto.videoUrl) {
-        throw new BadRequestException('videoUrl é obrigatório quando videoOption=URL');
+        throw new BadRequestException(
+          'videoUrl é obrigatório quando videoOption=URL',
+        );
       }
       updateCadastroCaoDto.whatsappContato = undefined;
     } else if (updateCadastroCaoDto.videoOption === VideoOption.WHATSAPP) {
@@ -377,7 +418,10 @@ export class CadastroCaoService {
 
     this.validateConditionalData(updateCadastroCaoDto);
 
-    const cadastro = await this.cadastroCaoRepository.update(cadastroId, updateCadastroCaoDto);
+    const cadastro = await this.cadastroCaoRepository.update(
+      cadastroId,
+      updateCadastroCaoDto,
+    );
     return this.mapToResponseDto(cadastro);
   }
   async remove(cadastroId: string, userId: string): Promise<void> {
@@ -440,7 +484,19 @@ export class CadastroCaoService {
   private validateConditionalData(
     data: CreateCadastroCaoDto | UpdateCadastroCaoDto,
   ): void {
-    if (data.temPedigree === true) {
+    const hasTemPedigreeField = Object.prototype.hasOwnProperty.call(
+      data as any,
+      'temPedigree',
+    );
+    const hasPedigreeFields =
+      Object.prototype.hasOwnProperty.call(data as any, 'registroPedigree') ||
+      Object.prototype.hasOwnProperty.call(
+        data as any,
+        'entidadeEmissoraPedigree',
+      ) ||
+      Object.prototype.hasOwnProperty.call(data as any, 'pedigreeFrente') ||
+      Object.prototype.hasOwnProperty.call(data as any, 'pedigreeVerso');
+    if (hasTemPedigreeField && (data as any).temPedigree === true) {
       if (!data.registroPedigree) {
         throw new BadRequestException(
           'Registro do pedigree Ã© obrigatÃ³rio quando o cÃ£o tem pedigree',
@@ -450,6 +506,19 @@ export class CadastroCaoService {
         throw new BadRequestException(
           'Entidade emissora do pedigree Ã© obrigatÃ³ria quando o cÃ£o tem pedigree',
         );
+      }
+    } else if (hasPedigreeFields) {
+      if ((data as any).temPedigree === true) {
+        if (!data.registroPedigree) {
+          throw new BadRequestException(
+            'Registro do pedigree Ã© obrigatÃ³rio quando o cÃ£o tem pedigree',
+          );
+        }
+        if (!data.entidadeEmissoraPedigree) {
+          throw new BadRequestException(
+            'Entidade emissora do pedigree Ã© obrigatÃ³ria quando o cÃ£o tem pedigree',
+          );
+        }
       }
     }
 
@@ -570,7 +639,18 @@ export class CadastroCaoService {
               'dogPedigree',
             )
           : Promise.resolve(undefined),
-        video ? (async () => { await this.fileUploadService.validateVideoDuration(video.path, 30); return this.fileUploadService.processUploadedFile(video, 'dogVideo'); })() : Promise.resolve(undefined),
+        video
+          ? (async () => {
+              await this.fileUploadService.validateVideoDuration(
+                video.path,
+                30,
+              );
+              return this.fileUploadService.processUploadedFile(
+                video,
+                'dogVideo',
+              );
+            })()
+          : Promise.resolve(undefined),
       ]);
 
       await this.cadastroCaoRepository.update(cadastroId, {
