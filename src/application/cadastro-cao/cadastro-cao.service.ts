@@ -440,7 +440,9 @@ export class CadastroCaoService {
   private validateConditionalData(
     data: CreateCadastroCaoDto | UpdateCadastroCaoDto,
   ): void {
-    if (data.temPedigree === true) {
+    const hasTemPedigreeField = Object.prototype.hasOwnProperty.call(data as any, 'temPedigree');
+    const hasPedigreeFields = Object.prototype.hasOwnProperty.call(data as any, 'registroPedigree') || Object.prototype.hasOwnProperty.call(data as any, 'entidadeEmissoraPedigree') || Object.prototype.hasOwnProperty.call(data as any, 'pedigreeFrente') || Object.prototype.hasOwnProperty.call(data as any, 'pedigreeVerso');
+    if (hasTemPedigreeField && (data as any).temPedigree === true) {
       if (!data.registroPedigree) {
         throw new BadRequestException(
           'Registro do pedigree Ã© obrigatÃ³rio quando o cÃ£o tem pedigree',
@@ -450,6 +452,19 @@ export class CadastroCaoService {
         throw new BadRequestException(
           'Entidade emissora do pedigree Ã© obrigatÃ³ria quando o cÃ£o tem pedigree',
         );
+      }
+    } else if (hasPedigreeFields) {
+      if ((data as any).temPedigree === true) {
+        if (!data.registroPedigree) {
+          throw new BadRequestException(
+            'Registro do pedigree Ã© obrigatÃ³rio quando o cÃ£o tem pedigree',
+          );
+        }
+        if (!data.entidadeEmissoraPedigree) {
+          throw new BadRequestException(
+            'Entidade emissora do pedigree Ã© obrigatÃ³ria quando o cÃ£o tem pedigree',
+          );
+        }
       }
     }
 
