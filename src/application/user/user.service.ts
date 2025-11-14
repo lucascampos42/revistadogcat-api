@@ -221,7 +221,19 @@ export class UserService {
         'Você não tem permissão para alterar seu próprio role',
       );
     }
-    const updatedUser = await this.userRepository.update(id, data);
+    // Se senha foi fornecida (não vazia), fazer hash antes de atualizar
+    if (typeof data.password === 'string') {
+      const trimmed = data.password.trim();
+      if (trimmed.length === 0) {
+        delete (data as any).password; // evita tentar validar/atualizar senha vazia
+      } else {
+        const hashed = await bcrypt.hash(trimmed, 10);
+        (data as any).password = hashed;
+        // Opcional: invalidar refresh tokens (incrementar tokenVersion) em troca de segurança
+        // Poderíamos mover para AuthRepository se necessário
+      }
+    }
+    const updatedUser = await this.userRepository.update(id, data as any);
     return this.mapToPublicDto(updatedUser);
   }
 
