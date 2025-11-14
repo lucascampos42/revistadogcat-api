@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Patch,
   Delete,
   Param,
   Query,
@@ -337,12 +338,129 @@ export class EdicaoController {
     return this.edicaoService.create(dto, files);
   }
 
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Atualizar edição com possibilidade de substituir PDF e capa' })
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'pdf', maxCount: 1 },
+        { name: 'capa', maxCount: 1 },
+      ],
+      {
+        storage: diskStorage({
+          destination: (req, file, cb) => {
+            const isPdf = file.fieldname === 'pdf';
+            const dest = isPdf
+              ? join(process.cwd(), 'uploads/revista')
+              : join(process.cwd(), 'uploads/revista/capas');
+            if (!existsSync(dest)) {
+              mkdirSync(dest, { recursive: true });
+            }
+            cb(null, dest);
+          },
+          filename: (req, file, cb) => {
+            const uniqueSuffix =
+              Date.now() + '-' + Math.round(Math.random() * 1e9);
+            cb(
+              null,
+              `${file.fieldname}-${uniqueSuffix}${extname(file.originalname)}`,
+            );
+          },
+        }),
+        fileFilter: (req, file, cb) => {
+          const pdfTypes = ['application/pdf'];
+          const imageTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/webp',
+          ];
+
+          const allowed = file.fieldname === 'pdf' ? pdfTypes : imageTypes;
+          if (!allowed.includes(file.mimetype)) {
+            cb(
+              new BadRequestException(
+                `Tipo de arquivo não permitido para ${file.fieldname}: ${file.mimetype}`,
+              ),
+              false,
+            );
+            return;
+          }
+
+          const ext = file.originalname.toLowerCase().split('.').pop();
+          const allowedExtensions =
+            file.fieldname === 'pdf' ? ['pdf'] : ['jpg', 'jpeg', 'png', 'webp'];
+
+          if (!ext || !allowedExtensions.includes(ext)) {
+            cb(
+              new BadRequestException(
+                `Extensão de arquivo não permitida para ${file.fieldname}: .${ext}`,
+              ),
+              false,
+            );
+            return;
+          }
+
+          const sanitizedName = EdicaoController.sanitizeFileName(
+            file.originalname,
+          );
+          if (!sanitizedName || sanitizedName.length === 0) {
+            cb(
+              new BadRequestException(
+                'Nome do arquivo inválido após sanitização',
+              ),
+              false,
+            );
+            return;
+          }
+
+          file.originalname = sanitizedName;
+          cb(null, true);
+        },
+        limits: {
+          fileSize: 50 * 1024 * 1024,
+          files: 2,
+          fieldNameSize: 50,
+          fieldSize: 1024 * 1024,
+        },
+      },
+    ),
+  )
+  @ApiBody({
+    description: 'Dados da edição e arquivos para atualização',
+    schema: {
+      type: 'object',
+      properties: {
+        titulo: { type: 'string' },
+        descricao: { type: 'string' },
+        data: { type: 'string', format: 'date-time' },
+        pdf: { type: 'string', format: 'binary' },
+        capa: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  async update(
+    @Param('id') id: string,
+    @UploadedFiles()
+    files: { pdf?: Express.Multer.File[]; capa?: Express.Multer.File[] },
+    @Body() dto: Partial<CreateEdicaoDto>,
+  ): Promise<EdicaoResponseDto> {
+    if (!id || id.includes('..')) {
+      throw new BadRequestException('ID inválido');
+    }
+    return this.edicaoService.update(id, dto, files);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Excluir edição permanentemente' })
+  @ApiOperation({ summary: 'Excluir edição (soft delete)' })
   @ApiParam({ name: 'id', description: 'ID da edição a ser excluída' })
   @ApiResponse({
     status: 204,

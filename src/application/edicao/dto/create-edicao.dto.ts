@@ -6,7 +6,6 @@ import {
   Length,
   Matches,
   IsNotEmpty,
-  MaxLength,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 
@@ -23,6 +22,13 @@ export class CreateEdicaoDto {
   @Matches(/^[a-zA-Z0-9_-]+$/, {
     message: 'ID deve conter apenas letras, números, hífens e underscores',
   })
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? value.trim().length
+        ? value.trim()
+        : undefined
+      : (value as string | undefined),
+  )
   id?: string;
 
   @ApiProperty({
@@ -34,7 +40,7 @@ export class CreateEdicaoDto {
   @IsString()
   @IsNotEmpty({ message: 'Título é obrigatório' })
   @Length(3, 200, { message: 'Título deve ter entre 3 e 200 caracteres' })
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   titulo!: string;
 
   @ApiPropertyOptional({
@@ -48,7 +54,13 @@ export class CreateEdicaoDto {
   @Length(10, 1000, {
     message: 'Descrição deve ter entre 10 e 1000 caracteres',
   })
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }) =>
+    typeof value === 'string'
+      ? value.trim().length
+        ? value.trim()
+        : undefined
+      : value,
+  )
   descricao?: string;
 
   @ApiPropertyOptional({
@@ -58,5 +70,5 @@ export class CreateEdicaoDto {
   })
   @IsOptional()
   @IsDateString({}, { message: 'Data deve estar no formato ISO 8601' })
-  data?: Date;
+  data?: string;
 }

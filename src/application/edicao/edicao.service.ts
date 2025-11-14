@@ -21,16 +21,24 @@ export class EdicaoService {
     private readonly pdfProcessorService: PdfProcessorService,
   ) {}
 
-  private toResponseDto(edicao: Edicao): EdicaoResponseDto {
+  private buildPublicUrl(url?: string | null): string | undefined {
+    if (!url) return undefined;
+    const base = process.env.PUBLIC_BASE_URL || '';
+    const normalizedBase = base.replace(/\/+$/, '');
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+    return normalizedBase ? `${normalizedBase}${normalizedPath}` : normalizedPath;
+  }
+
+  private toResponseDto = (edicao: Edicao): EdicaoResponseDto => {
     return {
       id: edicao.edicaoId,
       titulo: edicao.titulo,
       descricao: edicao.descricao || undefined,
       data: edicao.data,
-      pdfUrl: edicao.pdfUrl,
-      capaUrl: edicao.capaUrl || undefined,
+      pdfUrl: this.buildPublicUrl(edicao.pdfUrl)!,
+      capaUrl: this.buildPublicUrl(edicao.capaUrl),
     };
-  }
+  };
 
   async list(params: {
     ano?: number;
@@ -38,7 +46,7 @@ export class EdicaoService {
     limit?: number;
   }): Promise<EdicaoResponseDto[]> {
     const edicoes = await this.edicaoRepository.findAll(params);
-    return edicoes.map(this.toResponseDto);
+    return edicoes.map((e) => this.toResponseDto(e));
   }
 
   async getById(id: string): Promise<EdicaoResponseDto> {
@@ -128,6 +136,71 @@ export class EdicaoService {
     }
   }
 
+  async update(
+    id: string,
+    dto: Partial<CreateEdicaoDto>,
+    files: { pdf?: Express.Multer.File[]; capa?: Express.Multer.File[] },
+  ): Promise<EdicaoResponseDto> {
+    const edicao = await this.edicaoRepository.findById(id);
+    if (!edicao || (edicao as any).deletedAt) {
+      throw new NotFoundException('Edição não encontrada');
+    }
+
+    const pdf = files.pdf?.[0];
+    const capa = files.capa?.[0];
+
+    let pdfUrl = edicao.pdfUrl;
+    let capaUrl = edicao.capaUrl || undefined;
+
+    try {
+      if (pdf) {
+        const isValidPdf = await this.pdfProcessorService.validatePdf(pdf.path);
+        if (!isValidPdf) {
+          throw new BadRequestException('Arquivo PDF inválido ou corrompido');
+        }
+        // Remove PDF antigo
+        await this.pdfProcessorService.removeFile(edicao.pdfUrl);
+        pdfUrl = `/uploads/revista/${pdf.filename}`;
+      }
+
+      if (capa) {
+        await this.pdfProcessorService.removeFile(edicao.capaUrl || '');
+        capaUrl = `/uploads/revista/capas/${capa.filename}`;
+      } else if (pdf) {
+        // Se trocou PDF e não enviou capa, regenera capa
+        const capaDir = join(process.cwd(), 'uploads/revista/capas');
+        const capaFilename = `capa-${id}`;
+        try {
+          capaUrl = await this.pdfProcessorService.extractFirstPageAsImage(
+            pdf.path,
+            capaDir,
+            capaFilename,
+          );
+        } catch (extractError: any) {
+          this.logger.warn(
+            `Falha ao gerar capa a partir do PDF (mantendo capa existente se houver): ${extractError?.message}`,
+          );
+          // Mantém a capa anterior se existir; caso contrário segue sem capa
+          capaUrl = edicao.capaUrl || undefined;
+        }
+      }
+
+      const updated = await this.edicaoRepository.update(id, {
+        titulo: dto.titulo ?? edicao.titulo,
+        descricao: dto.descricao ?? edicao.descricao ?? undefined,
+        data: dto.data ? new Date(dto.data) : edicao.data,
+        pdfUrl,
+        capaUrl,
+        edicaoId: edicao.edicaoId,
+      });
+
+      return this.toResponseDto(updated);
+    } catch (error) {
+      this.logger.error(`Erro ao atualizar edição: ${error.message}`, error.stack);
+      throw new BadRequestException(`Falha ao atualizar edição: ${error.message}`);
+    }
+  }
+
   /**
    * Exclui uma edição permanentemente, removendo registro do banco e arquivos associados
    * @param id ID da edição a ser excluída
@@ -142,9 +215,9 @@ export class EdicaoService {
     this.logger.log(`Iniciando exclusão da edição: ${id}`);
 
     try {
-      // Remove o registro do banco de dados primeiro
-      await this.edicaoRepository.delete(id);
-      this.logger.log(`Registro da edição ${id} removido do banco de dados`);
+      // Soft delete do registro
+      await this.edicaoRepository.softDelete(id);
+      this.logger.log(`Registro da edição ${id} marcado como excluído`);
 
       // Remove os arquivos associados
       const filesToRemove: Promise<void>[] = [];
@@ -167,8 +240,7 @@ export class EdicaoService {
         error.stack,
       );
 
-      // Se falhou após remover do banco, tenta reverter (mas pode não ser possível)
-      if (error.code !== 'P2025') {
+      if ((error as any).code !== 'P2025') {
         // P2025 = registro não encontrado no Prisma
         throw new BadRequestException(
           `Falha ao excluir edição: ${error.message}`,

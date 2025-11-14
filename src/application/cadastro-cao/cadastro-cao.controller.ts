@@ -27,7 +27,6 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiConsumes,
-  ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { CadastroCaoService } from './cadastro-cao.service';
@@ -47,8 +46,9 @@ import { FileUploadService } from '../../core/services/file-upload.service';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { IsPublic } from '../../core/decorators/is-public.decorator';
 
-@ApiTags('Cadastro de CÃ£es')
+@ApiTags('Cadastro de Cães')
 @Controller('cadastro-cao')
 export class CadastroCaoController {
   private readonly logger = new Logger(CadastroCaoController.name);
@@ -122,7 +122,9 @@ export class CadastroCaoController {
     @Request() req,
     @UploadedFile() video?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
-    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(
+      req.user.role,
+    );
     return this.cadastroCaoService.updateVideoByUpload(
       id,
       req.user.userId,
@@ -142,8 +144,15 @@ export class CadastroCaoController {
     @UploadedFile() foto?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     if (!foto) throw new BadRequestException('Arquivo obrigatório');
-    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
-    return this.cadastroCaoService.updateFotoPerfil(id, req.user.userId, foto, isAdmin);
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(
+      req.user.role,
+    );
+    return this.cadastroCaoService.updateFotoPerfil(
+      id,
+      req.user.userId,
+      foto,
+      isAdmin,
+    );
   }
 
   @Patch(':id/foto-lateral')
@@ -157,8 +166,15 @@ export class CadastroCaoController {
     @UploadedFile() foto?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     if (!foto) throw new BadRequestException('Arquivo obrigatório');
-    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
-    return this.cadastroCaoService.updateFotoLateral(id, req.user.userId, foto, isAdmin);
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(
+      req.user.role,
+    );
+    return this.cadastroCaoService.updateFotoLateral(
+      id,
+      req.user.userId,
+      foto,
+      isAdmin,
+    );
   }
 
   @Patch(':id/pedigree/frente')
@@ -172,8 +188,15 @@ export class CadastroCaoController {
     @UploadedFile() arquivo?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     if (!arquivo) throw new BadRequestException('Arquivo obrigatório');
-    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
-    return this.cadastroCaoService.updatePedigreeFrente(id, req.user.userId, arquivo, isAdmin);
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(
+      req.user.role,
+    );
+    return this.cadastroCaoService.updatePedigreeFrente(
+      id,
+      req.user.userId,
+      arquivo,
+      isAdmin,
+    );
   }
 
   @Patch(':id/pedigree/verso')
@@ -187,11 +210,19 @@ export class CadastroCaoController {
     @UploadedFile() arquivo?: Express.Multer.File,
   ): Promise<CadastroCaoResponseDto> {
     if (!arquivo) throw new BadRequestException('Arquivo obrigatório');
-    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(req.user.role);
-    return this.cadastroCaoService.updatePedigreeVerso(id, req.user.userId, arquivo, isAdmin);
+    const isAdmin = [Role.ADMIN, Role.EDITOR, Role.FUNCIONARIO].includes(
+      req.user.role,
+    );
+    return this.cadastroCaoService.updatePedigreeVerso(
+      id,
+      req.user.userId,
+      arquivo,
+      isAdmin,
+    );
   }
 
   @Get()
+  @IsPublic()
   @ApiOperation({
     summary: 'Listar cadastros de cÃ£es com filtros e paginaÃ§Ã£o',
   })

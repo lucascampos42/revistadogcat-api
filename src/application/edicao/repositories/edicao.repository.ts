@@ -37,7 +37,7 @@ export class EdicaoRepository {
     }
 
     const edicoes = await this.prisma.edicao.findMany({
-      where,
+      where: { ...where, deletedAt: null },
       orderBy: [{ data: 'desc' }, { createdAt: 'desc' }],
       skip,
       take: limit,
@@ -52,13 +52,22 @@ export class EdicaoRepository {
 
   async findUltima() {
     return this.prisma.edicao.findFirst({
+      where: { deletedAt: null },
       orderBy: [{ data: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
-  async delete(id: string) {
-    return this.prisma.edicao.delete({
+  async softDelete(id: string) {
+    return this.prisma.edicao.update({
       where: { edicaoId: id },
+      data: { deletedAt: new Date() },
+    });
+  }
+
+  async update(id: string, data: Partial<CreateEdicaoData>) {
+    return this.prisma.edicao.update({
+      where: { edicaoId: id },
+      data,
     });
   }
 }
