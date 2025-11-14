@@ -27,7 +27,6 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiConsumes,
-  ApiBody,
 } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
 import { CadastroCaoService } from './cadastro-cao.service';
@@ -47,6 +46,7 @@ import { FileUploadService } from '../../core/services/file-upload.service';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { IsPublic } from '../../core/decorators/is-public.decorator';
 
 @ApiTags('Cadastro de Cães')
 @Controller('cadastro-cao')
@@ -222,6 +222,7 @@ export class CadastroCaoController {
   }
 
   @Get()
+  @IsPublic()
   @ApiOperation({
     summary: 'Listar cadastros de cÃ£es com filtros e paginaÃ§Ã£o',
   })
