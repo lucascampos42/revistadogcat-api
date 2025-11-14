@@ -170,11 +170,19 @@ export class EdicaoService {
         // Se trocou PDF e não enviou capa, regenera capa
         const capaDir = join(process.cwd(), 'uploads/revista/capas');
         const capaFilename = `capa-${id}`;
-        capaUrl = await this.pdfProcessorService.extractFirstPageAsImage(
-          pdf.path,
-          capaDir,
-          capaFilename,
-        );
+        try {
+          capaUrl = await this.pdfProcessorService.extractFirstPageAsImage(
+            pdf.path,
+            capaDir,
+            capaFilename,
+          );
+        } catch (extractError: any) {
+          this.logger.warn(
+            `Falha ao gerar capa a partir do PDF (mantendo capa existente se houver): ${extractError?.message}`,
+          );
+          // Mantém a capa anterior se existir; caso contrário segue sem capa
+          capaUrl = edicao.capaUrl || undefined;
+        }
       }
 
       const updated = await this.edicaoRepository.update(id, {
