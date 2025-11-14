@@ -264,6 +264,7 @@ model Edicao {
   capaUrl   String?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
   @@map("edicoes")
 }
