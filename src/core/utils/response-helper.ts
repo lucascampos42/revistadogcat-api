@@ -1,4 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
+import { ApiResponse } from '@core-types/api';
 
 /**
  * Helper para criar respostas padronizadas com mensagens divertidas
@@ -33,8 +34,9 @@ export class ResponseHelper {
     data: T,
     statusCode: number = HttpStatus.OK,
     customMessage?: string,
-  ) {
+  ): ApiResponse<T> {
     return {
+      success: statusCode >= 200 && statusCode < 300,
       statusCode,
       message: customMessage || this.getStandardMessage(statusCode),
       data,
@@ -52,8 +54,9 @@ export class ResponseHelper {
   /**
    * Cria uma resposta sem conteúdo
    */
-  static noContent(customMessage?: string) {
+  static noContent(customMessage?: string): ApiResponse<undefined> {
     return {
+      success: true,
       statusCode: HttpStatus.NO_CONTENT,
       message: customMessage || this.getStandardMessage(HttpStatus.NO_CONTENT),
       timestamp: new Date().toISOString(),
@@ -63,18 +66,18 @@ export class ResponseHelper {
   /**
    * Cria uma resposta personalizada
    */
-  static custom<T>(statusCode: number, data?: T, customMessage?: string) {
-    const response: any = {
+  static custom<T>(
+    statusCode: number,
+    data?: T,
+    customMessage?: string,
+  ): ApiResponse<T | undefined> {
+    return {
+      success: statusCode >= 200 && statusCode < 300,
       statusCode,
       message: customMessage || this.getStandardMessage(statusCode),
+      data,
       timestamp: new Date().toISOString(),
     };
-
-    if (data !== undefined) {
-      response.data = data;
-    }
-
-    return response;
   }
 }
 

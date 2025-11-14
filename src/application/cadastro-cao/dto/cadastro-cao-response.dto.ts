@@ -50,6 +50,9 @@ export class CadastroCaoResponseDto {
   @ApiPropertyOptional({ description: 'Número de registro do pedigree' })
   registroPedigree?: string;
 
+  @ApiPropertyOptional({ description: 'Entidade que emitiu o pedigree' })
+  entidadeEmissoraPedigree?: string;
+
   @ApiPropertyOptional({ description: 'URL do arquivo do pedigree (frente)' })
   pedigreeFrente?: string;
 

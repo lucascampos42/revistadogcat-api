@@ -357,6 +357,11 @@ export class CadastroCaoService {
           'Registro do pedigree Ã© obrigatÃ³rio quando o cÃ£o tem pedigree',
         );
       }
+      if (!data.entidadeEmissoraPedigree) {
+        throw new BadRequestException(
+          'Entidade emissora do pedigree Ã© obrigatÃ³ria quando o cÃ£o tem pedigree',
+        );
+      }
     }
 
     if (data.temMicrochip === true) {
@@ -401,6 +406,7 @@ export class CadastroCaoService {
       altura: cadastro.altura || undefined,
       temPedigree: cadastro.temPedigree,
       registroPedigree: cadastro.registroPedigree || undefined,
+      entidadeEmissoraPedigree: cadastro.entidadeEmissoraPedigree || undefined,
       pedigreeFrente: cadastro.pedigreeFrente || undefined,
       pedigreeVerso: cadastro.pedigreeVerso || undefined,
       temMicrochip: cadastro.temMicrochip,
@@ -546,6 +552,3 @@ export class CadastroCaoService {
     return cadastros.map((cadastro) => this.mapToResponseDto(cadastro));
   }
 }
-
-
-

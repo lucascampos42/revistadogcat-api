@@ -206,6 +206,7 @@ model CadastroCao {
   altura           String?
   temPedigree      Boolean         @default(false)
   registroPedigree String?
+  entidadeEmissoraPedigree String?
   pedigreeFrente   String?
   pedigreeVerso    String?
   temMicrochip     Boolean         @default(false)

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class BaseResponseDto<T = any> {
+export class BaseResponseDto<T = unknown> {
   @ApiProperty({ description: 'Indica se a operação foi bem-sucedida' })
   success: boolean;
 
@@ -38,7 +38,7 @@ export class ErrorResponseDto {
   error?: string;
 
   @ApiProperty({ description: 'Detalhes do erro', required: false })
-  details?: any;
+  details?: unknown;
 
   @ApiProperty({ description: 'Timestamp do erro' })
   timestamp: string;
@@ -50,7 +50,7 @@ export class ErrorResponseDto {
     message: string,
     statusCode: number,
     error?: string,
-    details?: any,
+    details?: unknown,
   ) {
     this.message = message;
     this.statusCode = statusCode;

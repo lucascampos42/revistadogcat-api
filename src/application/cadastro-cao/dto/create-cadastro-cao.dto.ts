@@ -87,6 +87,12 @@ export class CreateCadastroCaoDto {
   @IsString()
   registroPedigree?: string;
 
+  @ApiPropertyOptional({ description: 'Entidade que emitiu o pedigree' })
+  @ValidateIf((o) => o.temPedigree === true)
+  @IsNotEmpty()
+  @IsString()
+  entidadeEmissoraPedigree?: string;
+
   @ApiPropertyOptional({
     description: 'Se o cão tem microchip',
     default: false,
