@@ -1,4 +1,4 @@
-﻿import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { Request } from 'express';
@@ -292,6 +292,17 @@ export class FileUploadService {
         resolve();
       });
     });
+  }
+
+  async deleteFileByUrl(url: string): Promise<void> {
+    try {
+      const clean = url.replace(/^\//, '');
+      const fullPath = join(process.cwd(), clean);
+      const fs = require('fs');
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    } catch {}
   }
 }
 
