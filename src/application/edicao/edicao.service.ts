@@ -21,16 +21,24 @@ export class EdicaoService {
     private readonly pdfProcessorService: PdfProcessorService,
   ) {}
 
-  private toResponseDto(edicao: Edicao): EdicaoResponseDto {
+  private buildPublicUrl(url?: string | null): string | undefined {
+    if (!url) return undefined;
+    const base = process.env.PUBLIC_BASE_URL || '';
+    const normalizedBase = base.replace(/\/+$/, '');
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+    return normalizedBase ? `${normalizedBase}${normalizedPath}` : normalizedPath;
+  }
+
+  private toResponseDto = (edicao: Edicao): EdicaoResponseDto => {
     return {
       id: edicao.edicaoId,
       titulo: edicao.titulo,
       descricao: edicao.descricao || undefined,
       data: edicao.data,
-      pdfUrl: edicao.pdfUrl,
-      capaUrl: edicao.capaUrl || undefined,
+      pdfUrl: this.buildPublicUrl(edicao.pdfUrl)!,
+      capaUrl: this.buildPublicUrl(edicao.capaUrl),
     };
-  }
+  };
 
   async list(params: {
     ano?: number;
@@ -38,7 +46,7 @@ export class EdicaoService {
     limit?: number;
   }): Promise<EdicaoResponseDto[]> {
     const edicoes = await this.edicaoRepository.findAll(params);
-    return edicoes.map(this.toResponseDto);
+    return edicoes.map((e) => this.toResponseDto(e));
   }
 
   async getById(id: string): Promise<EdicaoResponseDto> {

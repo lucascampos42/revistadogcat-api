@@ -27,7 +27,7 @@ export class CreateEdicaoDto {
       ? value.trim().length
         ? value.trim()
         : undefined
-      : value,
+      : (value as string | undefined),
   )
   id?: string;
 
@@ -40,7 +40,7 @@ export class CreateEdicaoDto {
   @IsString()
   @IsNotEmpty({ message: 'Título é obrigatório' })
   @Length(3, 200, { message: 'Título deve ter entre 3 e 200 caracteres' })
-  @Transform(({ value }) => value?.trim())
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   titulo!: string;
 
   @ApiPropertyOptional({
