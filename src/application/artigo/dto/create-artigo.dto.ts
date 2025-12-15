@@ -6,7 +6,6 @@ import {
   IsBoolean,
   IsArray,
   IsDateString,
-  IsUUID,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { StatusArtigo, CategoriaArtigo } from '@prisma/client';
@@ -52,7 +51,7 @@ export class CreateArtigoDto {
     description: 'ID do autor do artigo',
     example: 'user-uuid-goes-here',
   })
-  @IsUUID()
+  @IsString()
   @IsNotEmpty()
   autorId: string;
 
