@@ -257,11 +257,29 @@ export class VotacaoService {
     const where: any = {};
 
     if (userId) {
-      where.userId = userId;
+      where.OR = [
+        { userId: userId },
+        { user: { name: { contains: userId, mode: 'insensitive' } } },
+      ];
     }
 
     if (cadastroId) {
-      where.cadastroId = cadastroId;
+      const dogFilter = {
+        OR: [
+          { cadastroId: cadastroId },
+          { cadastro: { nome: { contains: cadastroId, mode: 'insensitive' } } },
+        ],
+      };
+
+      if (where.OR) {
+        where.AND = [
+          { OR: where.OR },
+          dogFilter
+        ];
+        delete where.OR;
+      } else {
+        Object.assign(where, dogFilter);
+      }
     }
 
     if (params.tipo) {
