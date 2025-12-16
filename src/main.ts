@@ -20,9 +20,7 @@ async function bootstrap() {
     'http://localhost:4200',
     'http://localhost:4201',
     'https://revistadogcat.com.br',
-    'http://revistadogcat.com.br',
     'https://www.revistadogcat.com.br',
-    'http://www.revistadogcat.com.br',
   ];
 
   if (process.env.FRONTEND_URL) {
@@ -30,7 +28,7 @@ async function bootstrap() {
   }
 
   app.enableCors({
-    origin: true,
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: [
@@ -98,6 +96,5 @@ async function bootstrap() {
 
   await app.listen(port);
   Logger.log(`Application is running on: http://localhost:${port}`);
-  Logger.log(`Listening on 0.0.0.0:${port}`);
 }
 bootstrap();
