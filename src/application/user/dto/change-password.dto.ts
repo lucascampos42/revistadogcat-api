@@ -8,12 +8,9 @@ export class ChangePasswordDto {
   })
   @IsString({ message: 'Senha deve ser uma string' })
   @MinLength(8, { message: 'Senha deve ter pelo menos 8 caracteres' })
-  @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&+\-._#])[A-Za-z\d@$!%*?&+\-._#]/,
-    {
-      message:
-        'A senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula, 1 número e 1 caractere especial',
-    },
-  )
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&+\-._#]/, {
+    message:
+      'A senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula e 1 número',
+  })
   password: string;
 }
