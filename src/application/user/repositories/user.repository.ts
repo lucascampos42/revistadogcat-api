@@ -32,8 +32,8 @@ export class UserRepository implements IUserRepository {
       include: this._include,
     });
     if (user) {
-      const { password, ...result } = user;
-      return result as User;
+      user.password = null; // Oculta a hash da senha
+      return user;
     }
     return null;
   }
@@ -44,8 +44,8 @@ export class UserRepository implements IUserRepository {
       include: this._include,
     });
     if (user) {
-      const { password, ...result } = user;
-      return result as User;
+      user.password = null; // Oculta a hash da senha
+      return user;
     }
     return null;
   }
@@ -56,8 +56,8 @@ export class UserRepository implements IUserRepository {
       include: this._include,
     });
     if (user) {
-      const { password, ...result } = user;
-      return result as User;
+      user.password = null; // Oculta a hash da senha
+      return user;
     }
     return null;
   }
