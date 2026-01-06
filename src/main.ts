@@ -6,7 +6,10 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
-import { GlobalExceptionFilter } from './core/filters';
+import {
+  GlobalExceptionFilter,
+  PrismaExceptionFilter,
+} from './core/filters';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -14,7 +17,10 @@ async function bootstrap() {
   });
   const port = process.env.PORT ?? 3000;
 
-  app.useGlobalFilters(new GlobalExceptionFilter());
+  app.useGlobalFilters(
+    new GlobalExceptionFilter(),
+    new PrismaExceptionFilter(),
+  );
 
   const allowedOrigins = [
     'http://localhost:4200',

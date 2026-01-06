@@ -34,22 +34,35 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     let error = 'Error';
 
     if (exception instanceof HttpException) {
-      // Se for uma exceção HTTP conhecida, usamos os dados dela.
       status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
       error = exception.constructor.name;
 
+      this.logger.error(
+        `HttpException capturada: Status ${status} - Error: ${error}`,
+      );
+      if (typeof exceptionResponse === 'object') {
+        this.logger.error(
+          `Detalhes: ${JSON.stringify(exceptionResponse, null, 2)}`,
+        );
+      } else {
+        this.logger.error(`Mensagem: ${exceptionResponse}`);
+      }
+
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else {
-        // Captura a mensagem e o erro de DTOs de validação, etc.
         message = (exceptionResponse as any).message || exception.message;
         error = (exceptionResponse as any).error || error;
       }
     } else if (exception instanceof Error) {
-      // Se for um erro genérico do JavaScript, usamos sua mensagem.
       message = exception.message;
       error = exception.name;
+
+      this.logger.error(
+        `Erro não tratado capturado: ${message}`,
+        exception.stack,
+      );
     }
 
     const errorResponse: ErrorResponse = {
