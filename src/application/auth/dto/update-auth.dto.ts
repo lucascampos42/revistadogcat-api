@@ -14,11 +14,14 @@ export class UpdateUserDto extends PartialType(
 ) {
   @IsOptional()
   @Transform(({ value }) => {
-    if (typeof value === 'string' && value.trim() === '') return undefined;
     if (value === null) return undefined;
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed === '' || trimmed === 'Senha123') return undefined;
+    }
     return value;
   })
-  @ValidateIf((o) => o.password !== undefined && o.password !== null)
+  @ValidateIf((o) => o.password !== undefined)
   @IsString({ message: 'Senha deve ser uma string' })
   @MinLength(8, { message: 'Senha deve ter pelo menos 8 caracteres' })
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
