@@ -27,24 +27,39 @@ export class UserRepository implements IUserRepository {
   }
 
   async findById(id: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { userId: id },
       include: this._include,
     });
+    if (user) {
+      const { password, ...result } = user;
+      return result as User;
+    }
+    return null;
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { email },
       include: this._include,
     });
+    if (user) {
+      const { password, ...result } = user;
+      return result as User;
+    }
+    return null;
   }
 
   async findByUsername(userName: string): Promise<User | null> {
-    return this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: { userName },
       include: this._include,
     });
+    if (user) {
+      const { password, ...result } = user;
+      return result as User;
+    }
+    return null;
   }
 
   async findByCpf(cpf: string): Promise<User | null> {
