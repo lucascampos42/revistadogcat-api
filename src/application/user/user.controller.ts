@@ -31,6 +31,7 @@ import { UploadAvatarDto } from './dto/upload-avatar.dto';
 import { multerConfig } from '../../core/config/multer.config';
 import { AuthRequest } from '../auth/models/AuthRequest';
 import { FullUserDto } from './dto/full-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('Usuários')
 @ApiBearerAuth()
@@ -169,6 +170,17 @@ export class UserController {
     @Body() updateUserRoleDto: UpdateUserRoleDto,
   ) {
     return this.userService.updateUserRole(id, updateUserRoleDto.role);
+  }
+
+  @Patch(':id/password')
+  @Roles(Role.ADMIN)
+  @ApiOperation({ summary: 'Alterar senha do usuário (apenas Admin)' })
+  @ApiResponse({ status: 200, description: 'Senha alterada com sucesso' })
+  async changePassword(
+    @Param('id') id: string,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.userService.changePassword(id, changePasswordDto.password);
   }
 
   @Post(':id/restore')

@@ -273,6 +273,16 @@ export class UserService {
     return this.mapToPublicDto(user);
   }
 
+  async changePassword(id: string, password: string): Promise<PublicUserDto> {
+    await this.findUserOrFail(id);
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await this.userRepository.update(id, {
+      password: hashedPassword,
+      // Invalidar tokens setando versão nova se existir tal lógica, mas por enquanto só atualiza senha
+    });
+    return this.mapToPublicDto(user);
+  }
+
   // --- Métodos Internos (para uso de outros serviços como Auth) ---
 
   async findUserEntityById(id: string): Promise<User | null> {
