@@ -110,4 +110,13 @@ export class CadastroCaoResponseDto {
 
   @ApiProperty({ description: 'Total de votos recebidos' })
   totalVotos: number;
+
+  @ApiPropertyOptional({
+    description: 'Status do pagamento',
+    enum: ['PENDENTE', 'PAGO', 'CANCELADO', 'EXPIRADO'],
+  })
+  statusPagamento?: string;
+
+  @ApiPropertyOptional({ description: 'Link de pagamento InfinitePay' })
+  linkPagamento?: string;
 }

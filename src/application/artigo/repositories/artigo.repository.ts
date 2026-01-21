@@ -180,7 +180,7 @@ export class ArtigoRepository {
   }
 
   async findDestaques(limit: number = 5): Promise<ArtigoEntity[]> {
-    const artigos = await this.prisma.artigo.findMany({
+    const destaques = await this.prisma.artigo.findMany({
       where: {
         deletedAt: null,
         status: StatusArtigo.PUBLICADO,
@@ -191,7 +191,24 @@ export class ArtigoRepository {
       include: this.includeAutorAndComentarios,
     });
 
-    return artigos.map((artigo) => new ArtigoEntity(artigo));
+    if (destaques.length < limit) {
+      const destaquesIds = destaques.map(d => d.artigoId);
+      const remaining = limit - destaques.length;
+      const recentes = await this.prisma.artigo.findMany({
+        where: {
+          deletedAt: null,
+          status: StatusArtigo.PUBLICADO,
+          artigoId: { notIn: destaquesIds },
+        },
+        orderBy: { dataPublicacao: 'desc' },
+        take: remaining,
+        include: this.includeAutorAndComentarios,
+      });
+
+      return [...destaques, ...recentes].map((artigo) => new ArtigoEntity(artigo));
+    }
+
+    return destaques.map((artigo) => new ArtigoEntity(artigo));
   }
 
   async findCategoriasPublicadas(): Promise<string[]> {

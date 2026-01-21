@@ -19,6 +19,8 @@ import { RacaModule } from './application/raca/raca.module';
 import { EdicaoModule } from './application/edicao/edicao.module';
 import { VotacaoModule } from './application/votacao/votacao.module';
 import { DashboardModule } from './application/dashboard/dashboard.module';
+import { PagamentoModule } from './application/pagamento/pagamento.module';
+import { ConfiguracaoModule } from './application/configuracao/configuracao.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { DashboardModule } from './application/dashboard/dashboard.module';
     RacaModule,
     EdicaoModule,
     VotacaoModule,
+    PagamentoModule,
+    ConfiguracaoModule,
     MailModule,
   ],
   controllers: [],

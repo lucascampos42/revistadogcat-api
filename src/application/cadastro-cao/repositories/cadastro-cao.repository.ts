@@ -243,6 +243,12 @@ export class CadastroCaoRepository {
             },
           },
           raca: true,
+          pagamento: {
+            select: {
+              status: true,
+              linkPagamento: true,
+            },
+          },
         },
       }),
       this.prisma.cadastroCao.count({ where }),

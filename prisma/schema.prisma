@@ -48,6 +48,7 @@ model User {
   artigos      Artigo[]
   comentarios  Comentario[]
   votos        Voto[]
+  pagamentos   Pagamento[]
 
   @@map("users")
 }
@@ -239,6 +240,9 @@ model CadastroCao {
 
   // --- Relações de Votação ---
   votos Voto[]
+  
+  // --- Relação de Pagamento ---
+  pagamento Pagamento?
 
   @@map("cadastros_cao")
 }
@@ -306,4 +310,42 @@ enum AcaoKardex {
   VOTO_INVALIDADO
   USUARIO_BLOQUEADO
   CADASTRO_DESATIVADO
+}
+
+enum StatusPagamento {
+  PENDENTE
+  PAGO
+  CANCELADO
+  EXPIRADO
+}
+
+model Configuracao {
+  configuracaoId String   @id @default(cuid())
+  chave          String   @unique
+  valor          String
+  descricao      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@map("configuracoes")
+}
+
+model Pagamento {
+  pagamentoId       String            @id @default(cuid())
+  cadastroId        String            @unique
+  userId            String
+  valor             Int               // Valor em centavos
+  orderNsu          String            @unique // Número único do pedido
+  status            StatusPagamento   @default(PENDENTE)
+  linkPagamento     String?
+  transactionId     String?           // ID da transação InfinitePay
+  comprovante       String?           // URL do comprovante
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  paidAt            DateTime?
+  
+  cadastro CadastroCao @relation(fields: [cadastroId], references: [cadastroId], onDelete: Cascade)
+  user     User        @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  
+  @@map("pagamentos")
 }
