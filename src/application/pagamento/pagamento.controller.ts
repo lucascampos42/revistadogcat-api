@@ -23,7 +23,7 @@ export class PagamentoController {
     @Param('cadastroId') cadastroId: string,
     @Request() req,
   ): Promise<PagamentoResponseDto> {
-    return this.pagamentoService.criarLinkPagamento(cadastroId, req.user.sub);
+    return this.pagamentoService.criarLinkPagamento(cadastroId, req.user.userId);
   }
 
   @Get(':pagamentoId')
@@ -32,7 +32,7 @@ export class PagamentoController {
     @Param('pagamentoId') pagamentoId: string,
     @Request() req,
   ): Promise<PagamentoResponseDto> {
-    return this.pagamentoService.buscarPorId(pagamentoId, req.user.sub);
+    return this.pagamentoService.buscarPorId(pagamentoId, req.user.userId);
   }
 
   @Get('cadastro/:cadastroId')
@@ -41,13 +41,13 @@ export class PagamentoController {
     @Param('cadastroId') cadastroId: string,
     @Request() req,
   ): Promise<PagamentoResponseDto | null> {
-    return this.pagamentoService.buscarPorCadastro(cadastroId, req.user.sub);
+    return this.pagamentoService.buscarPorCadastro(cadastroId, req.user.userId);
   }
 
   @Get('meus-pendentes')
   @UseGuards(JwtAuthGuard)
   async listarPendentes(@Request() req): Promise<PagamentoResponseDto[]> {
-    return this.pagamentoService.listarPendentesPorUsuario(req.user.sub);
+    return this.pagamentoService.listarPendentesPorUsuario(req.user.userId);
   }
 
   @Get('verificar/:pagamentoId')
@@ -56,7 +56,7 @@ export class PagamentoController {
     @Param('pagamentoId') pagamentoId: string,
     @Request() req,
   ): Promise<PagamentoResponseDto> {
-    return this.pagamentoService.verificarPagamento(pagamentoId, req.user.sub);
+    return this.pagamentoService.verificarPagamento(pagamentoId, req.user.userId);
   }
 
   @Post('webhook')

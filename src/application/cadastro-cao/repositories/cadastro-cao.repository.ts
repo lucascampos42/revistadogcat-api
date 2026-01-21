@@ -548,4 +548,22 @@ export class CadastroCaoRepository {
 
     return cadastros.map((cadastro) => new CadastroCaoEntity(cadastro));
   }
+
+  async updateStatus(
+    cadastroId: string,
+    status: 'APROVADO' | 'REJEITADO' | 'CADASTRO_INCOMPLETO',
+    motivoRejeicao?: string,
+  ): Promise<CadastroCaoEntity> {
+    const cadastro = await this.prisma.cadastroCao.update({
+      where: { cadastroId },
+      data: {
+        status,
+        motivoRejeicao,
+        aprovadoEm: status === 'APROVADO' ? new Date() : undefined,
+      },
+      select: this.getSelect(false, true),
+    });
+
+    return new CadastroCaoEntity(cadastro);
+  }
 }

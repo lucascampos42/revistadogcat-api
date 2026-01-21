@@ -29,6 +29,7 @@ export class PagamentoService {
     if (!cadastro) {
       throw new NotFoundException('Cadastro de cão não encontrado');
     }
+
     if (cadastro.userId !== userId) {
       throw new ForbiddenException(
         'Você não tem permissão para criar pagamento para este cadastro',
@@ -167,9 +168,45 @@ export class PagamentoService {
   }
 
   async processarWebhook(data: any): Promise<void> {
-    // TODO: Implementar processamento de webhook da InfinitePay
-    // Validar assinatura, extrair dados, atualizar status do pagamento
-    console.log('Webhook recebido:', data);
+    const { order_nsu, transaction_id, comprovante, status } = data;
+
+    if (!order_nsu) {
+      console.error('Webhook sem order_nsu:', data);
+      throw new BadRequestException('order_nsu é obrigatório');
+    }
+
+    // Buscar pagamento pelo order_nsu
+    const pagamento = await this.pagamentoRepository.findByOrderNsu(order_nsu);
+    if (!pagamento) {
+      console.error('Pagamento não encontrado para order_nsu:', order_nsu);
+      throw new NotFoundException('Pagamento não encontrado');
+    }
+
+    // Se já foi pago, ignorar
+    if (pagamento.status === 'PAGO') {
+      console.log('Pagamento já processado:', order_nsu);
+      return;
+    }
+
+    // Atualizar status do pagamento para PAGO
+    await this.pagamentoRepository.updateStatus(
+      pagamento.pagamentoId,
+      'PAGO',
+      transaction_id,
+      comprovante,
+    );
+
+    // Atualizar status do cadastro para APROVADO
+    await this.cadastroCaoRepository.updateStatus(
+      pagamento.cadastroId,
+      'APROVADO',
+    );
+
+    console.log('Pagamento processado com sucesso:', {
+      orderNsu: order_nsu,
+      transactionId: transaction_id,
+      cadastroId: pagamento.cadastroId,
+    });
   }
 
   async buscarPorOrderNsu(orderNsu: string): Promise<PagamentoResponseDto | null> {
