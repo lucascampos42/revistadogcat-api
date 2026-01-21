@@ -43,7 +43,16 @@ export class CadastroCaoRepository {
       aprovadoPor: true,
       aprovadoEm: true,
       ativo: true,
+      ativo: true,
       totalVotos: true,
+      // Pagamento
+      statusPagamento: true,
+      pagamentoValor: true,
+      pagamentoOrderNsu: true,
+      pagamentoLink: true,
+      pagamentoIdTransacao: true,
+      pagamentoComprovante: true,
+      pagamentoData: true,
     };
     const withRelations: Prisma.CadastroCaoSelect = {
       ...base,
@@ -243,12 +252,7 @@ export class CadastroCaoRepository {
             },
           },
           raca: true,
-          pagamento: {
-            select: {
-              status: true,
-              linkPagamento: true,
-            },
-          },
+
         },
       }),
       this.prisma.cadastroCao.count({ where }),
@@ -291,6 +295,7 @@ export class CadastroCaoRepository {
     cadastroId: string,
     data: UpdateCadastroCaoDto,
   ): Promise<CadastroCaoEntity> {
+    // Helper para converter string "true"/"false" em boolean
     const toBoolean = (val: any): boolean | undefined => {
       if (val === undefined || val === null || val === '') return undefined;
       if (typeof val === 'boolean') return val;
@@ -313,25 +318,13 @@ export class CadastroCaoRepository {
       delete updateData.racaId;
     }
 
-    // Normalização defensiva em updates também (caso o front envie strings)
+    // Normalização defensiva em updates também
     if (updateData.temPedigree !== undefined) {
       updateData.temPedigree = toBoolean(updateData.temPedigree);
     }
     if (updateData.temMicrochip !== undefined) {
       updateData.temMicrochip = toBoolean(updateData.temMicrochip);
     }
-
-    // eslint-disable-next-line no-console
-    console.log('[CadastroCaoRepository.update] tipos antes do prisma:', {
-      temPedigree: {
-        value: updateData.temPedigree,
-        typeof: typeof updateData.temPedigree,
-      },
-      temMicrochip: {
-        value: updateData.temMicrochip,
-        typeof: typeof updateData.temMicrochip,
-      },
-    });
 
     const cadastro = await this.prisma.cadastroCao.update({
       where: { cadastroId },
@@ -340,6 +333,39 @@ export class CadastroCaoRepository {
     });
 
     return new CadastroCaoEntity(cadastro);
+  }
+
+  async updatePaymentData(
+    cadastroId: string,
+    data: {
+      statusPagamento?: string;
+      pagamentoValor?: number;
+      pagamentoOrderNsu?: string;
+      pagamentoLink?: string;
+      pagamentoIdTransacao?: string;
+      pagamentoComprovante?: string;
+      pagamentoData?: Date;
+    },
+  ): Promise<CadastroCaoEntity> {
+    const cadastro = await this.prisma.cadastroCao.update({
+      where: { cadastroId },
+      data: {
+        ...data,
+        statusPagamento: data.statusPagamento as any, // Cast para enum
+      },
+      select: this.getSelect(true, true),
+    });
+
+    return new CadastroCaoEntity(cadastro);
+  }
+
+  async findByOrderNsu(orderNsu: string): Promise<CadastroCaoEntity | null> {
+    const cadastro = await this.prisma.cadastroCao.findUnique({
+      where: { pagamentoOrderNsu: orderNsu },
+      select: this.getSelect(true, true),
+    });
+
+    return cadastro ? new CadastroCaoEntity(cadastro) : null;
   }
 
   async delete(cadastroId: string): Promise<void> {

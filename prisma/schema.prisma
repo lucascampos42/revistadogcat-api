@@ -48,7 +48,7 @@ model User {
   artigos      Artigo[]
   comentarios  Comentario[]
   votos        Voto[]
-  pagamentos   Pagamento[]
+
 
   @@map("users")
 }
@@ -241,11 +241,18 @@ model CadastroCao {
   // --- Relações de Votação ---
   votos Voto[]
   
-  // --- Relação de Pagamento ---
-  pagamento Pagamento?
+  // --- Relação de Pagamento (Internalizada) ---
+  statusPagamento      StatusPagamento @default(PENDENTE)
+  pagamentoValor       Int?            // Em centavos
+  pagamentoOrderNsu    String?         @unique
+  pagamentoLink        String?
+  pagamentoIdTransacao String?         // InfinitePay Transaction ID
+  pagamentoComprovante String?
+  pagamentoData        DateTime?
 
   @@map("cadastros_cao")
 }
+
 
 model Raca {
   racaId    String   @id @default(cuid())
@@ -330,22 +337,3 @@ model Configuracao {
   @@map("configuracoes")
 }
 
-model Pagamento {
-  pagamentoId       String            @id @default(cuid())
-  cadastroId        String            @unique
-  userId            String
-  valor             Int               // Valor em centavos
-  orderNsu          String            @unique // Número único do pedido
-  status            StatusPagamento   @default(PENDENTE)
-  linkPagamento     String?
-  transactionId     String?           // ID da transação InfinitePay
-  comprovante       String?           // URL do comprovante
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  paidAt            DateTime?
-  
-  cadastro CadastroCao @relation(fields: [cadastroId], references: [cadastroId], onDelete: Cascade)
-  user     User        @relation(fields: [userId], references: [userId], onDelete: Cascade)
-  
-  @@map("pagamentos")
-}

@@ -8,10 +8,12 @@ import {
   Request,
   HttpCode,
   HttpStatus,
+  NotFoundException,
 } from '@nestjs/common';
 import { PagamentoService } from './pagamento.service';
 import { PagamentoResponseDto } from './dto/pagamento-response.dto';
 import { JwtAuthGuard } from '../../core/guards/jwt-auth.guard';
+import { IsPublic } from '../../core/decorators/is-public.decorator';
 
 @Controller('pagamento')
 export class PagamentoController {
@@ -26,13 +28,18 @@ export class PagamentoController {
     return this.pagamentoService.criarLinkPagamento(cadastroId, req.user.userId);
   }
 
-  @Get(':pagamentoId')
+  @Get(':cadastroId')
   @UseGuards(JwtAuthGuard)
   async buscarPagamento(
-    @Param('pagamentoId') pagamentoId: string,
+    @Param('cadastroId') cadastroId: string,
     @Request() req,
   ): Promise<PagamentoResponseDto> {
-    return this.pagamentoService.buscarPorId(pagamentoId, req.user.userId);
+    // PagamentoId agora é o CadastroId
+    const result = await this.pagamentoService.buscarPorCadastro(cadastroId, req.user.userId);
+    if (!result) {
+        throw new NotFoundException('Pagamento não encontrado');
+    }
+    return result;
   }
 
   @Get('cadastro/:cadastroId')
@@ -44,22 +51,26 @@ export class PagamentoController {
     return this.pagamentoService.buscarPorCadastro(cadastroId, req.user.userId);
   }
 
+  /*
   @Get('meus-pendentes')
   @UseGuards(JwtAuthGuard)
   async listarPendentes(@Request() req): Promise<PagamentoResponseDto[]> {
-    return this.pagamentoService.listarPendentesPorUsuario(req.user.userId);
+    // Implementação pendente: filtrar cadastros com statusPagamento = PENDENTE
+    return [];
   }
+  */
 
-  @Get('verificar/:pagamentoId')
+  @Get('verificar/:cadastroId')
   @UseGuards(JwtAuthGuard)
   async verificarPagamento(
-    @Param('pagamentoId') pagamentoId: string,
+    @Param('cadastroId') cadastroId: string,
     @Request() req,
   ): Promise<PagamentoResponseDto> {
-    return this.pagamentoService.verificarPagamento(pagamentoId, req.user.userId);
+    return this.pagamentoService.verificarPagamento(cadastroId, req.user.userId);
   }
 
   @Post('webhook')
+  @IsPublic()
   @HttpCode(HttpStatus.OK)
   async processarWebhook(@Body() data: any): Promise<{ success: boolean }> {
     await this.pagamentoService.processarWebhook(data);

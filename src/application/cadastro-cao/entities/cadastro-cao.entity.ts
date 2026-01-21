@@ -1,4 +1,4 @@
-import { SexoCao, VideoOption, StatusCadastro } from '@prisma/client';
+import { SexoCao, VideoOption, StatusCadastro, StatusPagamento } from '@prisma/client';
 import { RacaEntity } from '../../raca/entities/raca.entity';
 
 interface UserInCaoEntity {
@@ -44,6 +44,15 @@ export class CadastroCaoEntity {
   ativo: boolean;
   raca?: RacaEntity | null;
   user?: UserInCaoEntity | null;
+
+  // Campos de Pagamento
+  statusPagamento: StatusPagamento;
+  pagamentoValor?: number | null;
+  pagamentoOrderNsu?: string | null;
+  pagamentoLink?: string | null;
+  pagamentoIdTransacao?: string | null;
+  pagamentoComprovante?: string | null;
+  pagamentoData?: Date | null;
 
   constructor(data: Partial<CadastroCaoEntity>) {
     Object.assign(this, data);
